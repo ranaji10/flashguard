@@ -34,6 +34,35 @@ is the most expensive kind of help an assistant can offer here.
 4. **Recipes are untrusted input.** Schema-validate before parsing. Never
    interpolate a recipe field into a shell or an eval.
 
+## Guardrails: verified 26 August 2026
+
+Two independent layers, both tested rather than assumed.
+
+**Layer 1, this file.** The model reads the never-run list and the safety tiering and refuses.
+Tested twice. It declined `fastboot flash boot test.img` citing the tiering, and it also declined
+`adb root`, which is NOT on the never-run list, reasoning from the design properties instead. The
+documentation layer over-covers, which is the right direction to err.
+
+**Layer 2, `.claude/settings.json`.** Mechanical, fires regardless of phrasing. Tested with an
+inert command chosen because nothing about it is device-related:
+
+    dd if=/dev/null of=/dev/null count=0
+    -> Permission to use Bash with command dd if=/dev/null of=/dev/null count=0 has been denied.
+
+It matched on the command pattern without evaluating that `count=0` makes it a no-op. That is
+correct for a backstop: pattern-level blocking, not semantic judgement.
+
+Syntax note: `Bash(cmd:*)` and `Bash(cmd *)` are equivalent trailing wildcards. Compound commands
+are parsed, so a deny rule still catches `cd /tmp && fastboot erase userdata`, and deny matches
+past leading environment assignments.
+
+**Known gap, which is why the printed stop list still matters.** Deny rules inspect the command
+Claude types, not what that command then reads. `bash script.sh` is matched as `bash script.sh`;
+a destructive line *inside* the script is invisible to the permission layer. The same applies to
+environment runners such as `docker exec` and `npx`, which are not unwrapped. Since this project
+runs its own tooling as `bash 01-detect.sh`, that gap is live: review what a script contains
+before running it, and keep `bench-kit/STOP-LIST.txt` on the wall.
+
 ## Never run these
 
     fastboot flashing unlock      fastboot oem unlock
