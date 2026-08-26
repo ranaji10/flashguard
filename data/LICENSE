@@ -1,0 +1,17 @@
+The contents of this directory — the device matrix, the recipe corpus and their
+schemas — are dedicated to the public domain under CC0 1.0 Universal.
+
+    https://creativecommons.org/publicdomain/zero/1.0/
+
+To the extent possible under law, the author has waived all copyright and related
+or neighbouring rights to this dataset.
+
+This is deliberate and different from the licence on the code in this repository,
+which is GPL-3.0-or-later. The dataset is meant to be absorbed without friction by
+other reuse and repair projects — postmarketOS, LineageOS, OpenAndroidInstaller and
+anyone else — and share-alike on a factual dataset would block exactly that.
+
+Records are contributed by volunteers who are shown `docs/participation-note.md`
+before they run anything. No serial numbers, IMEI, IMSI, MAC addresses, Android IDs
+or ICCIDs are collected, by design: the collection scripts query an explicit
+property allowlist rather than dumping device state.

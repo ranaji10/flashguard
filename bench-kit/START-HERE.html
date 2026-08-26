@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bench · Tier A</title>
+<style>
+  :root{
+    --ground:#F0F3F5;--surface:#FFF;--surface-2:#E7EDEF;--surface-3:#DBE4E8;
+    --ink:#14202A;--ink-soft:#52646F;--ink-faint:#7C8D97;
+    --rule:#D1DBDF;--rule-strong:#B5C4CA;
+    --accent:#22646B;--accent-mark:#2E848D;--brass:#8A6A1F;
+    --ok:#2F6B4F;--ok-bg:#E3EFE9;--warn:#8A5B14;--warn-bg:#F3EBDA;
+    --stop:#A33B2E;--stop-bg:#F7E7E4;--stop-rule:#DDB3AC;
+    --code-bg:#16222B;--code-ink:#DCE6EA;--code-dim:#7D919C;
+    --shadow:0 1px 2px rgba(20,32,42,.06),0 8px 24px rgba(20,32,42,.06);
+    --sans:system-ui,-apple-system,"Segoe UI",Ubuntu,Cantarell,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --ground:#0E151A;--surface:#151E25;--surface-2:#1C2831;--surface-3:#24333D;
+    --ink:#E1E8EC;--ink-soft:#90A1AC;--ink-faint:#6D7E89;
+    --rule:#283640;--rule-strong:#384854;
+    --accent:#62C0C6;--accent-mark:#62C0C6;--brass:#D6AC4A;
+    --ok:#6FBF95;--ok-bg:#163025;--warn:#D9A64E;--warn-bg:#2D2617;
+    --stop:#E58A79;--stop-bg:#34211E;--stop-rule:#6B3B33;
+    --code-bg:#0A1116;--code-ink:#D3E0E6;--code-dim:#6C808C;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);
+  }}
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:17px;
+       line-height:1.6;margin:0;padding:0 18px 90px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:680px;margin:0 auto}
+
+  /* ---- bar ---- */
+  .bar{position:sticky;top:0;z-index:30;background:var(--surface);
+       border-bottom:1px solid var(--rule-strong);margin:0 -18px;padding:9px 18px;
+       display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:var(--shadow)}
+  .bar .id{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+  .bar .cnt{font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin-left:auto;font-variant-numeric:tabular-nums}
+  .bar a,.bar button.lnk{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+       background:none;border:1px solid var(--rule-strong);border-radius:3px;padding:4px 9px;
+       color:var(--ink-faint);text-decoration:none;cursor:pointer}
+  .bar a.stopj{color:var(--stop);background:var(--stop-bg);border-color:var(--stop-rule)}
+  .bar button.lnk:hover{color:var(--ink)}
+
+  /* ---- card ---- */
+  .card{background:var(--surface);border:1px solid var(--rule);box-shadow:var(--shadow);
+        padding:30px 32px 32px;margin:26px 0 18px;border-top:3px solid var(--accent-mark)}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+          color:var(--accent);margin:0 0 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .kicker .where{color:var(--brass);border:1px solid var(--brass);border-radius:2px;padding:2px 7px;letter-spacing:.08em}
+  h1{font-size:27px;line-height:1.18;letter-spacing:-.018em;margin:0 0 14px;font-weight:650;text-wrap:balance}
+  h2{font-size:19px;margin:0 0 10px;font-weight:600}
+  p{margin:0 0 14px;max-width:62ch}
+  p:last-child{margin-bottom:0}
+  .sub{color:var(--ink-soft);font-size:16px}
+  code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);padding:1px 5px;border-radius:3px}
+  a{color:var(--accent)}
+
+  /* ---- buttons ---- */
+  .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+  button.b{font-family:var(--sans);font-size:16px;background:var(--accent);color:var(--surface);
+     border:1px solid var(--accent);border-radius:4px;padding:12px 20px;cursor:pointer;font-weight:500}
+  button.b:hover{background:var(--accent-mark);border-color:var(--accent-mark)}
+  button.b.ghost{background:none;color:var(--ink-soft);border-color:var(--rule-strong)}
+  button.b.ghost:hover{background:var(--surface-2);color:var(--ink)}
+  button.b:disabled{opacity:.4;cursor:not-allowed}
+  button.b:focus-visible,button.pick:focus-visible,button.copy:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* ---- device picker ---- */
+  .picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:20px}
+  button.pick{text-align:left;background:var(--surface-2);border:1px solid var(--rule-strong);
+     border-radius:4px;padding:14px 16px;cursor:pointer;font-family:var(--sans);font-size:16px;color:var(--ink);line-height:1.35}
+  button.pick:hover{border-color:var(--accent-mark);background:var(--surface-3)}
+  button.pick small{display:block;font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-top:4px;letter-spacing:.04em}
+  button.pick.done{opacity:.45}
+
+  /* ---- code + copy ---- */
+  .cmd{display:flex;gap:10px;align-items:stretch;margin:16px 0}
+  pre{background:var(--code-bg);color:var(--code-ink);font-family:var(--mono);font-size:14px;
+      line-height:1.6;padding:14px 16px;margin:0;overflow-x:auto;border-radius:4px;flex:1}
+  pre .c{color:var(--code-dim)}
+  button.copy{font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;
+     background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--rule-strong);
+     border-radius:4px;padding:0 14px;cursor:pointer;white-space:nowrap}
+  button.copy:hover{color:var(--ink);border-color:var(--accent-mark)}
+  button.copy.ok{color:var(--ok);border-color:var(--ok)}
+
+  textarea.paste{width:100%;min-height:88px;font-family:var(--mono);font-size:13px;padding:12px;
+     background:var(--ground);color:var(--ink);border:2px dashed var(--rule-strong);border-radius:4px;resize:vertical}
+  textarea.paste:focus{outline:none;border-color:var(--accent);border-style:solid}
+  textarea.note{width:100%;min-height:80px;font-family:var(--sans);font-size:16px;padding:12px;
+     background:var(--ground);color:var(--ink);border:1px solid var(--rule-strong);border-radius:4px;resize:vertical}
+  input.txt{width:100%;font-family:var(--sans);font-size:16px;padding:11px 12px;background:var(--ground);
+     color:var(--ink);border:1px solid var(--rule-strong);border-radius:4px}
+
+  /* ---- readout ---- */
+  .readout{background:var(--surface-2);border-left:3px solid var(--accent-mark);padding:16px 18px;margin:18px 0}
+  .readout dl{display:grid;grid-template-columns:auto 1fr;gap:5px 16px;margin:0;font-size:15px}
+  .readout dt{font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);padding-top:3px}
+  .readout dd{margin:0;font-family:var(--mono);font-size:13.5px;word-break:break-word}
+  .verdict{font-size:20px;font-weight:600;margin:0 0 4px}
+  .verdict.agree{color:var(--ok)} .verdict.differ{color:var(--warn)}
+
+  .why{background:var(--surface-2);border-left:2px solid var(--brass);padding:12px 15px;margin:16px 0;
+       font-size:15px;line-height:1.5;color:var(--ink-soft)}
+  .why b{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+         color:var(--brass);display:block;margin-bottom:4px;font-weight:500}
+  .alert{font-size:15px;padding:11px 14px;border-radius:4px;margin:14px 0;display:none}
+  .alert.on{display:block}
+  .alert.bad{background:var(--stop-bg);color:var(--stop);border:1px solid var(--stop-rule)}
+  .alert.good{background:var(--ok-bg);color:var(--ok)}
+
+  ol.mini{margin:14px 0;padding-left:22px} ol.mini li{margin-bottom:9px;max-width:62ch}
+  ul.mini{margin:14px 0;padding-left:20px} ul.mini li{margin-bottom:8px;max-width:62ch}
+
+  /* ---- collected ---- */
+  .collected{background:var(--surface);border:1px solid var(--rule);padding:18px 20px;margin:18px 0}
+  .collected h2{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:12px}
+  .rec{display:flex;gap:12px;align-items:baseline;padding:7px 0;border-top:1px solid var(--rule);font-size:15px}
+  .rec:first-of-type{border-top:0}
+  .rec .cls{font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+       background:var(--ok-bg);color:var(--ok);padding:2px 7px;border-radius:2px;white-space:nowrap}
+  .rec .cls.pos{background:var(--warn-bg);color:var(--warn)}
+  .rec .mins{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink-faint)}
+
+  details{background:var(--surface);border:1px solid var(--rule);padding:0 20px;margin:14px 0}
+  details[open]{padding-bottom:18px}
+  summary{cursor:pointer;padding:15px 0;font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;
+          text-transform:uppercase;color:var(--ink-faint)}
+  summary:hover{color:var(--ink)}
+  #stopbox{background:var(--stop-bg);border:1px solid var(--stop-rule);border-left:3px solid var(--stop);padding:20px 22px;margin:18px 0}
+  #stopbox h2{color:var(--stop)}
+  #stopbox ul{list-style:none;margin:12px 0 0;padding:0;font-family:var(--mono);font-size:13.5px;columns:2;column-gap:24px}
+  #stopbox li{margin-bottom:4px;color:var(--stop);break-inside:avoid}
+  @media (max-width:540px){#stopbox ul{columns:1}.card{padding:24px 20px 26px}}
+  table{border-collapse:collapse;width:100%;font-size:15px;margin:12px 0}
+  th{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);
+     text-align:left;padding:8px 10px;border-bottom:1px solid var(--rule-strong)}
+  td{padding:9px 10px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.45}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <span class="id">Bench · Tier A</span>
+  <span class="cnt" id="cnt">0 devices</span>
+  <a class="stopj" href="#stopbox">Stop list</a>
+  <button class="lnk" id="restart" type="button">Start over</button>
+</div>
+
+<div class="wrap">
+  <div id="stage"></div>
+
+  <div class="collected" id="collected" style="display:none">
+    <h2>Captured this session</h2>
+    <div id="reclist"></div>
+    <div class="btns">
+      <button class="b ghost" id="dl" type="button">Download device-matrix.jsonl</button>
+      <button class="b ghost" id="cp" type="button">Copy all</button>
+    </div>
+  </div>
+
+  <div id="stopbox">
+    <h2>Stop list</h2>
+    <p>Nothing in Tier A needs any of these. Two wipe the device on contact, the rest can
+    leave it unbootable. If any instruction anywhere tells you to run one, it is not this
+    protocol. Stop and ask.</p>
+    <ul>
+      <li>fastboot flashing unlock</li><li>fastboot oem unlock</li>
+      <li>fastboot flash …</li><li>fastboot erase …</li>
+      <li>fastboot format …</li><li>fastboot update …</li>
+      <li>fastboot set_active …</li><li>adb disable-verity</li><li>dd …</li>
+    </ul>
+  </div>
+
+  <details>
+    <summary>Reference · the seed devices and what to expect</summary>
+    <table>
+      <thead><tr><th>Device</th><th>Expect</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td>USB stick</td><td>mass_storage</td><td>Interface class 08. Do this first, nothing at stake.</td></tr>
+        <tr><td>External HDD</td><td>mass_storage</td><td>Same class, different power draw.</td></tr>
+        <tr><td>Fuji X-T30</td><td>ptp_camera</td><td>Do it twice: change the USB mode in the camera menu and capture again.</td></tr>
+        <tr><td>Fuji X-T20</td><td>ptp_camera</td><td>Written as "TX20" in the old kit. Confirm from the body.</td></tr>
+        <tr><td>Kobo</td><td>mass_storage or mtp</td><td>Either answer is a finding.</td></tr>
+        <tr><td>iPhone 8</td><td>ios</td><td>Vendor 05ac. Must be flagged unsupported for flashing.</td></tr>
+        <tr><td>Unknown Android</td><td>adb</td><td>Last. The one live positive.</td></tr>
+      </tbody>
+    </table>
+  </details>
+
+  <details>
+    <summary>Reference · why the scripts look awkward</summary>
+    <p>They query an explicit allowlist of device properties one at a time instead of dumping
+    everything. Both <code>adb devices</code> and <code>fastboot getvar all</code> print the
+    device serial, and this dataset is published openly. If you ever see a serial, IMEI, MAC
+    or Android ID in output you are about to record, that is a defect in the scripts worth
+    reporting, not something to quietly edit out.</p>
+  </details>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- state ---------------- */
+var KEY="bench.v2", S={ where:null, tester:"", consent:false, setup:0, records:[], seen:{} };
+try{ var raw=localStorage.getItem(KEY); if(raw){ S=Object.assign(S,JSON.parse(raw)||{}); } }catch(e){}
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+
+var stage=document.getElementById("stage");
+var cur=null;          // device being captured
+var t0=0;              // timer
+var step="boot";
+
+/* ---------------- helpers ---------------- */
+function el(h){ var d=document.createElement("div"); d.innerHTML=h.trim(); return d.firstChild; }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+
+function copyText(text,btn){
+  function done(){ var o=btn.textContent; btn.textContent="Copied"; btn.className+=" ok";
+    setTimeout(function(){ btn.textContent=o; btn.className=btn.className.replace(" ok",""); },1500); }
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done,function(){fb(text,done);});
+  } else { fb(text,done); }
+}
+function fb(text,done){ var ta=document.createElement("textarea"); ta.value=text;
+  ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); done(); }catch(e){} document.body.removeChild(ta); }
+
+function wireCopy(root){
+  [].slice.call(root.querySelectorAll(".cmd button.copy")).forEach(function(b){
+    b.addEventListener("click",function(){
+      var pre=b.parentNode.querySelector("pre"), cl=pre.cloneNode(true);
+      [].slice.call(cl.querySelectorAll(".c")).forEach(function(c){ c.parentNode.removeChild(c); });
+      copyText(cl.textContent.replace(/\n{2,}/g,"\n").trim(),b);
+    });
+  });
+}
+
+function uuid(){
+  if(window.crypto&&crypto.randomUUID) return crypto.randomUUID();
+  var b=new Uint8Array(16);
+  if(window.crypto&&crypto.getRandomValues) crypto.getRandomValues(b);
+  else for(var i=0;i<16;i++) b[i]=Math.floor(Math.random()*256);
+  b[6]=(b[6]&15)|64; b[8]=(b[8]&63)|128;
+  var h=[].map.call(b,function(x){return ("0"+x.toString(16)).slice(-2);}).join("");
+  return h.slice(0,8)+"-"+h.slice(8,12)+"-"+h.slice(12,16)+"-"+h.slice(16,20)+"-"+h.slice(20);
+}
+
+/* identifiers that must never reach a published dataset */
+var LEAKS=[
+  [/\b\d{15}\b/,                          "a 15-digit number, which looks like an IMEI"],
+  [/\b\d{19,20}\b/,                       "a 19 to 20 digit number, which looks like an ICCID"],
+  [/\b([0-9a-f]{2}:){5}[0-9a-f]{2}\b/i,   "a MAC address"],
+  [/\b[0-9a-f]{16}\b/i,                   "a 16-character hex string, which looks like an Android ID"],
+  [/\bimei\b/i,                           "the word IMEI"],
+  [/\bserial\s*(no\b|number|:)/i,         "the word serial"]
+];
+function leakIn(t){ for(var i=0;i<LEAKS.length;i++){ if(LEAKS[i][0].test(t)) return LEAKS[i][1]; } return null; }
+
+function parseCapture(text){
+  var i=text.indexOf("BENCH_CAPTURE");
+  if(i<0) return null;
+  var rest=text.slice(i+13), nl=rest.indexOf("\n");
+  if(nl>=0) rest=rest.slice(0,nl);
+  try{ return JSON.parse(rest.trim()); }catch(e){ return null; }
+}
+
+/* ---------------- the seed devices ---------------- */
+var DEVICES=[
+  {k:"usb",     label:"USB stick",        hint:"expect mass_storage",  name:"USB flash drive",       expect:"mass_storage"},
+  {k:"hdd",     label:"External drive",   hint:"expect mass_storage",  name:"External hard drive",   expect:"mass_storage"},
+  {k:"xt30",    label:"Fuji X-T30",       hint:"expect ptp_camera",    name:"Fujifilm X-T30",        expect:"ptp_camera"},
+  {k:"xt20",    label:"Fuji X-T20",       hint:"expect ptp_camera",    name:"Fujifilm X-T20",        expect:"ptp_camera"},
+  {k:"kobo",    label:"Kobo reader",      hint:"storage or MTP",       name:"Kobo e-reader",         expect:"mass_storage"},
+  {k:"iphone",  label:"iPhone 8",         hint:"expect ios",           name:"Apple iPhone 8",        expect:"ios"},
+  {k:"android", label:"Unknown Android",  hint:"the live positive",    name:"Unknown Android phone", expect:"adb"},
+  {k:"other",   label:"Something else",   hint:"anything from a drawer",name:"",                     expect:""}
+];
+var CLASSES=["mass_storage","ptp_camera","mtp","adb","fastboot","ios","unknown","not_detected"];
+
+/* ---------------- render ---------------- */
+function refreshBar(){
+  document.getElementById("cnt").textContent=S.records.length+" device"+(S.records.length===1?"":"s");
+  var box=document.getElementById("collected");
+  box.style.display=S.records.length?"block":"none";
+  var list=document.getElementById("reclist"); list.innerHTML="";
+  S.records.forEach(function(r){
+    var pos=(r.detected.device_class==="adb"||r.detected.device_class==="fastboot");
+    list.appendChild(el('<div class="rec"><span class="cls'+(pos?" pos":"")+'">'+
+      esc(r.detected.device_class)+'</span><span>'+esc(r.reported_device||"unnamed")+
+      (r.device_mode&&r.device_mode!=="default"?' <em style="color:var(--ink-faint)">('+esc(r.device_mode)+')</em>':'')+
+      '</span><span class="mins">'+(r.duration_minutes==null?"":r.duration_minutes+" min")+'</span></div>'));
+  });
+}
+
+function show(html){ stage.innerHTML=""; var c=el(html); stage.appendChild(c); wireCopy(c); refreshBar();
+  window.scrollTo({top:0,behavior:"smooth"}); return c; }
+
+/* ---------- 0. where are you ---------- */
+function scrBoot(){
+  var c=show(
+  '<div class="card">'+
+    '<p class="kicker">Tier A · nothing is written to any device</p>'+
+    '<h1>Where are you right now?</h1>'+
+    '<p class="sub">This page is used in two places. It only shows you the steps for the one you are at.</p>'+
+    '<div class="picks">'+
+      '<button class="pick" data-w="mac"><b>At my Mac</b><small>preparing the sticks</small></button>'+
+      '<button class="pick" data-w="acer"><b>At the Acer, in Linux</b><small>ready to plug things in</small></button>'+
+    '</div>'+
+  '</div>');
+  [].slice.call(c.querySelectorAll(".pick")).forEach(function(b){
+    b.addEventListener("click",function(){
+      S.where=b.getAttribute("data-w"); save();
+      if(S.where==="mac"){ step="mac"; scrMac(); } else { step="who"; scrWho(); }
+    });
+  });
+}
+
+/* ---------- 1. on the mac ---------- */
+function scrMac(){
+  var c=show(
+  '<div class="card">'+
+    '<p class="kicker">Once only <span class="where">At your Mac</span></p>'+
+    '<h1>Two USB sticks</h1>'+
+    '<p>Not one. A bootable Ubuntu stick is written as a disk image, so you cannot reliably add'+
+    ' files to it afterwards. The second stick carries this kit and holds your records, which'+
+    ' also solves the live session forgetting everything at reboot.</p>'+
+    '<ol class="mini">'+
+      '<li><b>Stick 1.</b> Write a current Ubuntu LTS desktop ISO with balenaEtcher. 8 GB or more. This stick gets wiped.</li>'+
+      '<li><b>Stick 2.</b> Format ExFAT in Disk Utility, name it <code>BENCH</code>, then copy the kit onto it:'+
+        '<div class="cmd"><pre>cp -R project/bench-kit /Volumes/BENCH/</pre><button class="copy" type="button">Copy</button></div></li>'+
+      '<li><b>Print</b> <code>bench-kit/STOP-LIST.txt</code> and tape it to the Acer.</li>'+
+      '<li><b>Charge</b> the Android above 50 percent and find a cable you know carries data. Charge-only cables are the most common reason a device looks invisible.</li>'+
+    '</ol>'+
+    '<div class="why"><b>Then</b>Restart the Acer holding <code>F12</code> for the boot menu. If nothing'+
+    ' appears, restart, press <code>F2</code> for setup, enable the F12 boot menu and disable Secure Boot.'+
+    ' Choose <b>Try Ubuntu</b>, not Install. Nothing on the Acer disk is touched. Connect wifi, then open'+
+    ' this same file from stick 2 and pick "At the Acer".</div>'+
+    '<div class="btns"><button class="b" id="ok">Done, I am at the Acer now</button>'+
+    '<button class="b ghost" id="back">Back</button></div>'+
+  '</div>');
+  c.querySelector("#ok").addEventListener("click",function(){ S.where="acer"; save(); step="who"; scrWho(); });
+  c.querySelector("#back").addEventListener("click",function(){ step="boot"; scrBoot(); });
+}
+
+/* ---------- 2. who + consent, asked once ---------- */
+function scrWho(){
+  if(S.tester && S.consent){ step=(S.setup?"loop":"setup"); return S.setup?scrLoop():scrSetup(); }
+  var c=show(
+  '<div class="card">'+
+    '<p class="kicker">Once only <span class="where">At the Acer</span></p>'+
+    '<h1>Two things, then you are set up</h1>'+
+    '<p class="sub">Asked once. Remembered for every device after.</p>'+
+    '<p style="margin-top:20px"><b>What should the records credit you as?</b><br>'+
+    '<span class="sub">A handle or initials. Not your full name, these are published.</span></p>'+
+    '<input class="txt" id="who" placeholder="ADK" value="'+esc(S.tester)+'">'+
+    '<div class="why" style="margin-top:22px"><b>Before you run anything</b>'+
+    'Everything here reads. Nothing is flashed, erased, unlocked or modified. What is recorded:'+
+    ' device type, make, model, chipset, Android version and patch level, partition scheme, bootloader'+
+    ' lock state, and your notes. What is never recorded: serial numbers, IMEI, IMSI, MAC addresses,'+
+    ' Android ID, ICCID. Records are published as an open dataset. Full text in'+
+    ' <code>participation-note.md</code>.</div>'+
+    '<div class="btns"><button class="b" id="go">I have read that. Start.</button></div>'+
+    '<div class="alert bad" id="err"></div>'+
+  '</div>');
+  c.querySelector("#go").addEventListener("click",function(){
+    var v=c.querySelector("#who").value.trim();
+    if(!v){ var e=c.querySelector("#err"); e.textContent="A handle or set of initials, so records can be attributed."; e.className="alert bad on"; return; }
+    S.tester=v; S.consent=true; save(); step="setup"; scrSetup();
+  });
+}
+
+/* ---------- 3. setup script ---------- */
+function scrSetup(){
+  var c=show(
+  '<div class="card">'+
+    '<p class="kicker">Once only <span class="where">Terminal</span></p>'+
+    '<h1>Run the setup script</h1>'+
+    '<p>It installs the read-only tools and takes a picture of what USB devices belong to the'+
+    ' machine itself. Everything after this is measured against that picture.</p>'+
+    '<p class="sub">Open a terminal with <code>Ctrl</code> + <code>Alt</code> + <code>T</code>, then:</p>'+
+    '<div class="cmd"><pre>cd /media/$USER/BENCH/bench-kit/scripts\nbash 00-setup.sh</pre><button class="copy" type="button">Copy</button></div>'+
+    '<p class="sub">It will ask you to unplug anything under test, then press Enter. That is the only'+
+    ' prompt. Run scripts with <code>bash</code>, not <code>./</code>, because a FAT stick does not carry'+
+    ' the executable bit.</p>'+
+    '<div class="btns"><button class="b" id="ok">It finished</button></div>'+
+  '</div>');
+  c.querySelector("#ok").addEventListener("click",function(){ S.setup=1; save(); step="loop"; scrLoop(); });
+}
+
+/* ---------- 4. pick a device ---------- */
+function scrLoop(){
+  var picks=DEVICES.map(function(d){
+    var done=S.seen[d.k]?" done":"";
+    return '<button class="pick'+done+'" data-k="'+d.k+'"><b>'+esc(d.label)+'</b><small>'+esc(d.hint)+
+      (S.seen[d.k]?" · captured "+S.seen[d.k]+"×":"")+'</small></button>';
+  }).join("");
+  var c=show(
+  '<div class="card">'+
+    '<p class="kicker">Device '+(S.records.length+1)+' <span class="where">At the Acer</span></p>'+
+    '<h1>Plug in one device. What is it?</h1>'+
+    '<p class="sub">One at a time. The timer starts when you choose, and stops when the record is saved,'+
+    ' so you never have to note the duration yourself.</p>'+
+    '<div class="picks">'+picks+'</div>'+
+    (S.records.length>=1?'<div class="btns"><button class="b ghost" id="fin">I am done for now</button></div>':'')+
+    '<div class="why" style="margin-top:24px"><b>Suggested order</b>USB stick first, Android last. The'+
+    ' easy negatives train your hands while nothing is at stake, and by the time you reach the phone the'+
+    ' routine is smooth. Do the Fuji twice, changing its USB mode in the camera menu between captures.</div>'+
+  '</div>');
+  [].slice.call(c.querySelectorAll(".pick")).forEach(function(b){
+    b.addEventListener("click",function(){
+      var d=DEVICES.filter(function(x){return x.k===b.getAttribute("data-k");})[0];
+      cur={ dev:d, name:d.name, mode:"default", cap:null, android:null };
+      t0=Date.now(); step="run"; scrRun();
+    });
+  });
+  var f=c.querySelector("#fin"); if(f) f.addEventListener("click",scrFinish);
+}
+
+/* ---------- 5. run detect, paste ---------- */
+function scrRun(){
+  var c=show(
+  '<div class="card">'+
+    '<p class="kicker">'+esc(cur.dev.label)+' · step 1 of 3 <span class="where">Terminal</span></p>'+
+    '<h1>Run this, then paste what it printed</h1>'+
+    '<div class="cmd"><pre>bash 01-detect.sh</pre><button class="copy" type="button">Copy</button></div>'+
+    '<p class="sub">If the script says it copied to your clipboard, just click in the box and paste.'+
+    ' Otherwise select the line it printed and copy it. Pasting the whole terminal output is fine too,'+
+    ' the right part gets picked out.</p>'+
+    '<textarea class="paste" id="p" placeholder="Paste here"></textarea>'+
+    '<div class="alert bad" id="err"></div>'+
+    '<div class="btns"><button class="b ghost" id="back">Different device</button></div>'+
+  '</div>');
+  var p=c.querySelector("#p"), err=c.querySelector("#err");
+  p.focus();
+  function tryParse(){
+    var t=p.value; if(!t.trim()) return;
+    var cap=parseCapture(t);
+    if(!cap){ err.textContent="No capture line found yet. Look for the line starting BENCH_CAPTURE and copy that."; err.className="alert bad on"; return; }
+    var lk=leakIn(t);
+    if(lk){ err.textContent="That text contains "+lk+". This dataset is published, so it cannot be recorded. If it came from the script rather than from you, that is a defect worth reporting."; err.className="alert bad on"; return; }
+    err.className="alert bad";
+    cur.cap=cap;
+    if(cap.device_class==="adb"||cap.device_class==="fastboot"){ step="android"; scrAndroid(); }
+    else { step="confirm"; scrConfirm(); }
+  }
+  p.addEventListener("input",tryParse);
+  p.addEventListener("paste",function(){ setTimeout(tryParse,60); });
+  c.querySelector("#back").addEventListener("click",function(){ step="loop"; scrLoop(); });
+}
+
+/* ---------- 5b. android fingerprint ---------- */
+function scrAndroid(){
+  var c=show(
+  '<div class="card">'+
+    '<p class="kicker">Android detected · step 2 of 3 <span class="where">Terminal</span></p>'+
+    '<h1>Now read the fingerprint</h1>'+
+    '<p>Read-only. It queries a fixed list of properties one at a time, deliberately, so a serial'+
+    ' number cannot come along for the ride.</p>'+
+    '<div class="cmd"><pre>bash 02-android.sh</pre><button class="copy" type="button">Copy</button></div>'+
+    '<p class="sub">If it says the phone is not authorised, look at the phone screen and accept the'+
+    ' prompt, then run it again.</p>'+
+    '<textarea class="paste" id="p" placeholder="Paste here"></textarea>'+
+    '<div class="alert bad" id="err"></div>'+
+    '<div class="btns"><button class="b ghost" id="skip">Skip, it would not connect</button></div>'+
+  '</div>');
+  var p=c.querySelector("#p"), err=c.querySelector("#err");
+  p.focus();
+  function tryParse(){
+    var t=p.value; if(!t.trim()) return;
+    var cap=parseCapture(t);
+    if(!cap||!cap.android){ err.textContent="No fingerprint line yet. Look for the line starting BENCH_CAPTURE."; err.className="alert bad on"; return; }
+    var lk=leakIn(t);
+    if(lk){ err.textContent="That text contains "+lk+". It cannot be recorded. If the script produced it, that is a defect worth reporting."; err.className="alert bad on"; return; }
+    err.className="alert bad";
+    cur.android=cap.android;
+    if(cap.android.product_model && cap.android.product_model!=="unknown"){
+      cur.name=(cap.android.manufacturer||"")+" "+cap.android.product_model;
+      cur.name=cur.name.trim();
+    }
+    step="confirm"; scrConfirm();
+  }
+  p.addEventListener("input",tryParse);
+  p.addEventListener("paste",function(){ setTimeout(tryParse,60); });
+  c.querySelector("#skip").addEventListener("click",function(){ step="confirm"; scrConfirm(); });
+}
+
+/* ---------- 6. confirm ---------- */
+function scrConfirm(){
+  var cap=cur.cap||{}, got=cap.device_class||"unknown", exp=cur.dev.expect;
+  var agree=(!exp||got===exp);
+  var a=cur.android;
+  var rows='<dt>class</dt><dd>'+esc(got)+'</dd>'+
+           '<dt>usb id</dt><dd>'+esc(cap.usb_vendor_id||"?")+":"+esc(cap.usb_product_id||"?")+'</dd>'+
+           (cap._lsusb?'<dt>reported</dt><dd>'+esc(cap._lsusb)+'</dd>':'');
+  if(a){ rows+='<dt>model</dt><dd>'+esc(a.manufacturer)+" "+esc(a.product_model)+'</dd>'+
+               '<dt>chipset</dt><dd>'+esc(a.board_platform)+'</dd>'+
+               '<dt>android</dt><dd>'+esc(a.android_version)+'</dd>'+
+               '<dt>partitions</dt><dd>'+esc(a.partition_scheme)+'</dd>'+
+               '<dt>bootloader</dt><dd>'+esc(a.bootloader_state)+'</dd>'; }
+
+  var opts=CLASSES.map(function(x){return '<option'+(x===got?" selected":"")+'>'+x+'</option>';}).join("");
+  var c=show(
+  '<div class="card">'+
+    '<p class="kicker">'+esc(cur.dev.label)+' · step 3 of 3</p>'+
+    '<h1>Is that what you plugged in?</h1>'+
+    '<div class="readout">'+
+      '<p class="verdict '+(agree?"agree":"differ")+'">'+(agree?"Matches what you expected":"Different from the expected "+esc(exp))+'</p>'+
+      '<dl>'+rows+'</dl>'+
+    '</div>'+
+    (got==="ptp_camera"?'<div class="why"><b>Worth knowing</b>USB class 0x06 covers both PTP and MTP. If this'+
+      ' device is really in MTP mode, correct it below. That ambiguity is a real classifier problem and'+
+      ' recording it accurately is the point.</div>':"")+
+    '<div class="btns"><button class="b" id="yes">Yes, that is right</button>'+
+    '<button class="b ghost" id="no">No, correct it</button></div>'+
+    '<div id="fix" style="display:none;margin-top:20px">'+
+      '<p><b>What is it actually?</b></p>'+
+      '<select class="txt" id="cls">'+opts+'</select>'+
+      '<p style="margin-top:14px"><b>What should the record call this device?</b></p>'+
+      '<input class="txt" id="nm" value="'+esc(cur.name)+'" placeholder="make and model">'+
+      '<p style="margin-top:14px"><b>Mode</b> <span class="sub">only if this is a second capture of the same device in a different USB mode</span></p>'+
+      '<input class="txt" id="md" value="default">'+
+      '<div class="btns"><button class="b" id="save2">Save corrected</button></div>'+
+    '</div>'+
+  '</div>');
+  c.querySelector("#yes").addEventListener("click",function(){ step="note"; scrNote(true,got,cur.name,"default"); });
+  c.querySelector("#no").addEventListener("click",function(){ c.querySelector("#fix").style.display="block"; c.querySelector("#cls").focus(); });
+  c.querySelector("#save2").addEventListener("click",function(){
+    step="note";
+    scrNote(false,c.querySelector("#cls").value,c.querySelector("#nm").value.trim()||cur.name,
+            c.querySelector("#md").value.trim()||"default");
+  });
+}
+
+/* ---------- 7. the one open question ---------- */
+function scrNote(correct,cls,name,mode){
+  var c=show(
+  '<div class="card">'+
+    '<p class="kicker">'+esc(cur.dev.label)+' · last thing</p>'+
+    '<h1>Anything awkward?</h1>'+
+    '<p class="sub">A cable that turned out to be charge-only, a menu you had to find, a step whose'+
+    ' wording made no sense. These are worth as much as the clean data, because making this work for'+
+    ' people who are not you is the actual research question. Skip freely if it just worked.</p>'+
+    '<textarea class="note" id="n" placeholder="Third cable worked. First two were charge-only."></textarea>'+
+    '<div class="alert bad" id="err"></div>'+
+    '<div class="btns"><button class="b" id="save">Save record</button>'+
+    '<button class="b ghost" id="skip">Nothing, it just worked</button></div>'+
+  '</div>');
+  function commit(note){
+    var lk=leakIn(note);
+    if(lk){ var e=c.querySelector("#err"); e.textContent="That note contains "+lk+". Records are published, so please take it out."; e.className="alert bad on"; return; }
+    saveRecord(correct,cls,name,mode,note);
+  }
+  c.querySelector("#save").addEventListener("click",function(){ commit(c.querySelector("#n").value.trim()); });
+  c.querySelector("#skip").addEventListener("click",function(){ commit(""); });
+  c.querySelector("#n").focus();
+}
+
+/* ---------- 8. build + store ---------- */
+function NA(v){ return (v===undefined||v===null||v==="")?"not_applicable":v; }
+
+function saveRecord(correct,cls,name,mode,note){
+  var cap=cur.cap||{}, a=cur.android;
+  var mins=t0?Math.max(1,Math.round((Date.now()-t0)/60000)):null;
+  var rec={
+    schema_version:"0.2", record_id:uuid(), tester:S.tester, consent_ack:true,
+    date:new Date().toISOString().slice(0,10),
+    host:{ os:"Ubuntu live", method:"linux-live", browser:"not_applicable" },
+    connection:"not_recorded", cable_notes:"",
+    reported_device:name||cur.dev.name||"unnamed",
+    device_mode:mode||"default",
+    detected:{
+      usb_vendor_id:NA(cap.usb_vendor_id), usb_product_id:NA(cap.usb_product_id),
+      device_class:cls, usb_interface_class:NA(cap.usb_interface_class),
+      android:{
+        product_model:NA(a&&a.product_model), product_device:NA(a&&a.product_device),
+        manufacturer:NA(a&&a.manufacturer), board_platform:NA(a&&a.board_platform),
+        hardware:NA(a&&a.hardware), android_version:NA(a&&a.android_version),
+        sdk:NA(a&&a.sdk), security_patch:NA(a&&a.security_patch),
+        build_fingerprint:NA(a&&a.build_fingerprint), partition_scheme:NA(a&&a.partition_scheme),
+        slot_suffix:NA(a&&a.slot_suffix), bootloader_state:NA(a&&a.bootloader_state),
+        verified_boot_state:NA(a&&a.verified_boot_state),
+        bootloader_unlockable:a?"unknown":"not_applicable"
+      }
+    },
+    classification_correct:!!correct,
+    classifier_confidence:(cap.classifier_confidence===undefined?null:cap.classifier_confidence),
+    verifier_runs:[], related_records:[],
+    duration_minutes:mins, notes:note||""
+  };
+  S.records.push(rec);
+  S.seen[cur.dev.k]=(S.seen[cur.dev.k]||0)+1;
+  save();
+  var c=show(
+  '<div class="card">'+
+    '<p class="kicker">Saved</p>'+
+    '<h1>'+esc(rec.reported_device)+' recorded</h1>'+
+    '<p class="sub">'+esc(rec.detected.device_class)+(mins?" · "+mins+" min":"")+
+    ' · '+S.records.length+' device'+(S.records.length===1?"":"s")+' this session.</p>'+
+    (cur.dev.k==="xt30"&&S.seen.xt30===1?'<div class="why"><b>Do this one again</b>Change the camera USB'+
+      ' mode in its menu and capture it a second time. The same physical device presenting as two'+
+      ' different classes is the most useful thing you will find tonight.</div>':"")+
+    '<div class="btns"><button class="b" id="next">Unplug, next device</button>'+
+    '<button class="b ghost" id="fin">Done for now</button></div>'+
+  '</div>');
+  c.querySelector("#next").addEventListener("click",function(){ cur=null; step="loop"; scrLoop(); });
+  c.querySelector("#fin").addEventListener("click",scrFinish);
+}
+
+/* ---------- 9. finish ---------- */
+function scrFinish(){
+  step="fin";
+  var andr=S.records.filter(function(r){var c=r.detected.device_class;return c==="adb"||c==="fastboot";}).length;
+  var mism=S.records.filter(function(r){return !r.classification_correct;}).length;
+  show(
+  '<div class="card">'+
+    '<p class="kicker">Session complete</p>'+
+    '<h1>'+S.records.length+' record'+(S.records.length===1?"":"s")+', '+andr+' live positive'+(andr===1?"":"s")+'</h1>'+
+    (mism?'<p><b>'+mism+' classification'+(mism===1?"":"s")+' had to be corrected.</b> Those are the most'+
+      ' valuable rows in the set. Each one is a case for the corpus.</p>':
+      '<p class="sub">Nothing needed correcting, which is a clean result for a first classifier but also'+
+      ' means it has not been stressed yet. The corpus is where that happens.</p>')+
+    '<p><b>Download the records to stick 2</b> using the button below, before closing this page.</p>'+
+    '<div class="why"><b>Then, back at the Mac</b>Append the file to'+
+    ' <code>project/data/device-matrix.jsonl</code> and run <code>python3 coverage.py</code> in that'+
+    ' folder. It prints exactly which gaps stand between you and a defensible validation claim.</div>'+
+    '<h2 style="margin-top:26px">Three questions worth answering while it is fresh</h2>'+
+    '<ol class="mini">'+
+      '<li><b>What did you have to invent?</b> Anything the record could not express is a schema defect found before it reached twenty strangers.</li>'+
+      '<li><b>Did not_applicable and unknown stay distinct?</b> If you hesitated over which applied, the schema is still wrong.</li>'+
+      '<li><b>How long did it really take?</b> The timings are in the records. If the phone took forty minutes, the ask you make of volunteers is not twenty.</li>'+
+    '</ol>'+
+    '<div class="btns"><button class="b ghost" id="more">Capture another device</button></div>'+
+  '</div>');
+  document.getElementById("more").addEventListener("click",function(){ step="loop"; scrLoop(); });
+}
+
+/* ---------------- collected actions ---------------- */
+function allLines(){ return S.records.map(function(r){return JSON.stringify(r);}).join("\n"); }
+document.getElementById("dl").addEventListener("click",function(){
+  if(!S.records.length) return;
+  var b=new Blob([allLines()+"\n"],{type:"application/x-ndjson"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="device-matrix.jsonl";
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); document.body.removeChild(a); },400);
+});
+document.getElementById("cp").addEventListener("click",function(){ if(S.records.length) copyText(allLines(),this); });
+document.getElementById("restart").addEventListener("click",function(){
+  if(S.records.length && !confirm("Start over? "+S.records.length+" record"+(S.records.length===1?"":"s")+
+     " will be cleared from this page. Download them first if you have not.")) return;
+  S={where:null,tester:S.tester,consent:S.consent,setup:0,records:[],seen:{}}; save(); step="boot"; scrBoot();
+});
+
+/* ---------------- go ---------------- */
+if(!S.where) scrBoot();
+else if(!S.tester||!S.consent) scrWho();
+else if(!S.setup) scrSetup();
+else scrLoop();
+})();
+</script>
+</body>
+</html>

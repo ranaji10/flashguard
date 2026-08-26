@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(fastboot flash:*)",
+      "Bash(fastboot erase:*)",
+      "Bash(fastboot format:*)",
+      "Bash(fastboot oem:*)",
+      "Bash(fastboot flashing:*)",
+      "Bash(fastboot update:*)",
+      "Bash(fastboot set_active:*)",
+      "Bash(fastboot boot:*)",
+      "Bash(fastboot continue:*)",
+      "Bash(adb root)",
+      "Bash(adb remount)",
+      "Bash(adb disable-verity)",
+      "Bash(dd:*)",
+      "Bash(mkfs:*)",
+      "Bash(parted:*)",
+      "Read(./**/.env)"
+    ]
+  }
+}

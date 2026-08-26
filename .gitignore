@@ -1,0 +1,18 @@
+# Never commit anything from the reference library
+/library/
+../library/
+
+# Raw device output. Contains serials and other identifiers.
+# Only scrubbed, schema-conformant records belong in data/device-matrix.jsonl
+raw/
+*-raw.txt
+*.getprop
+fastboot-*.txt
+
+# Local
+.DS_Store
+.venv/
+__pycache__/
+node_modules/
+*.pyc
+.env

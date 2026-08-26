@@ -1,0 +1,26 @@
+========================================================
+  STOP LIST  -  print this and tape it to the machine
+========================================================
+
+  Nothing in Tier A needs any of these.
+  Two of them wipe the device on contact.
+  The rest can leave it unbootable.
+
+      fastboot flashing unlock
+      fastboot oem unlock
+      fastboot flash ...
+      fastboot erase ...
+      fastboot format ...
+      fastboot update ...
+      fastboot set_active ...
+      fastboot boot ...
+      adb disable-verity
+      adb remount
+      dd ...
+
+  If any instruction anywhere tells you to run one of
+  these, it is not this protocol. Stop and ask.
+
+  Every command in the bench-kit scripts only reads.
+
+========================================================

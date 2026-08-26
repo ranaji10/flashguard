@@ -1,0 +1,41 @@
+{
+  "_comment": "ILLUSTRATIVE EXAMPLE, not real data. Deliberately a boring device, because the point is that ordinary junk counts. Delete this file's contents before use.",
+  "schema_version": "0.2",
+  "record_id": "00000000-0000-4000-8000-000000000000",
+  "tester": "EXAMPLE",
+  "consent_ack": true,
+  "date": "2026-09-01",
+  "host": { "os": "Ubuntu 24.04 live", "method": "linux-live", "browser": "not_applicable" },
+  "connection": "USB-A",
+  "cable_notes": "",
+  "reported_device": "generic 16GB USB flash drive, no branding",
+  "device_mode": "default",
+  "detected": {
+    "usb_vendor_id": "0x0000",
+    "usb_product_id": "0x0000",
+    "device_class": "mass_storage",
+    "usb_interface_class": "0x08",
+    "android": {
+      "product_model": "not_applicable",
+      "product_device": "not_applicable",
+      "manufacturer": "not_applicable",
+      "board_platform": "not_applicable",
+      "hardware": "not_applicable",
+      "android_version": "not_applicable",
+      "sdk": "not_applicable",
+      "security_patch": "not_applicable",
+      "build_fingerprint": "not_applicable",
+      "partition_scheme": "not_applicable",
+      "slot_suffix": "not_applicable",
+      "bootloader_state": "not_applicable",
+      "verified_boot_state": "not_applicable",
+      "bootloader_unlockable": "not_applicable"
+    }
+  },
+  "classification_correct": true,
+  "classifier_confidence": null,
+  "verifier_runs": [],
+  "related_records": [],
+  "duration_minutes": 4,
+  "notes": "Detected immediately. Nothing interesting, which is the point: this is a correct negative and proves the tool does not mistake storage for a flash target."
+}
