@@ -652,7 +652,15 @@ function scrPhonePrep(){
       '<li>Plug the phone in. A prompt appears <b>on the phone screen</b> asking whether to allow'+
         ' debugging from this computer. Tick "always allow" and accept it.</li>'+
       '<li>Pull down the notification shade and set the USB mode to <b>File transfer</b> if it is on charging only.</li>'+
+      '<li><b>Unlock the screen and leave it unlocked</b> while you capture. A locked phone will not show'+
+        ' the authorisation prompt, and an unauthorised phone gives you no fingerprint.</li>'+
+      '<li>If no prompt ever appears: <b>Developer options → Revoke USB debugging authorisations</b>,'+
+        ' then unplug and replug.</li>'+
     '</ol>'+
+    '<div class="why"><b>If the scan still says camera</b>Some phones present a card reader or a media'+
+    ' interface first and the debugging interface further down the list. The scan reads every interface'+
+    ' and also asks adb directly, so it should catch this. If it still reports a camera on a phone you'+
+    ' know has debugging on, that is a bug worth reporting \u2014 write it in the note box on the last screen.</div>'+
     '<p class="sub">If the phone is too old or locked down to offer developer options, capture it'+
     ' anyway and note that. A phone that cannot be fingerprinted read-only is itself a finding.</p>'+
     '<div class="btns"><button class="b" id="ok">Debugging is on, phone plugged in</button>'+

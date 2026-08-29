@@ -29,6 +29,24 @@ gets published and how to withdraw.
 5. For an Android, also run `bash 02-android.sh`.
 6. Download the records and send them back.
 
+## Before you plug in an Android phone
+
+Most of the value in a record comes from the Android properties, and none of them can be
+read without USB debugging. Five minutes here saves a whole capture.
+
+1. **Settings → About phone**, tap **Build number** seven times.
+2. **Developer options → USB debugging**, on.
+3. Plug in. **Look at the phone screen** — accept the authorisation prompt, tick "always allow".
+4. Notification shade → USB mode → **File transfer** (not charging only).
+5. **Unlock the screen and leave it unlocked** for the capture. A locked phone never shows the prompt.
+6. No prompt at all? **Developer options → Revoke USB debugging authorisations**, unplug, replug.
+
+A phone that is too old or too locked down to offer developer options should still be
+captured. A device that cannot be fingerprinted read-only is itself a finding.
+
+Nothing needs to be enabled on cameras, e-readers, USB sticks or iPhones. Plug them in as
+they are.
+
 ## What we are hoping you hit
 
 Problems. A cable that turns out to be charge-only, a device that shows up as the wrong

@@ -16,3 +16,6 @@ __pycache__/
 node_modules/
 *.pyc
 .env
+
+# Captures land here during a run; they are merged into data/ afterwards
+bench-kit/device-matrix.jsonl
