@@ -1,6 +1,6 @@
 # What's in your drawer?
 
-*Twenty minutes. Nothing is written to your devices.*
+*About 90 minutes the first time, then a few minutes per device. Nothing is written to your devices.*
 
 We are building an open safety tool for reusing old phones and tablets, and we need a
 reference dataset of what real devices actually report. That means old phones, but also
