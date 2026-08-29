@@ -250,19 +250,18 @@ Q2 was rebuilt from your CVs on 26 August. It was previously written around Anna
 - [x] **Timing claim corrected from measurement**
       Was a guess. Measured: about 90 minutes end to end the first time including making sticks and booting, then 2 to 5 minutes per device (median 2). protocol.md and the guide now say so.
 
-## 7b. Critical and unanswered — added 29 Aug 2026
+## 7b. Critical and unanswered — opened 29 Aug, swept 30 Aug
 
-These came out of the second bench-run planning pass. They are here because they
-are load-bearing and Ranaji has not answered them yet. Answer them in the tracker
-and they move into the sections above.
+Load-bearing questions Ranaji has not answered yet. Answer them in the tracker and
+they move into the sections above. Items marked `[x]` here were answered on 30 August
+and are kept in place, rather than moved to section 9, because the reasoning is what
+matters and it is easier to find beside the question that prompted it.
 
-- [ ] **THE BIG ONE: the verifier does not exist** _(added 30 Aug)_
-      *Blocks: the grant itself.* The repository is 6,430 lines. Zero of them are
-      `verify(fingerprint, recipe) -> safe | unsafe | cannot-verify`. `data/recipes/`
-      contains a README and nothing else, so there is no corpus either. The false-safe
-      rate — the primary metric, the build gate, the centre of the proposal — has no
-      subject to measure. Everything built so far is instrumentation for collecting
-      inputs to a function nobody has written. 65 days to 3 November.
+**Twelve still open. The first three are ordered; the rest are not.**
+
+- [ ] **THE BIG ONE: the verifier does not exist** — see **section 0**, at the
+      top of this file, which is where it now lives and what it now outranks.
+
 
 - [ ] **Which machine does the real tool run on?** _(added 30 Aug)_
       *Blocks: whether the current matrix is valid evidence.*
@@ -329,12 +328,6 @@ and they move into the sections above.
       record as `chipset_candidates`, so the choice can be redone against more devices
       without recapturing anyone's drawer. Revisit once the matrix has more silicon in it.
 
-- [ ] **Install node on the MacBook** — superseded, see above
-      Not a decision, but it belongs here because it is currently silent. Without
-      node, `tests/all.sh` skips the check that catches a broken START-HERE.html
-      and still reports success. On 29 Aug it skipped while a real bug
-      (`declare -A`, bash 3.2) was caught only by the other checks. A suite that
-      passes because a check did not run is worse than no suite.
 
 - [ ] **How do testers return their files, and to what address?**  ← still the first blocker
       *Blocks: recruitment, participation-note.md*
@@ -359,13 +352,6 @@ and they move into the sections above.
       open licensing of results. If exclusive use of the dataset was ever the plan, that
       changes which fund to apply to, not just the wording. Confirm or reject explicitly.
 
-- [ ] **Are the 13 records from 29 Aug retired, or kept in the matrix?**
-      *Blocks: coverage figures*
-      All 13 were captured by a classifier now known to be wrong, carry no
-      `identity_source`, no `device_local_id` and no saved descriptor. `coverage.py`
-      already counts them as zero toward the exit criterion. Recommended: once the
-      re-run lands, rename to `rana-2026-08-29.superseded.jsonl`, which keeps the file
-      and the evidence while taking it out of the counts. Needs a yes.
 
 - [ ] **Is the tester programme in the proposal, or is a solo matrix?**
       *Blocks: Q3, Q4, the schedule* — 66 days to 3 November, recruitment not started.
