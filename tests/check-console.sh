@@ -25,7 +25,12 @@ PY
 if command -v node >/dev/null 2>&1; then
   node --check "$JS" && echo "  START-HERE.html parses" || { echo "  START-HERE.html DOES NOT PARSE"; exit 1; }
 else
-  echo "  node not installed, skipping parse check"
+  echo "  !! NODE NOT INSTALLED -- THE CONSOLE WAS NOT PARSE-CHECKED."
+  echo "     This is the one check that catches a broken START-HERE.html before a"
+  echo "     tester meets a blank screen. On the authoring machine, install it once:"
+  echo "         macOS:  brew install node"
+  echo "         Ubuntu: sudo apt install -y nodejs"
+  echo "     Passing without it is not the same as passing."
 fi
 
 for f in "$HERE"/../bench-kit/scripts/*.sh; do

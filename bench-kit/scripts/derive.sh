@@ -9,14 +9,17 @@
 #
 # The three fields the verifier actually turns on -- partition scheme, bootloader
 # state, chipset family -- are derived here and NOWHERE else.
+#
+# PORTABILITY: bash 3.2 compatible. macOS still ships bash 3.2, so no
+# associative arrays (declare -A), no mapfile, no ${var,,}. tests/check-portability.sh
+# enforces this. The first version of this file used declare -A, passed on Linux,
+# and died on the authoring Mac -- caught by the fixtures, not by `bash -n`.
 set -u
-declare -A P=()
-while IFS= read -r line; do
-  case "$line" in ''|'#'*) continue;; esac
-  k="${line%%=*}"; v="${line#*=}"
-  P["$k"]="$v"
-done
-g(){ printf '%s' "${P[$1]:-}"; }
+PROPS_IN=$(cat)
+
+# Exact-prefix lookup. Property names contain dots, which are regex metacharacters,
+# so this compares strings rather than matching a pattern.
+g(){ printf '%s\n' "$PROPS_IN" | awk -v k="$1" 'index($0, k "=")==1 { print substr($0, length(k)+2); exit }'; }
 
 # ---- partition scheme -------------------------------------------------------
 # Abstains rather than guessing. The previous logic said "if we could read the

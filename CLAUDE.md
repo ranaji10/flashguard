@@ -56,6 +56,11 @@ saved descriptors:
 
     bash tests/run.sh
 
+The kit targets **bash 3.2**, because macOS still ships it. No `declare -A`, no
+`mapfile`, no `${v,,}`. `tests/check-portability.sh` enforces this; `bash -n` does
+not, because these fail at runtime rather than at parse. Code written and tested
+only on Linux has already broken this way once.
+
 A failing fixture is fixed in `classify.sh`, not by editing the fixture --
 unless the fixture's expected class was itself wrong, which must be recorded in
 a `#!note` line explaining why. Adding a device class or a vendor to a list

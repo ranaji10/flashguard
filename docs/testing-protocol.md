@@ -79,6 +79,42 @@ is `255/66/1` and needs subclass 66 and protocol 1 on the *same* interface. The 
 blocks and reports ADB on a card reader. That trap was written after the second defect,
 by asking what *else* the same class of mistake could produce.
 
+## Two hosts that do not agree
+
+The kit runs on an Ubuntu live session (bash 5). It is authored on a Mac (bash
+3.2, which Apple has shipped since 2007 for licence reasons and will not update).
+Volunteers will bring machines neither of us has seen.
+
+`derive.sh` was written and tested in a Linux environment, passed every check,
+and died on its first contact with the authoring Mac:
+
+    derive.sh: line 13: declare: -A: invalid option
+
+`declare -A` — associative arrays — needs bash 4. `bash -n` does not catch it,
+because it is a runtime failure, not a syntax error. The fixtures caught it: ten
+of fifteen assertions failed the moment the suite ran somewhere new.
+
+Worth being precise about what that means. The suite found a defect its own
+author had introduced, on a machine the author had not tested on, within minutes
+of that machine being used. That is the whole argument for the suite, made
+accidentally and at the suite's own expense.
+
+`tests/check-portability.sh` now rejects bash-4-only constructs outright:
+`declare -A`, `local -A`, `${v,,}` and `${v^^}`, `mapfile`, `readarray`,
+`coproc`, `;;&`, `&>>`. The kit targets bash 3.2.
+
+### The check that quietly did not run
+
+The same run printed:
+
+    node not installed, skipping parse check
+
+That is the check that catches a broken `START-HERE.html` before a tester meets a
+blank screen, and it had been silently skipping. A test that passes because it
+did not run is worse than no test, because it buys confidence it has not earned.
+It now says so loudly and tells you how to install node. Fix it on the authoring
+machine: `brew install node`.
+
 ## The rule
 
 Every commit that touches `classify.sh` runs `bash tests/all.sh` first. Adding a device

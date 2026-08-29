@@ -2,6 +2,7 @@
 # Everything that can be checked without a device. Run before every commit.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
+echo; echo "  PORTABILITY"; bash "$HERE/check-portability.sh" || exit 1
 echo; echo "  PARSE"; bash "$HERE/check-console.sh" || exit 1
 echo; echo "  CLASSIFIER"; bash "$HERE/run.sh" || exit 1
 echo "  ANDROID DERIVATION"; bash "$HERE/run-android.sh" || exit 1
