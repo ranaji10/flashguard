@@ -1,0 +1,7 @@
+#!expect_scheme=unknown
+#!expect_bootloader=unknown
+#!expect_chipset_source=none
+#!note=SYNTHETIC. adb connected but the device answers nothing useful.
+#!note=Must abstain on every derived field rather than invent one.
+ro.product.manufacturer=
+ro.product.model=

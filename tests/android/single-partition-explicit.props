@@ -1,0 +1,12 @@
+#!expect_scheme=single
+#!expect_bootloader=locked
+#!expect_chipset_source=ro.board.platform
+#!note=SYNTHETIC. ab_update explicitly false. This is the ONLY case where
+#!note="single" may be asserted; absence must stay unknown.
+ro.product.manufacturer=motorola
+ro.product.model=moto g(6)
+ro.board.platform=sdm450
+ro.build.ab_update=false
+ro.boot.verifiedbootstate=green
+ro.build.version.release=9
+ro.build.version.sdk=28

@@ -14,6 +14,10 @@ find yourself editing it, you are about to lose provenance.
     contributions/priya-2026-09-14.jsonl  ->  device-matrix.jsonl
     contributions/j-doe-2026-09-15.jsonl  ->
 
+A file renamed to *.superseded.jsonl is kept on disk and reported, but is not
+merged. That is how a run captured by a version of the tooling now known to be
+wrong is retired without destroying the evidence that it happened.
+
 Why a merge step rather than one shared file: fifteen testers appending to one
 file is a merge conflict every time, and there is no way to withdraw one person's
 data afterwards. One file per submission means a withdrawal is `rm one file` plus
@@ -64,7 +68,9 @@ def main():
     check_only = "--check" in sys.argv
     problems, records, seen_ids = [], [], {}
 
-    files = sorted(CONTRIB.glob("*.jsonl"))
+    files = [f for f in sorted(CONTRIB.glob("*.jsonl"))
+             if not f.name.endswith(".superseded.jsonl")]
+    retired = sorted(CONTRIB.glob("*.superseded.jsonl"))
     if not files:
         print(f"No contributions in {CONTRIB}/. Nothing to merge.")
         return 0
@@ -111,6 +117,9 @@ def main():
                                     if o.get("record_id") != r.get("record_id")]
 
     print(f"\n  {len(files)} contribution file(s)")
+    if retired:
+        print(f"  {len(retired)} superseded file(s) kept but not merged: "
+              + ", ".join(f.name for f in retired))
     print(f"  {len(records)} usable records")
     print(f"  {len(devices)} distinct physical devices\n")
 

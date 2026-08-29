@@ -94,14 +94,61 @@ def main():
     if durations:
         print("\n  median minutes/device  %.0f" % sorted(durations)[len(durations) // 2])
 
-    print("\n  gaps to close for the grant")
-    if len(androids) < 10:
-        print("    - only %d live android positives, target >=10" % len(androids))
-    real_chipsets = [c for c in chipsets if c not in ("unknown", "not_applicable")]
-    if len(real_chipsets) < 3:
-        print("    - only %d chipset families, target >=3" % len(real_chipsets))
-    if "A/B" not in schemes or "single" not in schemes:
-        print("    - need both A/B and single partition schemes represented")
+    tier_a_gate(records, androids)
+
+
+SEVEN = ["manufacturer", "product_model", "chipset_family", "android_version",
+         "partition_scheme", "bootloader_state", "verified_boot_state"]
+EMPTY = ("", None, "unknown", "not_applicable", "not_recorded", "not_saved")
+
+
+def tier_a_gate(records, androids):
+    """Score the dataset against the Tier A exit criterion, field by field.
+
+    Tier A is done when TEN records across at least THREE chipset families
+    carry all seven verifier fields, every non-Android device is classified
+    correctly against an independently established identity, and no verifier
+    run has produced a false safe.
+    """
+    def fields_present(a):
+        return [f for f in SEVEN if str(a.get(f, "")) not in EMPTY]
+
+    complete = [r for r in androids
+                if len(fields_present(r.get("detected", {}).get("android", {}))) == len(SEVEN)]
+    chips = {r["detected"]["android"].get("chipset_family")
+             for r in complete} - set(EMPTY)
+
+    non_android = [r for r in records if r not in androids]
+    ground_truth = [r for r in non_android if r.get("identity_source") == "tester_identified"]
+    wrong = [r for r in ground_truth if not r.get("classification_correct", False)]
+    unverifiable = len(non_android) - len(ground_truth)
+
+    false_safe = sum(1 for r in records for v in r.get("verifier_runs", [])
+                     if v.get("expected") == "unsafe" and v.get("verdict") == "safe")
+
+    print("\n  TIER A EXIT CRITERION")
+    def row(ok, label, got, want):
+        print("    [%s] %-38s %s" % ("x" if ok else " ", label, "%s of %s" % (got, want)))
+    row(len(complete) >= 10, "android records with all seven fields", len(complete), 10)
+    row(len(chips) >= 3, "distinct chipset families among them", len(chips), 3)
+    row(not wrong, "non-android classified correctly", len(ground_truth) - len(wrong), len(ground_truth))
+    row(false_safe == 0, "false safes (must be zero)", false_safe, 0)
+
+    if unverifiable:
+        print("\n    %d non-android record(s) carry no independent identity, so they" % unverifiable)
+        print("    cannot count either way. A record whose identity came from agreeing")
+        print("    with the scan cannot be used to validate the scan.")
+
+    if androids and len(complete) < len(androids):
+        print("\n  WHICH FIELDS ARE MISSING, ACROSS %d ANDROID RECORD(S)" % len(androids))
+        for f in SEVEN:
+            n = sum(1 for r in androids
+                    if str(r["detected"]["android"].get(f, "")) in EMPTY)
+            if n:
+                print("    %-22s missing on %d" % (f, n))
+        print("\n    A field that is genuinely not exposed by the device is a finding,")
+        print("    not a defect. Older hardware often exposes no partition or bootloader")
+        print("    property at all, and the verifier has to abstain on exactly those.")
     print()
 
 

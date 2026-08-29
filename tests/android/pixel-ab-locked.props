@@ -1,0 +1,15 @@
+#!expect_scheme=A/B
+#!expect_bootloader=locked
+#!expect_chipset_source=ro.board.platform
+#!note=SYNTHETIC. Classic A/B device, bootloader locked.
+ro.product.manufacturer=Google
+ro.product.model=Pixel 3a
+ro.product.device=sargo
+ro.board.platform=sdm670
+ro.hardware=sargo
+ro.build.version.release=12
+ro.build.version.sdk=31
+ro.build.ab_update=true
+ro.boot.slot_suffix=_a
+ro.boot.flash.locked=1
+ro.boot.verifiedbootstate=green

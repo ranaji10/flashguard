@@ -5,6 +5,13 @@
 # Queries an EXPLICIT ALLOWLIST of properties, one at a time. It does NOT run
 # bare `adb shell getprop` and does NOT run `adb devices`, because both print the
 # device serial and this dataset is published. Do not turn this into a dump.
+#
+# v2, 29 Aug 2026. All derivation moved to derive.sh, a pure function over
+# key=value text, so the reasoning can be tested without a phone -- see
+# tests/run-android.sh. This script talks to the device and prints; it concludes
+# nothing. The previous version inferred "single partition" whenever it could
+# read the Android version, which turned an absent property into a confident
+# answer on exactly the field the verifier most depends on.
 set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"; . "$DIR/_lib.sh"
 
@@ -17,7 +24,9 @@ case "$STATE" in
   NOT AUTHORISED YET.
   Look at the phone screen. There is a prompt asking whether to allow USB
   debugging from this computer. Tick "always allow", press Allow, then run
-  this script again.
+  this script again. If no prompt ever appears:
+    Developer options > Revoke USB debugging authorisations, then replug.
+  The screen must be unlocked for the prompt to show.
 
 UA
     exit 1 ;;
@@ -29,50 +38,73 @@ UA
   On the phone:
     Settings > About phone > tap "Build number" seven times
     Settings > System > Developer options > USB debugging  ON
+    Unlock the screen and leave it unlocked
   Then unplug, replug, and run this again.
 
 NOD
     exit 1 ;;
 esac
 
-get() { adb shell getprop "$1" 2>/dev/null | tr -d '\r\n'; }
+# The allowlist. Adding a line here is a deliberate act: check it cannot carry a
+# serial, an IMEI, a MAC or an account identifier before you add it.
+PROPS="
+ro.product.manufacturer ro.product.model ro.product.device ro.product.board
+ro.board.platform ro.hardware ro.soc.manufacturer ro.soc.model ro.product.cpu.abi
+ro.build.version.release ro.build.version.sdk ro.build.version.security_patch
+ro.build.fingerprint ro.build.ab_update ro.virtual_ab.enabled
+ro.boot.slot_suffix ro.boot.verifiedbootstate ro.boot.flash.locked
+ro.boot.vbmeta.device_state
+"
 
-MANU=$(get ro.product.manufacturer);  MODEL=$(get ro.product.model)
-DEV=$(get ro.product.device);         BOARD=$(get ro.product.board)
-PLAT=$(get ro.board.platform);        HW=$(get ro.hardware)
-REL=$(get ro.build.version.release);  SDK=$(get ro.build.version.sdk)
-PATCH=$(get ro.build.version.security_patch)
-FP=$(get ro.build.fingerprint);       ABU=$(get ro.build.ab_update)
-SLOT=$(get ro.boot.slot_suffix);      VBS=$(get ro.boot.verifiedbootstate)
-LOCK=$(get ro.boot.flash.locked)
+RAW=""
+for k in $PROPS; do
+  v=$(adb shell getprop "$k" 2>/dev/null | tr -d '\r\n')
+  RAW="${RAW}${k}=${v}
+"
+done
+
+OUT=$(printf '%s' "$RAW" | bash "$DIR/derive.sh")
+g(){ printf '%s\n' "$OUT" | awk -F'\t' -v k="$1" '$1==k{print $2}'; }
 
 echo
 echo "  FINGERPRINT (allowlisted properties only)"
-printf '    %-22s %s\n' "manufacturer" "${MANU:-<empty>}"
-printf '    %-22s %s\n' "model"        "${MODEL:-<empty>}"
-printf '    %-22s %s\n' "codename"     "${DEV:-<empty>}"
-printf '    %-22s %s\n' "chipset"      "${PLAT:-<empty>}"
-printf '    %-22s %s\n' "android"      "${REL:-<empty>} (sdk ${SDK:-?})"
-printf '    %-22s %s\n' "security patch" "${PATCH:-<empty>}"
-
-if [ -n "$SLOT" ]; then SCHEME="A/B"
-elif [ -n "$ABU" ] || [ -n "$REL" ]; then SCHEME="single"
-else SCHEME="unknown"; fi
-
-case "$LOCK" in 1) BL="locked" ;; 0) BL="unlocked" ;; *) BL="unknown" ;; esac
-[ -z "$VBS" ] && VBS="unknown"
+printf '    %-22s %s\n' "manufacturer"   "$(g manufacturer)"
+printf '    %-22s %s\n' "model"          "$(g product_model)"
+printf '    %-22s %s\n' "codename"       "$(g product_device)"
+printf '    %-22s %s\n' "chipset"        "$(g chipset_family)"
+printf '    %-22s %s\n' "chipset from"   "$(g chipset_source)"
+printf '    %-22s %s\n' "cpu abi"        "$(g cpu_abi)"
+printf '    %-22s %s\n' "android"        "$(g android_version) (sdk $(g sdk))"
+printf '    %-22s %s\n' "security patch" "$(g security_patch)"
 
 echo
 echo "  WHAT THAT MEANS"
-printf '    %-22s %s\n' "partition scheme" "$SCHEME"
-printf '    %-22s %s\n' "bootloader"       "$BL"
-printf '    %-22s %s\n' "verified boot"    "$VBS"
-printf '    %-22s %s\n' "unlockable"       "unknown  <- correct answer, not a gap"
-cat <<'TAIL'
+printf '    %-22s %-18s %s\n' "partition scheme" "$(g partition_scheme)" "$(g partition_basis)"
+printf '    %-22s %-18s %s\n' "bootloader"       "$(g bootloader_state)" "$(g bootloader_basis)"
+printf '    %-22s %-18s %s\n' "verified boot"    "$(g verified_boot_state)" ""
+printf '    %-22s %-18s %s\n' "unlockable"       "unknown" "not determinable read-only"
+
+UNK=0
+[ "$(g partition_scheme)" = "unknown" ] && UNK=$((UNK+1))
+[ "$(g bootloader_state)" = "unknown" ] && UNK=$((UNK+1))
+[ "$(g chipset_source)"   = "none" ]    && UNK=$((UNK+1))
+if [ "$UNK" -gt 0 ]; then
+  cat <<'TAIL'
+
+    Some fields came back unknown. That is a RESULT, not a failure, and the
+    record keeps it as unknown rather than filling in a plausible value.
+    Older devices -- roughly pre-2018, and Samsung hardware in particular --
+    often expose no partition or bootloader property at all. A device the
+    verifier cannot fingerprint read-only is precisely the case it has to
+    abstain on, so these records are worth as much as the complete ones.
+TAIL
+fi
+cat <<'TAIL2'
 
     Whether a bootloader CAN be unlocked is generally not determinable
     read-only. Recording "unknown" honestly is the point. Guessing here is
     how a verifier learns to be wrong.
-TAIL
+TAIL2
 
-emit "BENCH_CAPTURE {\"device_class\":\"adb\",\"android\":{\"manufacturer\":\"$(jesc "${MANU:-unknown}")\",\"product_model\":\"$(jesc "${MODEL:-unknown}")\",\"product_device\":\"$(jesc "${DEV:-unknown}")\",\"product_board\":\"$(jesc "${BOARD:-unknown}")\",\"board_platform\":\"$(jesc "${PLAT:-unknown}")\",\"hardware\":\"$(jesc "${HW:-unknown}")\",\"android_version\":\"$(jesc "${REL:-unknown}")\",\"sdk\":\"$(jesc "${SDK:-unknown}")\",\"security_patch\":\"$(jesc "${PATCH:-unknown}")\",\"build_fingerprint\":\"$(jesc "${FP:-unknown}")\",\"partition_scheme\":\"$SCHEME\",\"slot_suffix\":\"$(jesc "${SLOT:-}")\",\"bootloader_state\":\"$BL\",\"verified_boot_state\":\"$(jesc "$VBS")\",\"bootloader_unlockable\":\"unknown\"},\"_detected\":true}"
+j(){ jesc "$(g "$1")"; }
+emit "BENCH_CAPTURE {\"device_class\":\"adb\",\"android\":{\"manufacturer\":\"$(j manufacturer)\",\"product_model\":\"$(j product_model)\",\"product_device\":\"$(j product_device)\",\"product_board\":\"$(j product_board)\",\"board_platform\":\"$(j board_platform)\",\"hardware\":\"$(j hardware)\",\"chipset_family\":\"$(j chipset_family)\",\"chipset_source\":\"$(j chipset_source)\",\"cpu_abi\":\"$(j cpu_abi)\",\"android_version\":\"$(j android_version)\",\"sdk\":\"$(j sdk)\",\"security_patch\":\"$(j security_patch)\",\"build_fingerprint\":\"$(j build_fingerprint)\",\"partition_scheme\":\"$(j partition_scheme)\",\"partition_basis\":\"$(j partition_basis)\",\"slot_suffix\":\"$(j slot_suffix)\",\"bootloader_state\":\"$(j bootloader_state)\",\"bootloader_basis\":\"$(j bootloader_basis)\",\"verified_boot_state\":\"$(j verified_boot_state)\",\"bootloader_unlockable\":\"unknown\"},\"_detected\":true}"

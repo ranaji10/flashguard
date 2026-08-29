@@ -1,0 +1,16 @@
+#!expect_scheme=virtual_A/B
+#!expect_bootloader=unlocked
+#!expect_chipset_source=ro.soc.model
+#!note=SYNTHETIC. Virtual A/B is materially different from A/B for flashing and
+#!note=must not be flattened into it. Bootloader unlocked via vbmeta.device_state.
+ro.product.manufacturer=Nothing
+ro.product.model=A063
+ro.product.device=Spacewar
+ro.soc.manufacturer=QTI
+ro.soc.model=SM7325
+ro.board.platform=lahaina
+ro.virtual_ab.enabled=true
+ro.boot.slot_suffix=_b
+ro.boot.vbmeta.device_state=unlocked
+ro.build.version.release=13
+ro.build.version.sdk=33
