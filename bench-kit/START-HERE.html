@@ -588,12 +588,51 @@ function scrLoop(){
   [].slice.call(c.querySelectorAll(".pick")).forEach(function(b){
     b.addEventListener("click",function(){
       var d=DEVICES.filter(function(x){return x.k===b.getAttribute("data-k");})[0];
-      cur={ dev:d, name:d.name, mode:"default", cap:null, android:null };
+      cur={ dev:d, name:"", mode:"default", cap:null, android:null, idsrc:null };
       t0=Date.now();
-      if(d.phone) scrPhonePrep(); else scrRun();
+      scrIdentify();
     });
   });
   var f=c.querySelector("#fin"); if(f) f.addEventListener("click",scrFinish);
+}
+
+/* ---------- identity: the tester's own knowledge, captured BEFORE the scan ---------- */
+function scrIdentify(){
+  var c=show(
+  '<div class="card">'+
+    '<p class="kicker">'+esc(cur.dev.label)+' · before the scan</p>'+
+    '<h1>What is it, as far as you know?</h1>'+
+    '<div class="why hot"><b>You are the ground truth here, not the tool</b>This is the one thing the'+
+    ' software cannot work out for itself, and the whole matrix rests on it. Answer from what you know'+
+    ' about the device, not from what the scan says afterwards. If the tool guesses wrong and you agree'+
+    ' with it, the mistake gets recorded as fact and there is no way to find it later.</div>'+
+    '<p><b>Make and model</b><br><span class="sub">However you would describe it to a person.'+
+    ' "Samsung Galaxy A5", "Fujifilm X-T30", "some old 16GB stick".</span></p>'+
+    '<input class="txt" id="nm" placeholder="Samsung Galaxy A5" value="'+esc(cur.name||"")+'">'+
+    '<details class="inline"><summary>Where to look if you are not sure</summary>'+
+      '<p><b>Android:</b> Settings → About phone. <b>iPhone:</b> Settings → General → About.'+
+      ' <b>Camera:</b> printed on the body, usually front or base. <b>E-reader:</b> Settings → Device'+
+      ' information. <b>Storage:</b> often printed on the casing, and the capacity is enough.</p></details>'+
+    '<div class="btns"><button class="b" id="go">Continue</button>'+
+    '<button class="b ghost" id="dunno">I genuinely do not know what this is</button>'+
+    '<button class="b ghost" id="back">Different device</button></div>'+
+    '<div class="alert bad" id="err"></div>'+
+  '</div>');
+  function proceed(){ if(cur.dev.phone) scrPhonePrep(); else scrRun(); }
+  c.querySelector("#go").addEventListener("click",function(){
+    var v=c.querySelector("#nm").value.trim();
+    if(!v){ var e=c.querySelector("#err");
+      e.textContent="Either name it, or press the button saying you do not know. Both are valid; a blank is not.";
+      e.className="alert bad on"; return; }
+    cur.name=v; cur.idsrc="tester_identified"; proceed();
+  });
+  c.querySelector("#dunno").addEventListener("click",function(){
+    cur.name=c.querySelector("#nm").value.trim()||("unidentified "+cur.dev.label.toLowerCase());
+    cur.idsrc="unidentified";
+    proceed();
+  });
+  c.querySelector("#back").addEventListener("click",scrLoop);
+  c.querySelector("#nm").focus();
 }
 
 /* ---------- phone prep, before the capture ---------- */
@@ -709,7 +748,7 @@ function scrConfirm(){
   var c=show(
   '<div class="card">'+
     '<p class="kicker">'+esc(cur.dev.label)+' · step 3</p>'+
-    '<h1>Is that what you plugged in?</h1>'+
+    '<h1>Does the scan agree with you?</h1>'+'<p class="sub">You said <b>'+esc(cur.name)+'</b>. The scan is a guess and it is sometimes wrong, so trust yourself over it.</p>'+
     '<div class="readout">'+
       '<p class="verdict '+(agree?"agree":"differ")+'">'+(agree?"Matches what you expected":"Different from the expected "+esc(exp))+'</p>'+
       '<dl>'+rows+'</dl>'+
@@ -784,6 +823,7 @@ function saveRecord(correct,cls,name,mode,note){
         bootloader_unlockable:a?"unknown":"not_applicable"
       }
     },
+    identity_source:(cur.idsrc||"unidentified"),
     classification_correct:!!correct,
     classifier_confidence:(cap.classifier_confidence===undefined?null:cap.classifier_confidence),
     verifier_runs:[], related_records:[],

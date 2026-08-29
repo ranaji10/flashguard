@@ -59,6 +59,7 @@ A missing key is a defect, not a third kind of absence. Write the sentinel.
   "cable_notes": "",
 
   "reported_device": "what the tester says it is: make, model, year",
+  "identity_source": "tester_identified | unidentified",
   "device_mode": "default",
 
   "detected": {
@@ -101,6 +102,20 @@ A missing key is a defect, not a third kind of absence. Write the sentinel.
 ---
 
 ## Field notes
+
+**`identity_source`** New in 0.2, added 29 Aug after the first bench run. `tester_identified`
+means a human who knows the device named it independently, before seeing any scan output.
+`unidentified` means nobody could say what it was. **This is the ground-truth flag, and it decides
+whether a record can be used to validate the classifier at all.**
+
+A record whose identity came from agreeing with the tool cannot validate the tool: that is circular,
+and it silently launders a classifier error into the dataset as fact. On the first bench run six of
+thirteen records carried no make or model, because the interface only asked when the tester
+disagreed with the scan. The console now asks before running the scan, every time.
+
+`coverage.py` should count only `tester_identified` records toward classifier accuracy.
+`unidentified` records still belong in the matrix: a device nobody can name is a real and common
+condition, and the tool has to behave sensibly on one.
 
 **`device_mode`** New in 0.2. Some devices present as a different USB class depending
 on a setting the owner changed long ago and does not remember. A Fuji camera can
