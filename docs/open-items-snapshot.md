@@ -150,6 +150,37 @@ These came out of the second bench-run planning pass. They are here because they
 are load-bearing and Ranaji has not answered them yet. Answer them in the tracker
 and they move into the sections above.
 
+- [ ] **THE BIG ONE: the verifier does not exist** _(added 30 Aug)_
+      *Blocks: the grant itself.* The repository is 6,430 lines. Zero of them are
+      `verify(fingerprint, recipe) -> safe | unsafe | cannot-verify`. `data/recipes/`
+      contains a README and nothing else, so there is no corpus either. The false-safe
+      rate — the primary metric, the build gate, the centre of the proposal — has no
+      subject to measure. Everything built so far is instrumentation for collecting
+      inputs to a function nobody has written. 65 days to 3 November.
+
+- [ ] **Which machine does the real tool run on?** _(added 30 Aug)_
+      *Blocks: whether the current matrix is valid evidence.*
+      The bench kit needs an Ubuntu live USB, root, and a clean USB baseline to diff
+      against. No end user will do any of that, and few testers will either. Worse:
+      the matrix is being collected under conditions the product will never have, so
+      fields captured now may not be obtainable by the thing being funded. Decide the
+      delivery platform BEFORE collecting more data. See docs/delivery-platform.md
+      when it exists.
+
+- [ ] **Does WebUSB permit what Tier A needs?** _(added 30 Aug)_
+      Cheap to answer — an afternoon. Chrome's own documentation says the restriction
+      is driver-claim based and applies to *claiming* an interface, not reading
+      descriptors, and that macOS, Linux, Android and ChromeOS need no driver binding
+      while Windows needs WinUSB. If descriptor reading works in a browser on a normal
+      laptop, the Linux-USB requirement disappears for classification. The ADB
+      fingerprint needs interface claiming, which is the part to test. Do not design
+      around an assumption here; test it.
+
+- [ ] **Multi-device: the baseline-diff trick does not survive to the product**
+      The kit identifies a device by diffing USB against a baseline taken on an empty
+      live session. A real laptop has a mouse, keyboard, webcam and dock attached and
+      there is no empty baseline. Whatever replaces it must pick a target among many.
+
 - [ ] **Install node on the MacBook** — one command, `brew install node`
       Not a decision, but it belongs here because it is currently silent. Without
       node, `tests/all.sh` skips the check that catches a broken START-HERE.html
