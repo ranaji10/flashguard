@@ -73,7 +73,7 @@ A missing key is a defect, not a third kind of absence. Write the sentinel.
   "detected": {
     "usb_vendor_id": "0x____",
     "usb_product_id": "0x____",
-    "device_class": "mass_storage | ptp_camera | mtp | adb | fastboot | ios | unknown",
+    "device_class": "mass_storage | ptp_camera | mtp | ptp_or_mtp | adb | fastboot | ios | cdc_modem | cdc_other | unknown | not_detected",
     "usb_interface_class": "0x__",
 
     "android": {

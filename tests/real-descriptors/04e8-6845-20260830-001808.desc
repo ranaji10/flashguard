@@ -1,8 +1,16 @@
-#!expect=unknown
+#!expect=cdc_modem
+#!ground_truth=tester_identified
+#!device=Samsung feature phone, mode with modem + mass storage
+#!tester=Rana
+#!promoted=hand-set 30 Aug after reading the descriptor. The tester said 'not an
+#!promoted=android phone for sure'; the descriptor shows a CDC AT-command modem,
+#!promoted=which agrees. The classifier abstained ('unknown') on this device and
+#!promoted=the abstention was accepted at capture time -- accepting an abstention
+#!promoted=is not the same as establishing an identity, so this expectation was
+#!promoted=set from the evidence, not from the tool's answer.
+#!note=Same physical phone as 04e8-675a, in a different USB mode.
 #!adb_state=none
 #!captured=20260830-001808
-#!note=Captured on a real device. iSerial stripped. EDIT #!expect to the
-#!note=class a human knows this device to be, then it is a real test case.
 
 Bus 001 Device 018: ID 04e8:6845 Samsung Electronics Co., Ltd SAMSUNG Mobile Device
 Negotiated speed: High Speed (480Mbps)

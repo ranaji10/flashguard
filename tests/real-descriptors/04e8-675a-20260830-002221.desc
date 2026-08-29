@@ -1,8 +1,14 @@
 #!expect=mass_storage
+#!ground_truth=tester_identified
+#!device=Samsung feature phone, mass-storage-only mode
+#!tester=Rana
+#!promoted=hand-set 30 Aug. Ranaji confirmed this is the SAME physical phone as
+#!promoted=04e8-6845 in a different USB mode. One device, two product IDs, two
+#!promoted=classes -- the case device_local_id exists for.
+#!note=Its record carried identity_source=unidentified because of the console bug
+#!note=fixed on 30 Aug, so it could not be promoted automatically.
 #!adb_state=none
 #!captured=20260830-002221
-#!note=Captured on a real device. iSerial stripped. EDIT #!expect to the
-#!note=class a human knows this device to be, then it is a real test case.
 
 Bus 001 Device 019: ID 04e8:675a Samsung Electronics Co., Ltd D900e/B2100 Mass Storage
 Negotiated speed: High Speed (480Mbps)

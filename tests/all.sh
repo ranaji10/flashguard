@@ -9,6 +9,7 @@ if command -v node >/dev/null 2>&1; then
 fi
 echo; echo "  CLASSIFIER"; bash "$HERE/run.sh" || exit 1
 echo "  ANDROID DERIVATION"; bash "$HERE/run-android.sh" || exit 1
+echo "  DESCRIPTOR PRIVACY"; bash "$HERE/check-descriptor-privacy.sh" || exit 1
 echo "  DATA"; python3 "$HERE/../data/merge.py" --check >/dev/null 2>&1 \
   && echo "  contributions validate" || echo "  contributions have problems, run data/merge.py --check"
 echo

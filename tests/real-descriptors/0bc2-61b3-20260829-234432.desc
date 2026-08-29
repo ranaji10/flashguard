@@ -1,4 +1,8 @@
 #!expect=mass_storage
+#!ground_truth=tester_identified
+#!device=maxtor external hdd
+#!tester=Rana
+#!promoted=named by a human BEFORE the scan ran, and confirmed after
 #!adb_state=none
 #!captured=20260829-234432
 #!note=Captured on a real device. iSerial stripped. EDIT #!expect to the

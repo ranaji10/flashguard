@@ -1,4 +1,8 @@
 #!expect=ios
+#!ground_truth=tester_identified
+#!device=iphone 5
+#!tester=Rana
+#!promoted=named by a human BEFORE the scan ran, and confirmed after
 #!adb_state=none
 #!captured=20260830-000206
 #!note=Captured on a real device. iSerial stripped. EDIT #!expect to the

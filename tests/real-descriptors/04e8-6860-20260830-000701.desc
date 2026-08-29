@@ -1,4 +1,8 @@
 #!expect=adb
+#!ground_truth=tester_identified
+#!device=samsung SM-A510F
+#!tester=Rana
+#!promoted=named by a human BEFORE the scan ran, and confirmed after
 #!adb_state=device
 #!captured=20260830-000701
 #!note=Captured on a real device. iSerial stripped. EDIT #!expect to the

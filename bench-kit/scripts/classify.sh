@@ -105,6 +105,20 @@ else
       if   [ "${ISUB:-}" = "66" ] && [ "${IPROT:-}" = "1" ]; then CLASS="adb"; CONF="0.9"
       elif [ "${ISUB:-}" = "66" ] && [ "${IPROT:-}" = "3" ]; then CLASS="fastboot"; CONF="0.9"
       fi ;;
+    # Class 0x02 with an AT-command modem interface. Added 30 Aug 2026 from a real
+    # Samsung feature phone (0x04e8:0x6845) that the classifier had abstained on.
+    # A CDC modem exposing AT commands is characteristic of a pre-Android handset:
+    # no adb, no fastboot, and no Android recipe applies to it. Naming it is safer
+    # than "unknown", which invites a human to guess. A drawer full of old phones
+    # contains a lot of these.
+    0x02)
+      if has_triple "2/2/1"; then
+        CLASS="cdc_modem"; CONF="0.85"
+        HINT="Exposes an AT-command modem. Characteristic of a feature phone rather than an Android device. Out of scope for flashing: correct negative."
+      else
+        CLASS="cdc_other"; CONF="0.5"
+        HINT="A USB communications device. Not an Android flashing target."
+      fi ;;
   esac
 fi
 printf '%s' "${IPROD:-} ${IFACE:-}" | grep -qi 'fastboot' && { CLASS="fastboot"; CONF="0.9"; }
