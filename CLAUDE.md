@@ -34,6 +34,37 @@ is the most expensive kind of help an assistant can offer here.
 4. **Recipes are untrusted input.** Schema-validate before parsing. Never
    interpolate a recipe field into a shell or an eval.
 
+## Facts about hardware are read, never recalled
+
+Before stating any disk name, mount path, device model or machine name -- and
+before writing any command that contains one -- read `docs/bench-hardware.md`.
+Do not answer from the conversation, and do not answer from memory of an earlier
+session. If the fact is not in that file, say it is not recorded and ask, rather
+than supplying a plausible one.
+
+This rule exists because a confidently wrong path or disk name inside `rm -rf`
+or `cp -R` destroys a bench run, and because it has already happened once: an
+earlier session repeated a stale USB stick name after being corrected.
+
+If a hardware fact changes, update `docs/bench-hardware.md` in the same turn.
+
+## Changes to the classifier are tested before they are believed
+
+`bench-kit/scripts/classify.sh` is a pure function over `lsusb -v` text: no
+device, no I/O, no side effects. Every change to it must be run against the
+saved descriptors:
+
+    bash tests/run.sh
+
+A failing fixture is fixed in `classify.sh`, not by editing the fixture --
+unless the fixture's expected class was itself wrong, which must be recorded in
+a `#!note` line explaining why. Adding a device class or a vendor to a list
+means adding a fixture in the same commit.
+
+Both classifier defects found on the first bench run were latent in data that
+had already been collected and thrown away. Descriptors are now saved on every
+capture, with `iSerial` stripped, so no evidence is discarded again.
+
 ## Guardrails: verified 26 August 2026
 
 Two independent layers, both tested rather than assumed.

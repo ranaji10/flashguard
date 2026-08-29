@@ -296,7 +296,7 @@
 (function(){
 "use strict";
 
-var KEY="bench.v3", S={ where:null, tester:"", consent:false, setup:0, records:[], seen:{} };
+var KEY="bench.v3", S={ where:null, tester:"", consent:false, setup:0, records:[], seen:{}, devices:{} };
 try{ var raw=localStorage.getItem(KEY); if(raw){ S=Object.assign(S,JSON.parse(raw)||{}); } }catch(e){}
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 
@@ -363,6 +363,11 @@ var DEVICES=[
   {k:"other",   label:"Something else",  hint:"anything from a drawer", name:"",                 expect:""}
 ];
 var CLASSES=["mass_storage","ptp_camera","mtp","ptp_or_mtp","adb","fastboot","ios","unknown","not_detected"];
+/* One physical device can present four different USB product IDs depending on the
+   mode its owner picked. Without a stable per-device key, four captures of one
+   phone look like four phones. slug(name) gives that key without any serial. */
+function slug(x){ return String(x||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"unnamed"; }
+var USB_MODES=["charging only","file transfer (MTP)","photo transfer (PTP)","MIDI","USB tethering","mass storage","not applicable","do not know"];
 
 function refreshBar(){
   document.getElementById("cnt").textContent=S.records.length+" device"+(S.records.length===1?"":"s");
@@ -606,8 +611,7 @@ function scrIdentify(){
     ' software cannot work out for itself, and the whole matrix rests on it. Answer from what you know'+
     ' about the device, not from what the scan says afterwards. If the tool guesses wrong and you agree'+
     ' with it, the mistake gets recorded as fact and there is no way to find it later.</div>'+
-    '<p><b>Make and model</b><br><span class="sub">However you would describe it to a person.'+
-    ' "Samsung Galaxy A5", "Fujifilm X-T30", "some old 16GB stick".</span></p>'+
+    (Object.keys(S.devices||{}).length?'<p><b>Already captured this session</b><br><span class="sub">If this is one of these devices'+' again, pick it. Repeat captures of the SAME physical device have to be tied together, or the'+' matrix counts one phone as four.</span></p><div class="btns">'+Object.keys(S.devices).map(function(k){return '<button class="b ghost again" data-k="'+esc(k)+'">'+esc(S.devices[k])+'</button>';}).join('')+'</div><p style="margin-top:18px"><b>Or something new</b></p>':'<p><b>Make and model</b><br><span class="sub">However you would describe it to a person.'+' "Samsung Galaxy A5", "Fujifilm X-T30", "some old 16GB stick".</span></p>')+
     '<input class="txt" id="nm" placeholder="Samsung Galaxy A5" value="'+esc(cur.name||"")+'">'+
     '<details class="inline"><summary>Where to look if you are not sure</summary>'+
       '<p><b>Android:</b> Settings → About phone. <b>iPhone:</b> Settings → General → About.'+
@@ -619,15 +623,22 @@ function scrIdentify(){
     '<div class="alert bad" id="err"></div>'+
   '</div>');
   function proceed(){ if(cur.dev.phone) scrPhonePrep(); else scrRun(); }
+  Array.prototype.forEach.call(c.querySelectorAll(".again"),function(b){
+    b.addEventListener("click",function(){
+      cur.localId=b.getAttribute("data-k"); cur.name=S.devices[cur.localId];
+      cur.idsrc="tester_identified"; cur.repeat=true; proceed();
+    });
+  });
   c.querySelector("#go").addEventListener("click",function(){
     var v=c.querySelector("#nm").value.trim();
     if(!v){ var e=c.querySelector("#err");
       e.textContent="Either name it, or press the button saying you do not know. Both are valid; a blank is not.";
       e.className="alert bad on"; return; }
-    cur.name=v; cur.idsrc="tester_identified"; proceed();
+    cur.name=v; cur.localId=slug(v); cur.idsrc="tester_identified"; proceed();
   });
   c.querySelector("#dunno").addEventListener("click",function(){
     cur.name=c.querySelector("#nm").value.trim()||("unidentified "+cur.dev.label.toLowerCase());
+    cur.localId=slug(cur.name)+"-"+Date.now().toString(36).slice(-4);
     cur.idsrc="unidentified";
     proceed();
   });
@@ -663,11 +674,18 @@ function scrPhonePrep(){
     ' know has debugging on, that is a bug worth reporting \u2014 write it in the note box on the last screen.</div>'+
     '<p class="sub">If the phone is too old or locked down to offer developer options, capture it'+
     ' anyway and note that. A phone that cannot be fingerprinted read-only is itself a finding.</p>'+
+    '<p style="margin-top:18px"><b>Which USB mode is the phone in right now?</b><br>'+
+    '<span class="sub">Notification shade → the USB notification. Most phones start on charging only.'+
+    ' This goes on the record: the same phone reports a different USB product ID in each mode, and'+
+    ' without this field those look like different phones.</span></p>'+
+    '<select class="txt" id="mode">'+USB_MODES.map(function(m){
+      return '<option'+(m==="file transfer (MTP)"?" selected":"")+'>'+m+'</option>'; }).join("")+'</select>'+
     '<div class="btns"><button class="b" id="ok">Debugging is on, phone plugged in</button>'+
     '<button class="b ghost" id="skip">Cannot enable it, capture anyway</button></div>'+
   '</div>');
-  c.querySelector("#ok").addEventListener("click",scrRun);
-  c.querySelector("#skip").addEventListener("click",scrRun);
+  function go(){ cur.mode=c.querySelector("#mode").value; scrRun(); }
+  c.querySelector("#ok").addEventListener("click",go);
+  c.querySelector("#skip").addEventListener("click",go);
 }
 
 /* ---------- detect ---------- */
@@ -811,12 +829,15 @@ function saveRecord(correct,cls,name,mode,note){
   var cap=cur.cap||{}, a=cur.android;
   var mins=t0?Math.max(1,Math.round((Date.now()-t0)/60000)):null;
   var rec={
-    schema_version:"0.2", record_id:uuid(), tester:S.tester, consent_ack:true,
+    schema_version:"0.3", record_id:uuid(), tester:S.tester, consent_ack:true,
     date:new Date().toISOString().slice(0,10),
     host:{ os:"Ubuntu live", method:"linux-live", browser:"not_applicable" },
     connection:"not_recorded", cable_notes:"",
     reported_device:name||cur.dev.name||"unnamed",
-    device_mode:mode||"default",
+    device_local_id:cur.localId||slug(name||cur.dev.name),
+    device_mode:mode||cur.mode||"default",
+    usb_mode:cur.mode||"not_recorded",
+    descriptor_file:(cap._descriptor_file||"not_saved"),
     detected:{
       usb_vendor_id:NA(cap.usb_vendor_id), usb_product_id:NA(cap.usb_product_id),
       device_class:cls, usb_interface_class:NA(cap.usb_interface_class),
@@ -838,6 +859,8 @@ function saveRecord(correct,cls,name,mode,note){
     duration_minutes:mins, notes:note||""
   };
   S.records.push(rec);
+  S.devices=S.devices||{};
+  S.devices[rec.device_local_id]=rec.reported_device;
   S.seen[cur.dev.k]=(S.seen[cur.dev.k]||0)+1;
   save();
   var isPhone=cur.dev.phone, noFinger=isPhone && !a;
@@ -906,7 +929,7 @@ document.getElementById("cp").addEventListener("click",function(){ if(S.records.
 document.getElementById("restart").addEventListener("click",function(){
   if(S.records.length && !confirm("Start over? "+S.records.length+" record"+(S.records.length===1?"":"s")+
      " will be cleared from this page. Download them first if you have not.")) return;
-  S={where:null,tester:S.tester,consent:S.consent,setup:0,records:[],seen:{}}; save(); scrBoot();
+  S={where:null,tester:S.tester,consent:S.consent,setup:0,records:[],seen:{},devices:{}}; save(); scrBoot();
 });
 
 if(!S.where) scrBoot();

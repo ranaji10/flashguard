@@ -1,0 +1,24 @@
+#!expect=adb
+#!adb_state=device
+#!note=SYNTHETIC. The 29 Aug case: MTP at interface 0, ADB at interface 1.
+#!note=This is the shape that classifier v1 and v2 both read as a camera.
+Bus 001 Device 009: ID 04e8:6860 Samsung Electronics Co., Ltd Galaxy A5
+  idVendor           0x04e8 Samsung Electronics Co., Ltd
+  idProduct          0x6860 Galaxy A5
+  iProduct                2 SAMSUNG_Android
+    Interface Descriptor:
+      bInterfaceNumber        0
+      bAlternateSetting       0
+      bNumEndpoints           3
+      bInterfaceClass         6 Imaging
+      bInterfaceSubClass      1 Still Image Capture
+      bInterfaceProtocol      1 Picture Transfer Protocol (PIMA 15470)
+      iInterface              5 MTP
+    Interface Descriptor:
+      bInterfaceNumber        1
+      bAlternateSetting       0
+      bNumEndpoints           2
+      bInterfaceClass       255 Vendor Specific Class
+      bInterfaceSubClass     66
+      bInterfaceProtocol      1
+      iInterface              6 ADB Interface

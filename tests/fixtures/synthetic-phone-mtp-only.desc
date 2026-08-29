@@ -1,0 +1,14 @@
+#!expect=mtp
+#!adb_state=none
+#!note=SYNTHETIC. Phone in file transfer mode, USB debugging OFF. No ADB interface.
+#!note=Correct answer is mtp, NOT ptp_camera. This is the v1 bug.
+Bus 001 Device 010: ID 2a70:4ee1 Nothing Technology
+  idVendor           0x2a70 Nothing Technology
+  idProduct          0x4ee1
+  iProduct                2 Nothing Phone
+    Interface Descriptor:
+      bInterfaceNumber        0
+      bInterfaceClass         6 Imaging
+      bInterfaceSubClass      1 Still Image Capture
+      bInterfaceProtocol      1 Picture Transfer Protocol (PIMA 15470)
+      iInterface              0

@@ -1,0 +1,13 @@
+#!expect=ios
+#!adb_state=none
+#!note=SYNTHETIC. Apple. Out of scope by design; must be a clean refusal, not an error.
+Bus 001 Device 014: ID 05ac:12a8 Apple, Inc.
+  idVendor           0x05ac Apple, Inc.
+  idProduct          0x12a8
+  iProduct                2 iPhone
+    Interface Descriptor:
+      bInterfaceNumber        0
+      bInterfaceClass         6 Imaging
+      bInterfaceSubClass      1 Still Image Capture
+      bInterfaceProtocol      1 Picture Transfer Protocol (PIMA 15470)
+      iInterface              0

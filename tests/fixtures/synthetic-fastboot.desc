@@ -1,0 +1,13 @@
+#!expect=fastboot
+#!adb_state=none
+#!note=SYNTHETIC. Bootloader mode: 255/66/3.
+Bus 001 Device 013: ID 18d1:4ee0 Google Inc.
+  idVendor           0x18d1 Google Inc.
+  idProduct          0x4ee0
+  iProduct                2 Android
+    Interface Descriptor:
+      bInterfaceNumber        0
+      bInterfaceClass       255 Vendor Specific Class
+      bInterfaceSubClass     66
+      bInterfaceProtocol      3
+      iInterface              4 Android Fastboot
