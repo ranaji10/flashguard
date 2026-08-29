@@ -4,6 +4,9 @@ set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 echo; echo "  PORTABILITY"; bash "$HERE/check-portability.sh" || exit 1
 echo; echo "  PARSE"; bash "$HERE/check-console.sh" || exit 1
+if command -v node >/dev/null 2>&1; then
+  echo "  CONSOLE LOGIC"; node "$HERE/run-console-logic.js" || exit 1
+fi
 echo; echo "  CLASSIFIER"; bash "$HERE/run.sh" || exit 1
 echo "  ANDROID DERIVATION"; bash "$HERE/run-android.sh" || exit 1
 echo "  DATA"; python3 "$HERE/../data/merge.py" --check >/dev/null 2>&1 \

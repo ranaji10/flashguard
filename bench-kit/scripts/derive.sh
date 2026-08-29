@@ -61,12 +61,29 @@ esac
 # lot of Samsung hardware, which would have read as zero families covered.
 SOCM=$(g ro.soc.model); SOCV=$(g ro.soc.manufacturer)
 PLAT=$(g ro.board.platform); HW=$(g ro.hardware); BOARD=$(g ro.product.board)
-if   [ -n "$SOCM" ];  then CHIP="${SOCV:+$SOCV }$SOCM"; CHIP_SRC="ro.soc.model"
-elif [ -n "$PLAT" ];  then CHIP="$PLAT";  CHIP_SRC="ro.board.platform"
-elif [ -n "$HW" ];    then CHIP="$HW";    CHIP_SRC="ro.hardware"
-elif [ -n "$BOARD" ]; then CHIP="$BOARD"; CHIP_SRC="ro.product.board"
+
+# Some vendors return a legacy family label here that does not identify the chip.
+# The real Samsung A5 captured on 29 Aug reported ro.board.platform=exynos5 while
+# ro.hardware said samsungexynos7580 -- and the 7580 is not an Exynos 5 series part
+# at all, so preferring board.platform would have filed a wrong chipset as fact.
+# On a Pixel the reverse holds: board.platform=sdm670 is right and ro.hardware is
+# the device codename. Neither order is universally correct, so the generic values
+# are named and skipped, and every candidate is kept on the record.
+case "$PLAT" in
+  exynos5|exynos4|exynos3|generic|unknown|"") PLAT_USABLE="" ;;
+  *) PLAT_USABLE="$PLAT" ;;
+esac
+
+if   [ -n "$SOCM" ];        then CHIP="${SOCV:+$SOCV }$SOCM"; CHIP_SRC="ro.soc.model"
+elif [ -n "$PLAT_USABLE" ]; then CHIP="$PLAT_USABLE"; CHIP_SRC="ro.board.platform"
+elif [ -n "$HW" ];          then CHIP="$HW";    CHIP_SRC="ro.hardware"
+elif [ -n "$PLAT" ];        then CHIP="$PLAT";  CHIP_SRC="ro.board.platform_generic"
+elif [ -n "$BOARD" ];       then CHIP="$BOARD"; CHIP_SRC="ro.product.board"
 else CHIP="unknown"; CHIP_SRC="none"
 fi
+# Everything that could have answered, kept verbatim, so the choice can be redone
+# later against more devices without recapturing anyone's drawer.
+CHIP_CAND="soc=${SOCM:-} platform=${PLAT:-} hardware=${HW:-} board=${BOARD:-}"
 
 n(){ printf '%s' "${1:-unknown}"; }
 p(){ printf '%s\t%s\n' "$1" "$2"; }
@@ -78,6 +95,7 @@ p board_platform    "$(n "$PLAT")"
 p hardware          "$(n "$HW")"
 p chipset_family    "$CHIP"
 p chipset_source    "$CHIP_SRC"
+p chipset_candidates "$CHIP_CAND"
 p cpu_abi           "$(n "$(g ro.product.cpu.abi)")"
 p android_version   "$(n "$(g ro.build.version.release)")"
 p sdk               "$(n "$(g ro.build.version.sdk)")"

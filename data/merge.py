@@ -66,7 +66,7 @@ def scan_pii(raw, where, problems):
 
 def main():
     check_only = "--check" in sys.argv
-    problems, records, seen_ids = [], [], {}
+    problems, records, seen_ids, notes = [], [], {}, []
 
     files = [f for f in sorted(CONTRIB.glob("*.jsonl"))
              if not f.name.endswith(".superseded.jsonl")]
@@ -98,11 +98,50 @@ def main():
             if not rec.get("consent_ack"):
                 problems.append(f"{where}: consent_ack missing or false -- NOT PUBLISHED")
                 continue
+            if rec.get("record_type") == "session_note":
+                notes.append((f.name, rec))
+                continue
             rec["_source_file"] = f.name
             k, how = device_key(rec)
             rec["device_key"] = k
             rec["device_key_basis"] = how
             records.append(rec)
+
+    # One physical device, two local ids. The tester named it the same both times
+    # but the console minted a second id -- which is exactly the bug that produced
+    # two Samsung A5 device_keys on 29 Aug. Reconcile on the reported name, and say
+    # so out loud rather than silently, because silently merging two devices that
+    # really are different would be worse than the split.
+    by_name = {}
+    for r in records:
+        name = (r.get("reported_device") or "").strip().lower()
+        if not name or name == "unnamed" or name.startswith("unidentified"):
+            continue
+        nk = (slug(r.get("tester")), slug(r.get("reported_device")))
+        by_name.setdefault(nk, set()).add(r["device_key"])
+    aliases = {}
+    for nk, keys in by_name.items():
+        if len(keys) > 1:
+            canon = sorted(keys)[0]
+            for k in keys:
+                aliases[k] = canon
+            print(f"  reconciled {len(keys)} device keys naming the same device "
+                  f"'{nk[1]}' -> {canon}")
+            for k in sorted(keys):
+                print(f"      {k}")
+            srcs = {r.get("identity_source") for r in records
+                    if r["device_key"] in keys}
+            if len(srcs) > 1:
+                print(f"      NOTE: identity_source disagrees across these "
+                      f"({', '.join(sorted(str(x) for x in srcs))}).")
+                print("      identity_source is NOT repaired here -- a claim about who")
+                print("      knew what cannot be inferred after the fact. Recapture or")
+                print("      leave it; do not edit it to make the numbers work.")
+    for r in records:
+        if r["device_key"] in aliases:
+            r["device_key_alias_of"] = r["device_key"]
+            r["device_key"] = aliases[r["device_key"]]
+            r["device_key_basis"] = "reconciled_on_reported_device"
 
     # group observations by physical device
     devices = collections.OrderedDict()
@@ -140,6 +179,14 @@ def main():
         print(f"  {basis['vendor_product']} record(s) keyed on vendor:product alone.")
         print("  Two identical devices owned by one tester would merge into one.")
         print("  Ask those testers to label their devices.\n")
+
+    if notes:
+        print("  SESSION NOTES FROM TESTERS")
+        for fn, n in notes:
+            print(f"    [{n.get('tester','?')} / {fn}]")
+            for line in (n.get("notes") or "").splitlines():
+                print(f"      {line}")
+        print()
 
     if problems:
         print("  PROBLEMS")

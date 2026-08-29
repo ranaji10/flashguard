@@ -757,6 +757,28 @@ function scrAndroid(){
   c.querySelector("#skip").addEventListener("click",scrConfirm);
 }
 
+/* TESTABLE:sameDeviceAgain */
+/* The "same device, different mode" path. This is the ONE path where the device
+   is known with certainty to be the same physical object, and the first version
+   of it rebuilt `cur` from scratch -- dropping device_local_id and
+   identity_source. The 29 Aug re-run produced two records for one Samsung A5
+   under two different local ids, one of them marked "unidentified", for exactly
+   this reason. Identity is now carried from the record just saved, which is the
+   only source that definitely has both. */
+function sameDeviceAgain(cur, rec){
+  return {
+    dev: cur.dev,
+    name: rec.reported_device,
+    localId: rec.device_local_id || cur.localId,
+    idsrc: rec.identity_source || cur.idsrc,
+    repeat: true,
+    mode: "",
+    cap: null,
+    android: null
+  };
+}
+/* END TESTABLE:sameDeviceAgain */
+
 /* ---------- confirm ---------- */
 function scrConfirm(){
   var cap=cur.cap||{}, got=cap.device_class||"unknown", exp=cur.dev.expect;
@@ -848,6 +870,7 @@ function saveRecord(correct,cls,name,mode,note){
         product_model:NA(a&&a.product_model), product_device:NA(a&&a.product_device),
         manufacturer:NA(a&&a.manufacturer), board_platform:NA(a&&a.board_platform),
         chipset_family:NA(a&&a.chipset_family), chipset_source:NA(a&&a.chipset_source),
+        chipset_candidates:NA(a&&a.chipset_candidates),
         cpu_abi:NA(a&&a.cpu_abi),
         partition_basis:NA(a&&a.partition_basis), bootloader_basis:NA(a&&a.bootloader_basis),
         hardware:NA(a&&a.hardware), android_version:NA(a&&a.android_version),
@@ -887,7 +910,7 @@ function saveRecord(correct,cls,name,mode,note){
     '<button class="b ghost" id="fin">Done for now</button></div>'+
   '</div>');
   c.querySelector("#again").addEventListener("click",function(){
-    cur={ dev:cur.dev, name:rec.reported_device, mode:"", cap:null, android:null };
+    cur=sameDeviceAgain(cur,rec);
     t0=Date.now(); scrRun();
   });
   c.querySelector("#next").addEventListener("click",function(){ cur=null; scrLoop(); });
@@ -911,19 +934,50 @@ function scrFinish(){
     '<div class="why hot"><b>Download now</b>This is a live Ubuntu session. It forgets everything at'+
     ' reboot, including this page’s memory. Use the Download button below and save the file to the'+
     ' BENCH stick before you shut down.</div>'+
-    '<h2>Three questions worth answering while it is fresh</h2>'+
+    '<h2>Three questions, while it is fresh</h2>'+
+    '<p class="sub">Type the answers into the box below. They go into the file with your records.</p>'+
     '<ol class="mini">'+
-      '<li><b>What did you have to invent?</b> Anything the record could not express is a schema defect found before it reached twenty strangers.</li>'+
-      '<li><b>Did not_applicable and unknown stay distinct?</b> If you hesitated over which applied, the schema is still wrong.</li>'+
-      '<li><b>How long did it really take?</b> The timings are in the records. That number becomes the ask you make of volunteers.</li>'+
+      '<li><b>Was there anything true about a device that this tool gave you no way to say?</b>'+
+        ' For example: it is two devices in one, or it only works with one particular cable, or the'+
+        ' right answer was "sort of". If you had to squeeze something into a box that did not fit,'+
+        ' that is a hole in the form and it is much cheaper to hear about now than from twenty people.</li>'+
+      '<li><b>Was there a moment you could not tell whether to say "not applicable" or "unknown"?</b>'+
+        ' They mean different things here. <b>Not applicable</b> = the question makes no sense for this'+
+        ' device, like asking a USB stick about its bootloader. <b>Unknown</b> = the question makes'+
+        ' perfect sense and we could not find out. If you hesitated even once, the wording is at fault,'+
+        ' not you. Say where.</li>'+
+      '<li><b>How long did it really take, including the fiddling?</b> The timer only counts from when'+
+        ' you press start. It misses hunting for a cable, finding the menu, and reading this. That real'+
+        ' number is what we have to be honest with volunteers about.</li>'+
     '</ol>'+
+    '<textarea class="note" id="wrap" placeholder="Anything at all. One line is fine."></textarea>'+
+    '<div class="btns"><button class="b" id="savewrap">Save these answers</button></div>'+
+    '<div class="alert good" id="wrapok"></div>'+
     '<div class="btns"><button class="b ghost" id="more">Capture another device</button></div>'+
   '</div>');
+  var wt=c.querySelector("#wrap"); if(wt) wt.value=S.wrapup||"";
+  c.querySelector("#savewrap").addEventListener("click",function(){
+    var v=wt.value.trim(), lk=leakIn(v);
+    var ok=c.querySelector("#wrapok");
+    if(lk){ ok.textContent="That contains "+lk+". Records are published, so please take it out.";
+            ok.className="alert bad on"; return; }
+    S.wrapup=v; save();
+    ok.textContent="Saved. It will be in the downloaded file.";
+    ok.className="alert good on";
+  });
   document.getElementById("more").addEventListener("click",scrLoop);
 }
 
 /* ---------- collected actions ---------- */
-function allLines(){ return S.records.map(function(r){return JSON.stringify(r);}).join("\n"); }
+function allLines(){
+  var lines=S.records.map(function(r){return JSON.stringify(r);});
+  /* The session wrap-up rides out with the records as its own line, so a tester
+     never has to remember to send a second file. merge.py skips session_note
+     lines when building the matrix and collects them separately. */
+  if(S.wrapup) lines.push(JSON.stringify({record_type:"session_note",schema_version:"0.3",
+    tester:S.tester,date:new Date().toISOString().slice(0,10),notes:S.wrapup}));
+  return lines.join("\n");
+}
 document.getElementById("dl").addEventListener("click",function(){
   if(!S.records.length) return;
   var b=new Blob([allLines()+"\n"],{type:"application/x-ndjson"});
