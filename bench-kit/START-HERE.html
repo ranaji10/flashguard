@@ -766,10 +766,13 @@ function scrConfirm(){
            (cap._lsusb?'<dt>reported</dt><dd>'+esc(cap._lsusb)+'</dd>':'')+
            (cap._iface_string?'<dt>interfaces</dt><dd>'+esc(cap._iface_string)+'</dd>':'');
   if(a){ rows+='<dt>model</dt><dd>'+esc(a.manufacturer)+" "+esc(a.product_model)+'</dd>'+
-               '<dt>chipset</dt><dd>'+esc(a.board_platform)+'</dd>'+
+               '<dt>chipset</dt><dd>'+esc(a.chipset_family||a.board_platform)+
+                 (a.chipset_source?' <span style="color:var(--ink-faint)">from '+esc(a.chipset_source)+'</span>':'')+'</dd>'+
                '<dt>android</dt><dd>'+esc(a.android_version)+'</dd>'+
-               '<dt>partitions</dt><dd>'+esc(a.partition_scheme)+'</dd>'+
-               '<dt>bootloader</dt><dd>'+esc(a.bootloader_state)+'</dd>'; }
+               '<dt>partitions</dt><dd>'+esc(a.partition_scheme)+
+                 (a.partition_basis?' <span style="color:var(--ink-faint)">'+esc(a.partition_basis)+'</span>':'')+'</dd>'+
+               '<dt>bootloader</dt><dd>'+esc(a.bootloader_state)+
+                 (a.bootloader_basis?' <span style="color:var(--ink-faint)">'+esc(a.bootloader_basis)+'</span>':'')+'</dd>'; }
   var opts=CLASSES.map(function(x){return '<option'+(x===got?" selected":"")+'>'+x+'</option>';}).join("");
   var c=show(
   '<div class="card">'+
@@ -844,6 +847,9 @@ function saveRecord(correct,cls,name,mode,note){
       android:{
         product_model:NA(a&&a.product_model), product_device:NA(a&&a.product_device),
         manufacturer:NA(a&&a.manufacturer), board_platform:NA(a&&a.board_platform),
+        chipset_family:NA(a&&a.chipset_family), chipset_source:NA(a&&a.chipset_source),
+        cpu_abi:NA(a&&a.cpu_abi),
+        partition_basis:NA(a&&a.partition_basis), bootloader_basis:NA(a&&a.bootloader_basis),
         hardware:NA(a&&a.hardware), android_version:NA(a&&a.android_version),
         sdk:NA(a&&a.sdk), security_patch:NA(a&&a.security_patch),
         build_fingerprint:NA(a&&a.build_fingerprint), partition_scheme:NA(a&&a.partition_scheme),
