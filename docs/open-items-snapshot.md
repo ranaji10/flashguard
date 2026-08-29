@@ -1,17 +1,67 @@
 # Open items
 
 Applicant: **Ranaji Deb**, sole applicant, in his own name.
-Baseline swept **2026-08-29**. Critical unanswered items added **2026-08-29** in section 7b.
+Baseline swept **2026-08-29**. Re-swept **2026-08-30** after the second bench run.
+Section 0 is new and it outranks everything below it.
 
 > **Maintained in the tracker.**
 > <https://claude.ai/code/artifact/73ce736a-3f8b-4696-925c-df63ec3a9824>
 > To sync: Export then Download in the tracker, drop the file here replacing this one, say "sync".
 
 Repository: <https://github.com/ranaji10/flashguard> (private until the phones are re-captured).
+Latest state: second bench run complete, classifier v4, 9 real descriptors published as test
+fixtures, test suite green. **65 days to the deadline.**
 
 Status marks: `[ ]` open · `[~]` in progress · `[x]` done · `[-]` dropped or deferred on purpose.
 
 ---
+
+## 0. The next thing, which is not any of the things below
+
+Added 30 August 2026 after counting what is actually in the repository.
+
+- [ ] **Write the verifier** _(by 2026-09-08)_
+      *Blocks: the grant. Everything else in this file is downstream of it.*
+
+      The repository is **6,430 lines and none of them are the verifier.** There is no
+      `verify(fingerprint, recipe) -> safe | unsafe | cannot-verify`. `data/recipes/`
+      contains a README and nothing else, so there is no corpus. The false-safe rate —
+      the primary metric, the build gate, the centre of the proposal — has no subject
+      to measure. Everything built so far is instrumentation for collecting the inputs
+      to a function nobody has written.
+
+          tests/       2,126 lines
+          bench-kit/   1,832
+          docs/        1,414
+          data/          683
+          grant/         375   <- untouched since 26 August
+
+      This is drift, and most of it is the assistant's. Improving the bench kit gives
+      fast feedback: a test goes green, a bug is found, numbers move. Writing the
+      verifier means an unsolved problem with no scaffolding. Every individual
+      improvement was defensible, which is exactly how a project ends up with excellent
+      instrumentation and no deliverable.
+
+      **What "done" means for a first version:** a pure function matching
+      `docs/verdict-contract.md`; ten recipes in `data/recipes/`, five safe and five
+      deliberately unsafe; the false-safe gate wired into `tests/all.sh` and failing the
+      build on a single false safe; abstain rate reported alongside. Roughly 200-300
+      lines. Tier A being incomplete does not block this: the verifier takes a
+      fingerprint as input, and there is now one real complete fingerprint plus a schema,
+      which is enough to write against.
+
+- [x] **Freeze the bench kit** _(30 Aug)_
+      It works. It produced a complete seven-field record. `CLAUDE.md` now carries the
+      rule: no bench-kit change unless a tester is blocked, and when asked what to do
+      next, the answer is the verifier until one exists. That rule binds the assistant
+      more than it binds Ranaji.
+
+- [ ] **Smaller turns**
+      Six defects shipped in roughly 24 hours — `grep -m1`, `grep -A2`, the partition
+      inference, `declare -A`, a broken JavaScript string, and identity loss in
+      `sameDeviceAgain`. The suite catches them now, but the rate is the signal. Four
+      hundred lines in one turn is not reviewable, and review is the only defence.
+      Push back when it happens.
 
 ## 1. Decisions
 
@@ -86,17 +136,60 @@ Q2 was rebuilt from your CVs on 26 August. It was previously written around Anna
 
 ## 5. Verify before relying on
 
-- [ ] **Re-capture both phones with USB debugging ON** _(by 2026-09-07)_
-      The single highest-value hour available right now. The Samsung A5 and Nothing Phone 1 were captured nine times between them and produced ZERO Android fingerprints, because USB debugging was off so 02-android.sh never ran. Without model, chipset, partition scheme and bootloader state there is nothing for a verifier to reason about. Enable debugging on both, capture again, and H2 goes from 0 live positives to 2.
-      *Blocks: H2, Q1 validation claim*
-      **Note:** Guide v3 now puts the USB debugging step BEFORE the phone capture rather than after.
+- [x] **Re-capture both phones with USB debugging ON**
+      Done 29-30 Aug. Both phones fingerprinted. **Nothing Phone 1 is the first complete
+      record in the matrix**: QTI SM7325, Android 15, virtual_A/B from
+      `ro.virtual_ab.enabled=true`, bootloader locked from `ro.boot.flash.locked=1`,
+      verified boot green — all seven fields, each with its evidence recorded beside it.
+      Samsung A5 gave five of seven: it exposes no partition and no bootloader property
+      at all, and the record says so with `"absent is not the same as single"` rather
+      than guessing. That is the abstain case, from real hardware.
+      **Note:** The A5 had debugging on during the FIRST run too. The classifier was blind
+      to it, not the phone.
+
+- [x] **The classifier defect is fixed and measured** _(30 Aug)_
+      Classifier v4. Reads every USB interface rather than the first, detects the ADB and
+      fastboot triples anywhere in the descriptor, and treats `adb get-state` as decisive.
+      **The A5 is a controlled before-and-after**: same phone, same debugging state, same
+      cable, same machine, v2 said `ptp_camera`, v4 says `adb`. One variable moved. That
+      single comparison is the strongest evidence in the dataset and belongs in the
+      proposal.
+
+- [x] **A test suite exists that runs with no device attached** _(30 Aug)_
+      `bash tests/all.sh` — portability (bash 3.2), console parse, console logic,
+      classifier fixtures, Android derivation, descriptor privacy, data validation.
+      Classification and Android derivation are now pure functions over text
+      (`classify.sh`, `derive.sh`), the same shape the verifier must have. It has already
+      caught four of the assistant's own defects, one of them within minutes of the code
+      first touching a Mac.
+
+- [x] **Nine real USB descriptors published as fixtures** _(30 Aug)_
+      Captured with `iSerial` stripped, verified clean line by line, committed and pushed.
+      Six carry human ground truth via `tests/promote.py`; three are kept as evidence but
+      refused as assertions. **An abstention cannot be ground truth** — marking `unknown`
+      "correct" means "I agree you cannot tell", not "unknown is what this is", and
+      promoting it would lock the classifier out of ever improving on that device. The
+      guard is automatic.
+
+- [x] **A device class nobody had thought of** _(30 Aug)_
+      The old Samsung turned out to expose a CDC AT-command modem — a pre-Android
+      handset. The classifier had no case for USB class `0x02` and abstained. There is
+      now a `cdc_modem` class, and the phone is its test. None of the eight synthetic
+      fixtures contained a class their author did not already know existed. This is the
+      argument for real descriptors, in one device.
 - [x] **Deny rules verified firing at the tool level**
       Tested 26 Aug 2026, both layers independently. CLAUDE.md layer: the model refused fastboot flash citing the tiering, and also refused adb root which is NOT on the never-run list, reasoning from the design properties. settings.json layer: verified with an inert, non-device command, dd if=/dev/null of=/dev/null count=0, which returned 'Permission to use Bash ... has been denied'. Pattern-level blocking, no semantic evaluation, which is correct for a backstop. Recorded in both CLAUDE.md files.
       **Note:** Took three attempts to test properly: the documentation layer kept refusing before the permission layer got a turn. Had to pick a denied command with nothing device-related about it to isolate the mechanical rule.
 - [x] **The Acer boots from USB**
       Confirmed 29 Aug 2026. Booted Ubuntu live, ran the full protocol, produced 13 records. The item flagged as blocking everything since the first review is closed.
-- [x] **Camera captured, X-T30 confirmed**
-      Fujifilm vendor 0x04cb, product 0x02c1, classified ptp_camera correctly. Only one USB mode captured; a second mode is still worth doing.
+- [x] **Cameras captured; X-T30 is dead**
+      Fuji X30 (0x04cb:0x02c1) classified `ptp_camera` correctly and is now a fixture.
+      The X-T30 will not power on after charging — recorded as a finding, not a gap: a
+      share of any volunteer's drawer will not boot, and the proposal makes a feasibility
+      claim about recruiting drawers.
+      **Note:** The X-T20 came back `not_detected` while visibly taking charge (green
+      light), on a cable proven good on other devices. That is a distinct condition from
+      "no cable" and the schema currently has no way to say it. See section 7b.
 - [ ] **Re-confirm the prior-art figures before submitting**
       88 devices, 523 stars, 380 issues were read on 26 August. All of them move.
 
@@ -109,11 +202,24 @@ Q2 was rebuilt from your CVs on 26 August. It was previously written around Anna
       Done 26 Aug 2026. github.com/ranaji10/flashguard, private, commit 5856219, 30 files. Author is Ranaji Deb via the GitHub noreply address, so no personal email is in the history. GPL-3.0-or-later LICENSE, CC0 on data/, SPDX headers on the scripts, LF line endings pinned. The project no longer exists only on one laptop.
       **Note:** Backup and version history now real. Push authenticated with a fine-grained token scoped to this repo only.
 - [ ] **H1: public repository with the read-only Tier A spike** _(by 2026-09-16)_
-      The repository now exists with the Tier A scripts in it, so this is closer than it looks. What is left: run the bench, correct anything the run exposes, flip the repo to public.
-      **Note:** Repo pushed 26 Aug (private). H1 is now gated on the bench run rather than on writing code.
+      The bench run is done and the defects it exposed are fixed, so the Tier A half of
+      this is real. What is left: decide whether "spike" includes a first `verify()` —
+      it should, or H1 demonstrates a device scanner rather than a verifier — then flip
+      the repo public.
+      **Note:** Gated on section 0 now, not on the bench run.
 - [ ] **H2: 10+ Android records, 3+ chipset families, both partition schemes** _(by 2026-10-14)_
-      Chipset family is the silicon underneath: Snapdragon, MediaTek, Exynos. Partition scheme is whether the phone has two system slots that swap on update (A/B) or one (single). Ten phones on the same chipset and scheme prove far less than five spread across both. STATUS 29 Aug: 13 records, 0 fingerprints, so 0 counts toward this. Two phones are in hand and one re-capture session with debugging on moves it to 2.
-      **Note:** First bench run done. The count that matters is fingerprints, not records.
+      `python3 data/coverage.py` scores this every time it runs. **STATUS 30 Aug:**
+
+          [ ] android records with all seven fields   1 of 10
+          [ ] distinct chipset families among them    1 of 3
+          [x] non-android classified correctly        6 of 6
+          [x] false safes (must be zero)              0 of 0
+
+      The arithmetic this yields: roughly **eight more Android phones, mostly post-2018**,
+      because older hardware tends to expose no partition or bootloader property. That is
+      a recruitment target with a number behind it rather than a feeling, and it is the
+      concrete argument for the tester programme in the proposal.
+      *At risk:* recruitment has not started and 65 days remain.
 - [ ] **H3: all seven answers at final length** _(by 2026-10-27)_
       One week of margin, on purpose.
 - [ ] **Submit** _(by 2026-11-02)_
@@ -181,14 +287,56 @@ and they move into the sections above.
       live session. A real laptop has a mouse, keyboard, webcam and dock attached and
       there is no empty baseline. Whatever replaces it must pick a target among many.
 
-- [ ] **Install node on the MacBook** — one command, `brew install node`
+- [x] **Install node on the MacBook** _(done 30 Aug)_
+      `tests/all.sh` now runs the console parse check and the console logic tests instead
+      of silently skipping them. The skip message is loud now if it ever happens again.
+
+- [x] **Are the 13 records from the first run retired?** _(answered 30 Aug: yes)_
+      `data/contributions/rana-2026-08-29.superseded.jsonl` — kept on disk, reported by
+      `merge.py`, not merged, not counted. `merge.py` skips any `*.superseded.jsonl`. The
+      file stays because the before-and-after comparison is evidence.
+
+- [x] **Old Samsung: one phone or two?** _(answered 30 Aug: one, in two modes)_
+      `0x04e8:0x6845` (CDC modem + mass storage) and `0x04e8:0x675a` (mass storage only)
+      are the same physical handset. Both fixtures say so.
+
+- [x] **Should testers return their descriptors?** _(answered 30 Aug: yes)_
+      No grant downside; the opposite — a CC0 corpus of real USB descriptors is more
+      durable than the matrix it produced, and NLnet's model is reusable open output.
+      **Still to do before asking anyone:** say it in `docs/participation-note.md`, say
+      that `iSerial` is stripped at capture, and say that
+      `tests/check-descriptor-privacy.sh` runs before publication. Right now a tester
+      would be sending a folder nobody told them about.
+
+- [x] **Multiple devices plugged in at once?** _(answered 30 Aug: no, but test the refusal)_
+      `01-detect.sh` refuses outright, and should: `adb get-state` errors with two Android
+      devices attached, attribution stops being certain, and bus power gets unreliable.
+      The gain is minutes; the cost is the one property the matrix rests on. **Worth
+      thirty seconds of deliberate testing** — plug in two things and confirm the refusal
+      message reads sensibly to someone who is not Ranaji. A tester WILL leave a mouse
+      plugged in.
+
+- [ ] **The schema cannot express "powered but invisible"**
+      The Fuji X-T20 drew charge (green light) on a cable proven good elsewhere and still
+      came back `not_detected`. That is a different finding from "no cable" or "dead
+      device", and there is nowhere to say it. This is a live instance of the "what did
+      you have to invent" question, found by the person who wrote the question.
+
+- [ ] **`ro.board.platform` is not reliably the chipset**
+      The A5 reports `exynos5` there while `ro.hardware` says `samsungexynos7580` — and
+      the 7580 is not an Exynos 5 part. On a Pixel the reverse holds. Neither ordering is
+      universally right. Generic values are now skipped and every candidate is kept on the
+      record as `chipset_candidates`, so the choice can be redone against more devices
+      without recapturing anyone's drawer. Revisit once the matrix has more silicon in it.
+
+- [ ] **Install node on the MacBook** — superseded, see above
       Not a decision, but it belongs here because it is currently silent. Without
       node, `tests/all.sh` skips the check that catches a broken START-HERE.html
       and still reports success. On 29 Aug it skipped while a real bug
       (`declare -A`, bash 3.2) was caught only by the other checks. A suite that
       passes because a check did not run is worse than no suite.
 
-- [ ] **How do testers return their files, and to what address?**
+- [ ] **How do testers return their files, and to what address?**  ← still the first blocker
       *Blocks: recruitment, participation-note.md*
       The kit assumes files come back and never says how. Attachments to a personal
       address puts that address in fifteen inboxes and their data in Gmail. Options:
@@ -224,6 +372,14 @@ and they move into the sections above.
       A solo-built matrix plus a credible recruitment plan is defensible. A claimed
       multi-tester matrix that does not exist by submission is not.
 
+- [x] **Testers' answers to the closing questions are now captured** _(30 Aug)_
+      They were not being captured at all — the three questions printed on a screen with
+      nowhere to type. Ranaji only answered them because he opened a text editor
+      unprompted; nobody else would have. There is now a box, a Save button, a leak check,
+      and the answer rides out in the same file as one `record_type: "session_note"` line.
+      `merge.py` collects them separately. The questions were also rewritten: they were
+      written for the assistant, not for someone at midnight with a phone in one hand.
+
 - [ ] **Who checks a returned file before it enters the matrix?**
       `merge.py --check` catches malformed records, duplicate IDs, missing consent and
       IMEI/MAC-shaped strings. It cannot catch a tester who confidently misidentifies
@@ -245,14 +401,25 @@ Not problems. Decisions already made to not do these yet.
       Not before the grant decision.
 - [-] **A submission endpoint**
       Not before 20 records exist.
-- [-] **A WebUSB browser tool**
-      Not before the bench run.
+- [~] **A WebUSB browser tool — NO LONGER DEFERRED** _(reopened 30 Aug)_
+      Moved out of "deferred" because the reason for deferring it collapsed. See section
+      7b, "Which machine does the real tool run on?". This is now a decision that gates
+      whether the matrix being collected is evidence at all, not a nice-to-have for later.
 - [-] **A landing page or any website**
       Out of scope. That is RePurpose, not Flashguard.
 - [-] **Wave 3 online recruitment**
       Only after waves 1 and 2 smooth the protocol.
 
 ## 9. Closed
+
+- [x] **Second bench run, 29-30 Aug 2026**
+      10 records, 8 physical devices, first Android fingerprints, first complete record,
+      9 real descriptors, one new device class, four assistant defects caught by the suite.
+      Written up in `docs/bench-run-2026-08-29.md` and `docs/testing-protocol.md`.
+- [x] **The Acer now dual-boots Ubuntu**
+      No longer dependent on the live USB for the bench machine. Does not change the
+      question in 7b about what the *product* runs on — if anything it sharpens it, since
+      the bench conditions have moved further from the end user's, not closer.
 
 - [x] **The web documents are now in the repository**
       26 Aug 2026. The readiness review and bench protocol are in project/docs/ as markdown, so the prior-art reasoning and design rationale no longer live only behind links.
