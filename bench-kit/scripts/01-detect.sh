@@ -52,7 +52,22 @@ DESC=$(printf '%s' "$NEW" | sed -E 's/.*ID [0-9a-f]{4}:[0-9a-f]{4} ?//')
 
 # iSerial is stripped here and never leaves this line. lsusb -v prints it; the
 # matrix must never contain it. See data/schema.md.
-V=$(sudo lsusb -v -d "$ID" 2>/dev/null | grep -v 'iSerial')
+#
+# Try WITHOUT sudo first. Most interface descriptors are readable unprivileged,
+# and a password prompt in the middle of a capture is a real place for a
+# volunteer to give up -- one appeared on the 29 Aug re-run. Only escalate if the
+# unprivileged read came back without any interface descriptors.
+V=$(lsusb -v -d "$ID" 2>/dev/null | grep -v 'iSerial')
+if ! printf '%s' "$V" | grep -q 'bInterfaceClass'; then
+  echo
+  echo "  Reading the full descriptor needs administrator rights on this machine."
+  echo "  You may be asked for your password. Nothing is written to any device;"
+  echo "  this only reads how the device describes itself over USB."
+  V=$(sudo lsusb -v -d "$ID" 2>/dev/null | grep -v 'iSerial')
+  PRIV="sudo"
+else
+  PRIV="user"
+fi
 ADBSTATE=$(adb get-state 2>/dev/null || true)
 
 OUT=$(ADB_STATE="${ADBSTATE:-none}" bash "$DIR/classify.sh" <<< "$V")
@@ -75,6 +90,7 @@ FIXNAME="${VID#0x}-${PID#0x}-$STAMP.desc"
   echo "#!expect=$CLASS"
   echo "#!adb_state=${ADBSTATE:-none}"
   echo "#!captured=$STAMP"
+  echo "#!read_privilege=${PRIV:-user}"
   echo "#!note=Captured on a real device. iSerial stripped. EDIT #!expect to the"
   echo "#!note=class a human knows this device to be, then it is a real test case."
   printf '%s\n' "$V"
@@ -120,4 +136,4 @@ if [ "$ISPHONE" = "yes" ] && [ "$CLASS" != "adb" ] && [ "$CLASS" != "fastboot" ]
 PHONE
 fi
 
-emit "BENCH_CAPTURE {\"device_class\":\"$(jesc "$CLASS")\",\"usb_vendor_id\":\"$VID\",\"usb_product_id\":\"$PID\",\"usb_interface_class\":\"$(jesc "$ICLASS")\",\"classifier_confidence\":$CONF,\"_lsusb\":\"$(jesc "$DESC")\",\"_product_string\":\"$(jesc "${IPROD:-}")\",\"_iface_string\":\"$(jesc "${IFACE:-}")\",\"_all_interface_classes\":\"$(jesc "${ALLCLASS:-}")\",\"_interface_triples\":\"$(jesc "${TRIPLES:-}")\",\"_adb_state\":\"$(jesc "${ADBSTATE:-none}")\",\"_descriptor_file\":\"$(jesc "${SAVED:-}")\",\"_hint\":\"$(jesc "$HINT")\",\"_detected\":true}"
+emit "BENCH_CAPTURE {\"device_class\":\"$(jesc "$CLASS")\",\"usb_vendor_id\":\"$VID\",\"usb_product_id\":\"$PID\",\"usb_interface_class\":\"$(jesc "$ICLASS")\",\"classifier_confidence\":$CONF,\"_lsusb\":\"$(jesc "$DESC")\",\"_product_string\":\"$(jesc "${IPROD:-}")\",\"_iface_string\":\"$(jesc "${IFACE:-}")\",\"_all_interface_classes\":\"$(jesc "${ALLCLASS:-}")\",\"_interface_triples\":\"$(jesc "${TRIPLES:-}")\",\"_adb_state\":\"$(jesc "${ADBSTATE:-none}")\",\"_read_privilege\":\"$(jesc "${PRIV:-user}")\",\"_descriptor_file\":\"$(jesc "${SAVED:-}")\",\"_hint\":\"$(jesc "$HINT")\",\"_detected\":true}"
