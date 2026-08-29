@@ -150,6 +150,13 @@ These came out of the second bench-run planning pass. They are here because they
 are load-bearing and Ranaji has not answered them yet. Answer them in the tracker
 and they move into the sections above.
 
+- [ ] **Install node on the MacBook** — one command, `brew install node`
+      Not a decision, but it belongs here because it is currently silent. Without
+      node, `tests/all.sh` skips the check that catches a broken START-HERE.html
+      and still reports success. On 29 Aug it skipped while a real bug
+      (`declare -A`, bash 3.2) was caught only by the other checks. A suite that
+      passes because a check did not run is worse than no suite.
+
 - [ ] **How do testers return their files, and to what address?**
       *Blocks: recruitment, participation-note.md*
       The kit assumes files come back and never says how. Attachments to a personal
