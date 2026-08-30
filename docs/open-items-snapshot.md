@@ -5,8 +5,14 @@ Baseline swept **2026-08-29**. Re-swept **2026-08-30** after the second bench ru
 Section 0 is new and it outranks everything below it.
 
 > **Maintained in the tracker.**
-> <https://claude.ai/code/artifact/73ce736a-3f8b-4696-925c-df63ec3a9824>
+> <https://claude.ai/code/artifact/bbac4a10-81b5-49bb-b206-46e4cbe6d303>
+> Find it any time at claude.ai/code/artifacts — "Verifier Open Items", shield icon.
+> The banner at the top of the tracker says when it was last swept and what went in.
 > To sync: Export then Download in the tracker, drop the file here replacing this one, say "sync".
+>
+> *Replaces <https://claude.ai/code/artifact/73ce736a-3f8b-4696-925c-df63ec3a9824> (29 Aug),
+> which this session could not write to. Delete that one from the gallery so there is only
+> one tracker.*
 
 Repository: <https://github.com/ranaji10/flashguard> (private until the phones are re-captured).
 Latest state: second bench run complete, classifier v4, 9 real descriptors published as test
