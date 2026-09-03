@@ -1,8 +1,8 @@
 # Open items
 
 Applicant: **Ranaji Deb**, sole applicant, in his own name.
-Baseline swept **2026-08-29**. Re-swept **2026-08-30** after the second bench run.
-Section 0 is new and it outranks everything below it.
+Baseline swept **2026-08-29**, **2026-08-30** after the second bench run, and
+**2026-09-03** after the NLnet call opened. Section 0 outranks everything below it.
 
 > **Maintained in the tracker.**
 > <https://claude.ai/code/artifact/bbac4a10-81b5-49bb-b206-46e4cbe6d303>
@@ -76,10 +76,20 @@ Six of these are now settled. The reasoning is in OPEN.md and the repo, not just
 - [x] **Project name: Flashguard, and RePurpose**
       Flashguard is the verifier, the one thing this grant funds. RePurpose is the working title for the wider ambition beyond it. Now written into both CLAUDE.md files as a scope tool: if a feature belongs to RePurpose rather than Flashguard, it is out of scope.
       **Note:** Decided. Use Flashguard for whatever is required to be built for the grant. Anything beyond, use the working title RePurpose.
-- [~] **Restack, CodeSupply or ELFA** _(by 2026-09-03)_
-      Cannot be decided without the pages that go live that day. A scheduled task now fires on 3 September to read all three, compare them against Flashguard, recommend one with the counter-argument, and capture the exact form fields. It runs in the cloud, so it reports back rather than editing files.
-      *Blocks: the whole application*
-      **Note:** Handled by the scheduled task. Nothing to do until 3 September.
+- [x] **Programme: Restack** _(settled 2026-09-03)_
+      ELFA is dead — NLnet withdrew from the consortium in August 2026, no successor named. NGI
+      Mobifree, which would have fitted best (ethical mobile software, explicitly Android-facing),
+      closed its final call in December 2025. That leaves Restack and CodeSupply. Restack's scope
+      names devices, full-stack security, reproducibility and trust-enhancing technologies —
+      Flashguard hits four at once — and its ceilings are 150k per proposal and 500k lifetime
+      against CodeSupply's 60k and 60k.
+      The real counter-argument is competition, not scope: Restack is broad so everyone applies
+      there, CodeSupply is narrow and will draw a thinner field, and Flashguard *could* be framed
+      as supply-chain integrity. The price is a 60k lifetime ceiling — one grant, not a programme.
+      Fallback if declined: resubmit to CodeSupply on 3 January or 3 March with that framing.
+      Full findings: `grant/nlnet-findings-2026-09-03.md`.
+      **Note:** Handled by the scheduled task, which fired twice. Both runs consolidated; the
+      originals are in `_superseded/nlnet-2026-09-03/`.
 - [x] **Code licence: GPL-3.0-or-later**
       Chosen with eyes open. It is NOT free of limitations: copyleft means anyone distributing a modified version must publish their source. That is the right constraint here, because a safety verifier whose checks can be quietly weakened in a closed fork is worth less. It also keeps OpenAndroidInstaller's GPL material usable as a corpus source. Revisit only if you later want commercial products to embed the verifier privately, which would argue for Apache-2.0.
       **Note:** Decided on your instruction to take the recommendation, with the trade-off stated rather than hidden.
@@ -229,7 +239,11 @@ Q2 was rebuilt from your CVs on 26 August. It was previously written around Anna
 - [ ] **H3: all seven answers at final length** _(by 2026-10-27)_
       One week of margin, on purpose.
 - [ ] **Submit** _(by 2026-11-02)_
-      Not on the morning of the 3rd. Deadline is 3 November, 12:00 CET.
+      Deadline 3 November 2026, noon Amsterdam. The programme pages say CET and `/propose/` says
+      CEST for the same instant; 3 November falls after the 25 October clock change, so CET is the
+      consistent reading. Submit a day early — do not plan to file at 11:55. Deadlines cannot be
+      postponed and now fall on the 3rd of every odd month, so a miss costs two months. Review
+      takes 3 to 5 months, so a November submission decides around February to April 2027.
 
 ## 7. Raised and passed over
 
@@ -268,6 +282,67 @@ matters and it is easier to find beside the question that prompted it.
 - [ ] **THE BIG ONE: the verifier does not exist** — see **section 0**, at the
       top of this file, which is where it now lives and what it now outranks.
 
+
+- [ ] **Generative-AI disclosure: decide the answer now** _(added 3 Sep)_
+      *Blocks: submission.* The form has a mandatory field. The Restack FAQ, verbatim:
+      *"The short answer is: no. Grant applications are short and we spend a lot of effort
+      evaluating proposals. Please grant us the courtesy of writing the proposal yourself. If you
+      do use generative AI to write (part of your) proposal, please put this in the text and
+      explain why this was necessary. Failure to do so is likely to result in the proposal being
+      rejected, and tarnishing your reputation."*
+      Three things follow. The disclosure asks you to **explain why it was necessary** — a
+      justification bar, not a checkbox. The stated objection is to *not writing it yourself*,
+      framed as a courtesy owed to people who read every word. And the threatened rejection
+      attaches to **failure to disclose**, not to use. Form field 15 accepts an upload of the
+      prompts; keep the logs.
+
+- [ ] **AI vocabulary sweep before the repository goes public** _(added 3 Sep)_
+      Restack, verbatim: *"AI-related projects are not within scope — unless they are already
+      widely used throughout society (> 1 million active human users) and directly relevant to the
+      stack."* Flashguard is safely outside it. But the repository ships `classify.sh`, a
+      "classifier", and a `classifier_confidence` field carrying values like `0.85` — all
+      deterministic rules with hand-assigned constants, and a reviewer skimming for AI vocabulary
+      will not know that. Not a rename; one plain sentence in `README.md` and the proposal.
+
+- [ ] **The proposal is structured for a form that does not exist** _(added 3 Sep)_
+      *Blocks: the proposal draft.* The draft answers seven questions. The real form is two
+      free-text boxes: one carrying project, outcomes and track record; one carrying budget, rates,
+      prior-art comparison, technical challenges and ecosystem engagement together. No word limit
+      anywhere, but the procedure is described as "very light-weight" and completable "in less than
+      an hour". Depth goes in attachments. Submissions are plain text.
+
+- [ ] **schedule.md must become a milestone plan, not a calendar** _(added 3 Sep)_
+      Payment is never upfront: *"you divide your project into milestones... Once you reach a
+      milestone you send in a request for payment."* Each milestone needs a payable, externally
+      checkable completion criterion.
+
+- [ ] **Pair the false-safe gate with a coverage floor** _(added 3 Sep)_
+      A verifier that answers `cannot-verify` for everything has a false-safe rate of exactly zero,
+      and a reviewer sees that in seconds. Both research runs raised it independently. `coverage.py`
+      already reports abstain rate — make it a paired gate with a stated minimum share of the corpus
+      that must get a definite verdict. Related: zero is meaningless without labelled ground truth.
+
+- [ ] **Talk to OpenAndroidInstaller, LineageOS or postmarketOS** _(added 3 Sep)_
+      Box 11 asks for comparison with existing efforts *and* the ecosystem plan, in one field. A
+      named contact — better, a letter of support — turns the strongest apparent competitor into the
+      strongest endorsement. Silence invites "why isn't this a patch to their project?" Impact is
+      40% of the score, the heaviest weight, and nothing moves it further for less effort.
+
+- [ ] **Ask NLnet whether the NixOS packaging condition binds funded projects** _(added 3 Sep)_
+      The Restack background page says *"All projects within Restack use the same state-of-the-art
+      packaging system."* Ambiguous whether it binds third parties. Cheap question, expensive
+      surprise.
+
+- [ ] **How much to ask for** _(added 3 Sep)_
+      Cost effectiveness is 30% of the score. A 50k ask with thin justification scores worse than a
+      32k ask with explicit rates and milestones. Scoring: technical excellence 30%, relevance and
+      impact 40%, cost effectiveness 30%; weighted total must exceed 5.0 of 7 to advance.
+
+- [ ] **The tester-safety paragraph, and liability framing** _(added 3 Sep)_
+      What happens if a volunteer's device is damaged, and exactly what leaves their machine. Most
+      of the substance exists already in `docs/participation-note.md` and the descriptor privacy
+      check; it needs saying in the proposal. Same for who is liable when the verifier says `safe`
+      and a phone bricks — a framing question, and reviewers want to see it has been thought about.
 
 - [ ] **Which machine does the real tool run on?** _(added 30 Aug)_
       *Blocks: whether the current matrix is valid evidence.*
