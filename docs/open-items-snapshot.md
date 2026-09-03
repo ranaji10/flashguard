@@ -123,9 +123,20 @@ Settled: Ranaji Deb, sole applicant, in his own name. NLnet states anyone may ap
 Q2 was rebuilt from your CVs on 26 August. It was previously written around Anna's evaluation career, which was my error.
 
 - [ ] **Read the new Q2 draft and make it yours**
-      grant/nlnet-restack-proposal.md. Built from the CV variants you supplied: bioinformatics foundation, the FAMU computer-vision thesis, the CloudChef forecasting tool you actually built, 18 programmes to go-live at Cognizant, and your current agentic-AI work. The 'what I am not' paragraph is the load-bearing one; check you are willing to say it.
+      The Q2 material is NOT obsolete — the second half of box 9 is the same question: “Have you
+      been involved with projects or organisations relevant to this project before?” So it
+      survives, compressed from a long answer to a paragraph. Source is grant/nlnet-restack-
+      proposal.md, built from the CV variants: bioinformatics foundation, the FAMU computer-vision
+      thesis, the CloudChef forecasting tool, 18 programmes to go-live at Cognizant, the current
+      agentic-AI work. WHAT REMAINS: read it and decide you are willing to say it, particularly
+      the 'what I am not' paragraph.
       *Blocks: the application*
-      **Note:** Is this still relevant now, considering the grant form only has box 9 and 11? — 3 Sep: Yes, but as source material rather than as a deliverable. The second half of box 9 IS the Q2 question — “have you been involved with projects or organisations relevant to this project before?” So the content survives, compressed to a paragraph. The 'what I am not' line is exactly the kind of thing that belongs there.
+      *Moved: 2026-09-03*
+      **Note:** Is this still relevant now, considering the grant form only has box 9 and 11? — 3
+      Sep: Yes, but as source material rather than as a deliverable. The second half of box 9 IS
+      the Q2 question — “have you been involved with projects or organisations relevant to this
+      project before?” So the content survives, compressed to a paragraph. The 'what I am not'
+      line is exactly the kind of thing that belongs there.
 - [ ] **Flip flashguard from private to public** _(by 2026-09-16)_
       The repo exists and holds the read-only Tier A scripts, which ARE the spike H1 asks for. What remains is confidence, not code: run the bench once so you know the scripts work on real hardware, fix whatever breaks, then flip to public in Settings. Do not recreate the repo to make it public, or you lose the history.
       *Blocks: Q1, Q2*
@@ -287,95 +298,231 @@ matters and it is easier to find beside the question that prompted it.
       top of this file, which is where it now lives and what it now outranks.
 
 
-- [ ] **Generative-AI disclosure: decide the answer now** _(added 3 Sep)_
-      *Blocks: submission.* The form has a mandatory field. The Restack FAQ, verbatim:
-      *"The short answer is: no. Grant applications are short and we spend a lot of effort
-      evaluating proposals. Please grant us the courtesy of writing the proposal yourself. If you
-      do use generative AI to write (part of your) proposal, please put this in the text and
-      explain why this was necessary. Failure to do so is likely to result in the proposal being
-      rejected, and tarnishing your reputation."*
-      Three things follow. The disclosure asks you to **explain why it was necessary** — a
-      justification bar, not a checkbox. The stated objection is to *not writing it yourself*,
-      framed as a courtesy owed to people who read every word. And the threatened rejection
-      attaches to **failure to disclose**, not to use. Form field 15 accepts an upload of the
-      prompts; keep the logs.
-      **Note:** I'll follow the compliance route. Write the proposal myself and disclose that the technical aspects of the project was entirely authored by you, while the idea maturation was done by the back and forth between our conversation. Practically does this mean box 9 and 11? Or is it part of the attachment package? — 3 Sep: Field 13 and 14, not box 9 or 11. Field 13 is the yes/no, field 14 is where the explanation goes, field 15 accepts the prompt files. The FAQ also says “put this in the text”, so one plain line inside box 9 is the belt-and-braces reading. ONE CORRECTION to your wording, and it matters. Do not write that the technical aspects were “entirely authored by” an AI. It is not accurate — you specified the design, made every judgement call, caught what the tooling got wrong, and rejected several of my recommendations — and it hands a reviewer a reason to doubt you can do the funded work, which is 30 percent of the score. The accurate version: the bench tooling was written with AI assistance under your direction and review; the design decisions, the safety properties and the proposal text are yours.
+- [~] **Generative-AI disclosure: decide the answer now**
+      DECIDED 3 Sep: the compliance route. Ranaji writes the proposal himself; the disclosure is
+      narrow and truthful. Mechanically it goes in FIELD 13 (yes/no) and FIELD 14 (the
+      explanation), not box 9 or 11, with field 15 available for prompt logs; the FAQ's “put this
+      in the text” makes one plain line in box 9 the belt-and-braces reading. WHAT REMAINS: the
+      exact wording of field 14, and it must not say the technical work was “entirely authored by”
+      an AI — that is inaccurate and it hands a reviewer a reason to doubt feasibility, which is
+      30 percent of the score. Accurate version: tooling written with AI assistance under Ranaji's
+      direction and review; design decisions, safety properties and proposal text his.
+      *Blocks: submission*
+      *Moved: 2026-09-03*
+      **Note:** I'll follow the compliance route. Write the proposal myself and disclose that the
+      technical aspects of the project was entirely authored by you, while the idea maturation was
+      done by the back and forth between our conversation. Practically does this mean box 9 and
+      11? Or is it part of the attachment package? — 3 Sep: Field 13 and 14, not box 9 or 11.
+      Field 13 is the yes/no, field 14 is where the explanation goes, field 15 accepts the prompt
+      files. The FAQ also says “put this in the text”, so one plain line inside box 9 is the belt-
+      and-braces reading. ONE CORRECTION to your wording, and it matters. Do not write that the
+      technical aspects were “entirely authored by” an AI. It is not accurate — you specified the
+      design, made every judgement call, caught what the tooling got wrong, and rejected several
+      of my recommendations — and it hands a reviewer a reason to doubt you can do the funded
+      work, which is 30 percent of the score. The accurate version: the bench tooling was written
+      with AI assistance under your direction and review; the design decisions, the safety
+      properties and the proposal text are yours.
 
-- [ ] **AI vocabulary sweep before the repository goes public** _(added 3 Sep)_
-      Restack, verbatim: *"AI-related projects are not within scope — unless they are already
-      widely used throughout society (> 1 million active human users) and directly relevant to the
-      stack."* Flashguard is safely outside it. But the repository ships `classify.sh`, a
-      "classifier", and a `classifier_confidence` field carrying values like `0.85` — all
-      deterministic rules with hand-assigned constants, and a reviewer skimming for AI vocabulary
-      will not know that. Not a rename; one plain sentence in `README.md` and the proposal.
-      **Note:** does it mean doing the sweep now makes sense before we do any more code or architectural changes? — 3 Sep: Yes, and it costs about ten minutes — but it is a documentation change, not a code change, so it blocks nothing and must not delay the verifier. Do it whenever README.md is next open, and definitely before the repo flips public on 16 September.
+- [ ] **AI vocabulary sweep before the repository goes public**
+      CONFIRMED 3 Sep as worth doing, and it is a DOCUMENTATION change rather than a code change,
+      so it blocks nothing and must not delay the verifier. Restack, verbatim: “AI-related
+      projects are not within scope — unless they are already widely used throughout society (> 1
+      million active human users).” Flashguard is outside it, but the repo ships classify.sh, a
+      “classifier”, and classifier_confidence values like 0.85 — all deterministic rules with
+      hand-assigned constants. WHAT REMAINS: one sentence in README.md and in the proposal, done
+      next time README is open and in any case before the repo flips public on 16 September.
+      *Moved: 2026-09-03*
+      **Note:** does it mean doing the sweep now makes sense before we do any more code or
+      architectural changes? — 3 Sep: Yes, and it costs about ten minutes — but it is a
+      documentation change, not a code change, so it blocks nothing and must not delay the
+      verifier. Do it whenever README.md is next open, and definitely before the repo flips public
+      on 16 September.
 
-- [ ] **The proposal is structured for a form that does not exist** _(added 3 Sep)_
-      *Blocks: the proposal draft.* The draft answers seven questions. The real form is two
-      free-text boxes: one carrying project, outcomes and track record; one carrying budget, rates,
-      prior-art comparison, technical challenges and ecosystem engagement together. No word limit
-      anywhere, but the procedure is described as "very light-weight" and completable "in less than
-      an hour". Depth goes in attachments. Submissions are plain text.
-      **Note:** can we restructure the proposal for the actual one that we will be submitting? The ideal way to treat the answers to the questions that dont exist, would be to synthesize their essence and see which parts make our case stronger as attachments. The rest can be archived somewhere in the Library folder. — 3 Sep: Yes, and the synthesis approach is right. One correction on where the rest goes: NOT library/. That folder is borrowed, differently-licensed third-party material behind the licensing wall, and putting your own drafts in it breaks the one rule that folder exists to enforce. Archive to grant/_drafts/ inside the repo, or to _superseded/ beside the NLnet runs.
+- [~] **The proposal is structured for a form that does not exist**
+      DECIDED 3 Sep: restructure into what the form actually is. Box 9 carries project, outcomes
+      and track record. Box 11 carries budget, rates, prior-art comparison, technical challenges
+      and ecosystem plan together. The long answers already written are not wasted — synthesise
+      their essence into an attachment, keeping the parts that strengthen the case. ARCHIVE
+      DESTINATION: grant/_drafts/ or _superseded/, NOT library/, which holds borrowed differently-
+      licensed material behind the licensing wall. WHAT REMAINS: the restructure itself.
+      *Blocks: the proposal draft*
+      *Moved: 2026-09-03*
+      **Note:** can we restructure the proposal for the actual one that we will be submitting? The
+      ideal way to treat the answers to the questions that dont exist, would be to synthesize
+      their essence and see which parts make our case stronger as attachments. The rest can be
+      archived somewhere in the Library folder. — 3 Sep: Yes, and the synthesis approach is right.
+      One correction on where the rest goes: NOT library/. That folder is borrowed, differently-
+      licensed third-party material behind the licensing wall, and putting your own drafts in it
+      breaks the one rule that folder exists to enforce. Archive to grant/_drafts/ inside the
+      repo, or to _superseded/ beside the NLnet runs.
 
-- [ ] **schedule.md must become a milestone plan, not a calendar** _(added 3 Sep)_
-      Payment is never upfront: *"you divide your project into milestones... Once you reach a
-      milestone you send in a request for payment."* Each milestone needs a payable, externally
-      checkable completion criterion.
-      **Note:** so if i understand this correctly, the device fingerprint milestone is the verifier that we are working on now? I'm not sure what the corpus milestone means and how it is related to openandroid installer, lineage or postmaker. Are we already in a position to have a milestone structure in place? — 3 Sep: No — the fingerprint and the verifier are different things, and that confusion is worth clearing up before the budget is written. DEVICE FINGERPRINT = what the bench kit produces. Model, chipset, partition scheme, bootloader state for a real device. These are the INPUTS. CORPUS = a set of provisioning recipes with known-correct verdicts. OpenAndroidInstaller ships 88 device configs; LineageOS and postmarketOS publish install instructions per device. Each is a recipe, and for each you need a human-established answer to 'is this safe for this device'. That labelled set is what the verifier is measured against, and it is the thing that does not exist yet. VERIFIER = the function that takes a fingerprint and a recipe and returns safe / unsafe / cannot-verify. Are we ready for a milestone structure? Once the verifier exists, yes — and the natural shape is roughly: M1 verifier plus corpus v1 with the false-safe gate running; M2 device matrix to N devices with the tester programme; M3 browser-side detection; M4 release, documentation and upstream handover.
+- [ ] **schedule.md must become a milestone plan, not a calendar**
+      Three things that are easy to conflate, separated 3 Sep. FINGERPRINT: what the bench kit
+      produces — model, chipset, partition scheme, bootloader state for a real device. These are
+      the INPUTS. CORPUS: a set of provisioning recipes with human-established verdicts, drawn
+      from OpenAndroidInstaller's 88 device configs and the LineageOS and postmarketOS install
+      instructions. This is what the verifier is MEASURED AGAINST, and it does not exist.
+      VERIFIER: the function between them. Milestone shape once the verifier exists: M1 verifier
+      plus corpus v1 with the false-safe gate running; M2 device matrix to N devices with the
+      tester programme; M3 browser-side detection; M4 release, documentation and upstream
+      handover. WHAT REMAINS: write it, after the verifier. Blocked by section 0.
+      *Moved: 2026-09-03*
+      **Note:** so if i understand this correctly, the device fingerprint milestone is the
+      verifier that we are working on now? I'm not sure what the corpus milestone means and how it
+      is related to openandroid installer, lineage or postmaker. Are we already in a position to
+      have a milestone structure in place? — 3 Sep: No — the fingerprint and the verifier are
+      different things, and that confusion is worth clearing up before the budget is written.
+      DEVICE FINGERPRINT = what the bench kit produces. Model, chipset, partition scheme,
+      bootloader state for a real device. These are the INPUTS. CORPUS = a set of provisioning
+      recipes with known-correct verdicts. OpenAndroidInstaller ships 88 device configs; LineageOS
+      and postmarketOS publish install instructions per device. Each is a recipe, and for each you
+      need a human-established answer to 'is this safe for this device'. That labelled set is what
+      the verifier is measured against, and it is the thing that does not exist yet. VERIFIER =
+      the function that takes a fingerprint and a recipe and returns safe / unsafe / cannot-
+      verify. Are we ready for a milestone structure? Once the verifier exists, yes — and the
+      natural shape is roughly: M1 verifier plus corpus v1 with the false-safe gate running; M2
+      device matrix to N devices with the tester programme; M3 browser-side detection; M4 release,
+      documentation and upstream handover.
 
-- [ ] **Pair the false-safe gate with a coverage floor** _(added 3 Sep)_
-      A verifier that answers `cannot-verify` for everything has a false-safe rate of exactly zero,
-      and a reviewer sees that in seconds. Both research runs raised it independently. `coverage.py`
-      already reports abstain rate — make it a paired gate with a stated minimum share of the corpus
-      that must get a definite verdict. Related: zero is meaningless without labelled ground truth.
-      **Note:** how exactly can we achieve this? — 3 Sep: Concretely: two numbers in coverage.py instead of one, and the build fails if EITHER is missed. (1) false_safe == 0. (2) decided_share >= X, where decided_share is the proportion of corpus recipes that got a definite safe or unsafe rather than cannot-verify. Pick X once the corpus exists and there is something real to measure — proposing a number before then is a guess. Then state both in the proposal as a pair, so 'zero false safes' can never be read as 'it refuses everything'.
+- [ ] **Pair the false-safe gate with a coverage floor**
+      MECHANISM SETTLED 3 Sep: two numbers in coverage.py rather than one, and the build fails if
+      either is missed. (1) false_safe == 0. (2) decided_share >= X, the proportion of corpus
+      recipes given a definite safe or unsafe rather than cannot-verify. X gets picked once the
+      corpus exists and there is something real to measure — naming a number before then is a
+      guess. Both are then stated in the proposal AS A PAIR, so 'zero false safes' can never be
+      read as 'it refuses everything'. WHAT REMAINS: the corpus. Blocked by section 0.
+      *Moved: 2026-09-03*
+      **Note:** how exactly can we achieve this? — 3 Sep: Concretely: two numbers in coverage.py
+      instead of one, and the build fails if EITHER is missed. (1) false_safe == 0. (2)
+      decided_share >= X, where decided_share is the proportion of corpus recipes that got a
+      definite safe or unsafe rather than cannot-verify. Pick X once the corpus exists and there
+      is something real to measure — proposing a number before then is a guess. Then state both in
+      the proposal as a pair, so 'zero false safes' can never be read as 'it refuses everything'.
 
-- [ ] **Talk to OpenAndroidInstaller, LineageOS or postmarketOS** _(added 3 Sep)_
-      Box 11 asks for comparison with existing efforts *and* the ecosystem plan, in one field. A
-      named contact — better, a letter of support — turns the strongest apparent competitor into the
-      strongest endorsement. Silence invites "why isn't this a patch to their project?" Impact is
-      40% of the score, the heaviest weight, and nothing moves it further for less effort.
-      **Note:** can you help me pull out the relevant people in all three organization who would be best person to discuss this with? How should the reach-out be structured? what would be their benefit out of endorsing the project? — 3 Sep: Worth doing properly rather than from memory — it needs current maintainer names, the right channel for each project, and what each one actually gains. Its own turn.
+- [ ] **Talk to OpenAndroidInstaller, LineageOS or postmarketOS**
+      Impact is 40 percent of the score, the heaviest weight, and nothing moves it further for
+      less effort: a named contact — better, a letter of support — turns the strongest apparent
+      competitor into the strongest endorsement. Box 11 asks for comparison with existing efforts
+      AND the ecosystem plan in one field, so silence invites “why isn't this a patch to their
+      project?”. WHAT REMAINS, and Ranaji has asked for it: current maintainer names for
+      OpenAndroidInstaller, LineageOS and postmarketOS, the right channel for each, how to
+      structure the approach, and what each project gains. Needs current research rather than
+      recall — its own turn.
+      *Moved: 2026-09-03*
+      **Note:** can you help me pull out the relevant people in all three organization who would
+      be best person to discuss this with? How should the reach-out be structured? what would be
+      their benefit out of endorsing the project? — 3 Sep: Worth doing properly rather than from
+      memory — it needs current maintainer names, the right channel for each project, and what
+      each one actually gains. Its own turn.
 
-- [ ] **Ask NLnet whether the NixOS packaging condition binds funded projects** _(added 3 Sep)_
-      The Restack background page says *"All projects within Restack use the same state-of-the-art
-      packaging system."* Ambiguous whether it binds third parties. Cheap question, expensive
-      surprise.
-      **Note:** can you elaborate on this? what exactly should I be asking and what does it mean for the project overall? — 3 Sep: WHAT TO ASK, in one line: “Does the requirement that Restack projects use a common packaging system apply to funded third parties, and if so, is a Nix package expected as a deliverable?” WHAT IT MEANS IF YES: one extra milestone — packaging Flashguard as a Nix derivation. For a small shell-and-Python tool with almost no dependencies that is genuinely small, probably one to two days, and it is a budget line rather than a problem. It would also constrain how the tool is distributed later. WHAT IT MEANS IF NO: nothing changes. Either way it is better known than guessed, and their monthly office hour is the place to ask.
+- [ ] **Ask NLnet whether the NixOS packaging condition binds funded projects**
+      THE QUESTION TO ASK, in one line: “Does the requirement that Restack projects use a common
+      packaging system apply to funded third parties, and if so, is a Nix package expected as a
+      deliverable?” IF YES: one extra milestone, packaging Flashguard as a Nix derivation — for a
+      small shell-and-Python tool with almost no dependencies, probably one to two days, so a
+      budget line rather than a problem, though it constrains later distribution. IF NO: nothing
+      changes. WHERE TO ASK: NLnet run a monthly office hour, which can also settle the AI-
+      assisted-code question and whether one applicant may submit to both Restack and CodeSupply.
+      *Moved: 2026-09-03*
+      **Note:** can you elaborate on this? what exactly should I be asking and what does it mean
+      for the project overall? — 3 Sep: WHAT TO ASK, in one line: “Does the requirement that
+      Restack projects use a common packaging system apply to funded third parties, and if so, is
+      a Nix package expected as a deliverable?” WHAT IT MEANS IF YES: one extra milestone —
+      packaging Flashguard as a Nix derivation. For a small shell-and-Python tool with almost no
+      dependencies that is genuinely small, probably one to two days, and it is a budget line
+      rather than a problem. It would also constrain how the tool is distributed later. WHAT IT
+      MEANS IF NO: nothing changes. Either way it is better known than guessed, and their monthly
+      office hour is the place to ask.
 
-- [ ] **How much to ask for** _(added 3 Sep)_
-      Cost effectiveness is 30% of the score. A 50k ask with thin justification scores worse than a
-      32k ask with explicit rates and milestones. Scoring: technical excellence 30%, relevance and
-      impact 40%, cost effectiveness 30%; weighted total must exceed 5.0 of 7 to advance.
-      **Note:** I'm unsure about this. I don't have full visibility on the infrastructure costs and the cost of my time or any other future costs that might arise during building this and after it goes live. — 3 Sep: That visibility gap is smaller than it looks, because NLnet grants are almost entirely YOUR TIME. Infrastructure here is close to zero: the verifier is a pure function, the console is a static file, there is no server and no hosting bill. So the budget is hours times a rate, plus a small line for devices and travel. A way to derive it: list the milestones, estimate days per milestone honestly, pick a defensible hourly or daily rate, multiply, and show the arithmetic. Cost effectiveness is 30 percent of the score and the thing being scored is whether the number is JUSTIFIED, not whether it is low. A 32k ask with visible arithmetic beats a 50k round number.
+- [ ] **How much to ask for**
+      The visibility gap is smaller than it feels: NLnet grants are almost entirely TIME. There is
+      no infrastructure cost here — the verifier is a pure function, the console a static file, no
+      server and no hosting bill. So the budget is hours times a rate, plus a small line for
+      devices and travel. METHOD: list the milestones, estimate days per milestone honestly, pick
+      a defensible rate, multiply, show the arithmetic. Cost effectiveness is 30 percent of the
+      score and what is scored is whether the number is JUSTIFIED, not whether it is low — a 32k
+      ask with visible arithmetic beats a 50k round number. WHAT REMAINS: the milestones have to
+      exist first. Blocked by the milestone item.
+      *Moved: 2026-09-03*
+      **Note:** I'm unsure about this. I don't have full visibility on the infrastructure costs
+      and the cost of my time or any other future costs that might arise during building this and
+      after it goes live. — 3 Sep: That visibility gap is smaller than it looks, because NLnet
+      grants are almost entirely YOUR TIME. Infrastructure here is close to zero: the verifier is
+      a pure function, the console is a static file, there is no server and no hosting bill. So
+      the budget is hours times a rate, plus a small line for devices and travel. A way to derive
+      it: list the milestones, estimate days per milestone honestly, pick a defensible hourly or
+      daily rate, multiply, and show the arithmetic. Cost effectiveness is 30 percent of the score
+      and the thing being scored is whether the number is JUSTIFIED, not whether it is low. A 32k
+      ask with visible arithmetic beats a 50k round number.
 
-- [ ] **The tester-safety paragraph, and liability framing** _(added 3 Sep)_
-      What happens if a volunteer's device is damaged, and exactly what leaves their machine. Most
-      of the substance exists already in `docs/participation-note.md` and the descriptor privacy
-      check; it needs saying in the proposal. Same for who is liable when the verifier says `safe`
-      and a phone bricks — a framing question, and reviewers want to see it has been thought about.
+- [ ] **The tester-safety paragraph, and liability framing**
+      APPROVED 3 Sep: include it. A short paragraph on what happens if a volunteer's device is
+      damaged, and on exactly what leaves their machine. Most of the substance already exists —
+      docs/participation-note.md, the allowlisted property reads, iSerial stripped at capture,
+      tests/check-descriptor-privacy.sh before publication. This is writing, not building. WHAT
+      REMAINS: draft the paragraph when the proposal is restructured.
+      *Moved: 2026-09-03*
       **Note:** yes please add it.
 
-- [ ] **Which machine does the real tool run on?** _(added 30 Aug)_
-      *Blocks: whether the current matrix is valid evidence.*
-      The bench kit needs an Ubuntu live USB, root, and a clean USB baseline to diff
-      against. No end user will do any of that, and few testers will either. Worse:
-      the matrix is being collected under conditions the product will never have, so
-      fields captured now may not be obtainable by the thing being funded. Decide the
-      delivery platform BEFORE collecting more data. See docs/delivery-platform.md
-      when it exists.
-      **Note:** Benchkit, is the means to an end. We can assume that the testers would mostly be on a windows machine. But yes, they could also be on a mac or linux. the final version of the tool that an end user will see, would need to be available on all platforms. Ideally, the end user opens a browser, enters some brief details about what devices are in the drawer that needs repurposing, selects which main device (mac/windows/linux) will be used as a base to run the tests required to safely repurpose the device, and the appropriate package can be provided according to the selection. It would also be great if the user can do some preliminary checks (like getting a safe probability of repurpose score) from the browser itself. This what they dont have to download anything on their system unnecessarily. Does this context change the may the matrix is structured currently? — 3 Sep: This is a clear direction and it changes the plan more than it changes the matrix. What it does NOT change: the USB descriptor half. WebUSB exposes vendor id, product id, and every interface class, subclass and protocol — exactly the fields classify.sh reads. Those records stay valid. What it MIGHT change: the Android half. The seven verifier fields come from adb, and adb over WebUSB means claiming the ADB interface. Whether that works on each platform is the thing to test. What it ADDS to the schema: a field recording HOW a record was captured — Linux live, browser, or a downloaded package — so a record obtained by a route the product will not have can be told apart from one it will.
+- [~] **Which machine does the real tool run on?**
+      DIRECTION SET 3 Sep. The end user opens a browser, describes what is in the drawer, picks
+      the machine they will run it from, does preliminary checks in the browser itself, and only
+      downloads a package if the flow needs one. Testers are assumed to be mostly on Windows, some
+      on Mac and Linux. The bench kit is a means to an end, not the product. WHAT THIS CHANGES:
+      the USB descriptor half of the matrix stays valid, because WebUSB exposes vendor id, product
+      id and every interface class — exactly what classify.sh reads. The Android half is the open
+      question, since the seven verifier fields come from adb and adb over WebUSB means claiming
+      an interface. It also ADDS a schema field recording how a record was captured — Linux live,
+      browser, or downloaded package — so records obtained by a route the product will not have
+      can be told apart. WHAT REMAINS: the WebUSB test settles the rest.
+      *Blocks: whether the current matrix is valid evidence*
+      *Moved: 2026-09-03*
+      **Note:** Benchkit, is the means to an end. We can assume that the testers would mostly be
+      on a windows machine. But yes, they could also be on a mac or linux. the final version of
+      the tool that an end user will see, would need to be available on all platforms. Ideally,
+      the end user opens a browser, enters some brief details about what devices are in the drawer
+      that needs repurposing, selects which main device (mac/windows/linux) will be used as a base
+      to run the tests required to safely repurpose the device, and the appropriate package can be
+      provided according to the selection. It would also be great if the user can do some
+      preliminary checks (like getting a safe probability of repurpose score) from the browser
+      itself. This what they dont have to download anything on their system unnecessarily. Does
+      this context change the may the matrix is structured currently? — 3 Sep: This is a clear
+      direction and it changes the plan more than it changes the matrix. What it does NOT change:
+      the USB descriptor half. WebUSB exposes vendor id, product id, and every interface class,
+      subclass and protocol — exactly the fields classify.sh reads. Those records stay valid. What
+      it MIGHT change: the Android half. The seven verifier fields come from adb, and adb over
+      WebUSB means claiming the ADB interface. Whether that works on each platform is the thing to
+      test. What it ADDS to the schema: a field recording HOW a record was captured — Linux live,
+      browser, or a downloaded package — so a record obtained by a route the product will not have
+      can be told apart from one it will.
 
-- [ ] **Does WebUSB permit what Tier A needs?** _(added 30 Aug)_
-      Cheap to answer — an afternoon. Chrome's own documentation says the restriction
-      is driver-claim based and applies to *claiming* an interface, not reading
-      descriptors, and that macOS, Linux, Android and ChromeOS need no driver binding
-      while Windows needs WinUSB. If descriptor reading works in a browser on a normal
-      laptop, the Linux-USB requirement disappears for classification. The ADB
-      fingerprint needs interface claiming, which is the part to test. Do not design
-      around an assumption here; test it.
-      **Note:** how exactly can i test this? What i'm interested in knowing is, how far can a user go into the entire flow, without having to install anything on their laptop or computer? — 3 Sep: HOW TO TEST: a single HTML file with one button calling navigator.usb.requestDevice({filters:[]}), then printing device.configuration.interfaces — vendor, product, and every interface class. Open it in Chrome on the Mac, plug in the two phones and the Kobo, and compare what it prints against the nine descriptors already captured. If the interface classes match, browser-side classification is proven. Half an hour. HOW FAR WITHOUT INSTALLING ANYTHING, as far as can be established without testing: identifying the device and classifying it — very likely browser-only on every platform, since that is descriptor reading. The Android fingerprint needs interface claiming, which Chrome's documentation says works without a driver on macOS, Linux, Android and ChromeOS but needs WinUSB binding on Windows — so Windows is the one that may need a download. Actual flashing over WebUSB is possible in principle. The honest answer is that the boundary is testable in an afternoon and should not be assumed from my summary.
+- [ ] **Does WebUSB permit what Tier A needs?**
+      THE TEST, half an hour: a single HTML file with one button calling
+      navigator.usb.requestDevice({filters:[]}), printing device.configuration.interfaces —
+      vendor, product, and every interface class, subclass and protocol. Open it in Chrome on the
+      Mac, plug in the two phones and the Kobo, compare against the nine descriptors already
+      captured. Matching interface classes prove browser-side classification. HOW FAR WITHOUT
+      INSTALLING ANYTHING, as far as can be established without testing: identification and
+      classification are descriptor reads and very likely browser-only everywhere; the Android
+      fingerprint needs interface claiming, which Chrome's documentation says works driver-free on
+      macOS, Linux, Android and ChromeOS but needs WinUSB binding on Windows — so Windows is the
+      one that may need a download. Do not design around that summary; the test is cheap. DO IT
+      THIS WEEK: it decides whether volunteers should be asked to boot Linux at all.
+      *Moved: 2026-09-03*
+      **Note:** how exactly can i test this? What i'm interested in knowing is, how far can a user
+      go into the entire flow, without having to install anything on their laptop or computer? — 3
+      Sep: HOW TO TEST: a single HTML file with one button calling
+      navigator.usb.requestDevice({filters:[]}), then printing device.configuration.interfaces —
+      vendor, product, and every interface class. Open it in Chrome on the Mac, plug in the two
+      phones and the Kobo, and compare what it prints against the nine descriptors already
+      captured. If the interface classes match, browser-side classification is proven. Half an
+      hour. HOW FAR WITHOUT INSTALLING ANYTHING, as far as can be established without testing:
+      identifying the device and classifying it — very likely browser-only on every platform,
+      since that is descriptor reading. The Android fingerprint needs interface claiming, which
+      Chrome's documentation says works without a driver on macOS, Linux, Android and ChromeOS but
+      needs WinUSB binding on Windows — so Windows is the one that may need a download. Actual
+      flashing over WebUSB is possible in principle. The honest answer is that the boundary is
+      testable in an afternoon and should not be assumed from my summary.
 
 - [ ] **Multi-device: the baseline-diff trick does not survive to the product**
       The kit identifies a device by diffing USB against a baseline taken on an empty
@@ -425,14 +572,25 @@ matters and it is easier to find beside the question that prompted it.
       without recapturing anyone's drawer. Revisit once the matrix has more silicon in it.
 
 
-- [ ] **How do testers return their files, and to what address?**  ← still the first blocker
-      *Blocks: recruitment, participation-note.md*
-      The kit assumes files come back and never says how. Attachments to a personal
-      address puts that address in fifteen inboxes and their data in Gmail. Options:
-      a dedicated project address, a form-and-upload service, or a repository issue
-      with the file attached. Nothing else in the tester programme can start until
-      this exists, because the participation note has to state it.
-      **Note:** Ideally it should all be uploaded to a google or one drive. We can decide on the exact execution of this later. Off the top of mind, the kit can push the files to a linked drive with one click at the end. — 3 Sep: Workable, and the one-click push is the right end state. Two things it brings that are worth knowing before choosing it: an OAuth dependency in the kit, which is more to break on a stranger's machine, and their files landing in your personal Drive, which makes you the data controller for whatever is in them. A shared upload folder link needs no code and no account and is a fine wave-1 answer; the one-click push earns its complexity at wave 3.
+- [~] **How do testers return their files, and to what address?**
+      DIRECTION SET 3 Sep: files go to shared cloud storage, with the kit eventually pushing them
+      in one click at the end of a session. TWO THINGS THAT COME WITH THE ONE-CLICK VERSION: an
+      OAuth dependency inside the kit, which is more to break on a stranger's machine, and
+      testers' files landing in a personal Drive, which makes Ranaji the data controller for
+      whatever is in them. A shared upload folder link needs no code and no account and is a fine
+      wave-1 answer; the one-click push earns its complexity at wave 3. WHAT REMAINS: pick the
+      wave-1 destination and write it into docs/participation-note.md, which is what unblocks
+      recruitment.
+      *Blocks: recruitment, and docs/participation-note.md*
+      *Moved: 2026-09-03*
+      **Note:** Ideally it should all be uploaded to a google or one drive. We can decide on the
+      exact execution of this later. Off the top of mind, the kit can push the files to a linked
+      drive with one click at the end. — 3 Sep: Workable, and the one-click push is the right end
+      state. Two things it brings that are worth knowing before choosing it: an OAuth dependency
+      in the kit, which is more to break on a stranger's machine, and their files landing in your
+      personal Drive, which makes you the data controller for whatever is in them. A shared upload
+      folder link needs no code and no account and is a fine wave-1 answer; the one-click push
+      earns its complexity at wave 3.
 
 - [ ] **What is a tester's contact detail, legally?**
       *Blocks: recruitment*
@@ -443,19 +601,25 @@ matters and it is easier to find beside the question that prompted it.
       is kept, for how long, and how to have it deleted.
 
 - [x] **Does the CC0 data licence match what Ranaji expects to own?**
+      CONFIRMED 3 Sep: CC0 stands, open licensing is the direction. Nobody owns the matrix
+      exclusively, Ranaji included, and that is the intent rather than a cost. It also matches
+      what NLnet requires of results, so no tension remains between the licence and the fund.
       *Blocks: fund choice*
-      He asked whether he would "still own the full rights on how to use the insights."
-      Under CC0 nobody owns the matrix exclusively, himself included, and NLnet requires
-      open licensing of results. If exclusive use of the dataset was ever the plan, that
-      changes which fund to apply to, not just the wording. Confirm or reject explicitly.
-      **Note:** Yeah, that's confirmed. Open licensing is the way forward. — 3 Sep: Closed. CC0 stands.
+      *Moved: 2026-09-03*
+      **Note:** Yeah, that's confirmed. Open licensing is the way forward. — 3 Sep: Closed. CC0
+      stands.
 
 
 - [x] **Is the tester programme in the proposal, or is a solo matrix?**
-      *Blocks: Q3, Q4, the schedule* — 66 days to 3 November, recruitment not started.
-      A solo-built matrix plus a credible recruitment plan is defensible. A claimed
-      multi-tester matrix that does not exist by submission is not.
-      **Note:** I'm confident of getting testers. So please count on that while doing any planning. — 3 Sep: Closed. Planning assumes the tester programme is real.
+      CONFIRMED 3 Sep: the tester programme is real and planning assumes it. Ranaji is confident
+      of recruiting. The proposal can therefore describe a multi-tester matrix as the plan rather
+      than hedging to a solo build — with the recruitment work named as part of the funded effort,
+      not as an assumption. The coverage arithmetic stands: roughly eight more Android phones,
+      mostly post-2018.
+      *Blocks: Q3, Q4, the schedule*
+      *Moved: 2026-09-03*
+      **Note:** I'm confident of getting testers. So please count on that while doing any
+      planning. — 3 Sep: Closed. Planning assumes the tester programme is real.
 
 - [x] **Testers' answers to the closing questions are now captured** _(30 Aug)_
       They were not being captured at all — the three questions printed on a screen with
@@ -466,19 +630,37 @@ matters and it is easier to find beside the question that prompted it.
       written for the assistant, not for someone at midnight with a phone in one hand.
 
 - [ ] **Who checks a returned file before it enters the matrix?**
-      `merge.py --check` catches malformed records, duplicate IDs, missing consent and
-      IMEI/MAC-shaped strings. It cannot catch a tester who confidently misidentifies
-      their own phone, which then becomes ground truth. `identity_source` narrows this;
-      it does not close it. Decide whether a second opinion is required on any record
-      that becomes a test fixture.
-      **Note:** Shouldn't the check be done at your end? What kind of second opinion are you talking about? You mean physically have someone verify whether the tester identifying the phone is correct or not? — 3 Sep: Fair challenge, and it makes the answer better. I CAN check consistency automatically: does the descriptor actually contain what the claimed class requires — an ADB triple for adb, mass storage for mass_storage, a CDC modem for cdc_modem? That catches a tester who mislabels in a way the evidence contradicts, and it belongs in tests/promote.py as a gate before any descriptor is promoted to an assertion. What I CANNOT check is a tester who says “Samsung A5” about a phone that is really an A3 — the descriptor would be consistent either way. That was what 'second opinion' meant, and no, it does not mean a physical inspection. The proportionate answer is that model names are not what the fixtures assert; they assert the CLASS. So the automatic consistency check closes the part that matters, and the rest can stay an accepted limitation stated in the docs.
+      SHARPENED 3 Sep by Ranaji's challenge that the check belongs at the tool's end. It largely
+      does. AUTOMATIC: verify the descriptor actually contains what the claimed class requires —
+      an ADB triple for adb, mass storage for mass_storage, a CDC modem for cdc_modem. That
+      catches any mislabel the evidence contradicts, and it belongs in tests/promote.py as a gate
+      before a descriptor is promoted to an assertion. NOT AUTOMATABLE: a tester who says “Samsung
+      A5” about an A3 — the descriptor is consistent either way. But the fixtures do not assert
+      model names, they assert the CLASS, so this is a limitation to state in the docs rather than
+      a process to build. No physical second opinion is needed. WHAT REMAINS: write the
+      consistency gate.
+      *Moved: 2026-09-03*
+      **Note:** Shouldn't the check be done at your end? What kind of second opinion are you
+      talking about? You mean physically have someone verify whether the tester identifying the
+      phone is correct or not? — 3 Sep: Fair challenge, and it makes the answer better. I CAN
+      check consistency automatically: does the descriptor actually contain what the claimed class
+      requires — an ADB triple for adb, mass storage for mass_storage, a CDC modem for cdc_modem?
+      That catches a tester who mislabels in a way the evidence contradicts, and it belongs in
+      tests/promote.py as a gate before any descriptor is promoted to an assertion. What I CANNOT
+      check is a tester who says “Samsung A5” about a phone that is really an A3 — the descriptor
+      would be consistent either way. That was what 'second opinion' meant, and no, it does not
+      mean a physical inspection. The proportionate answer is that model names are not what the
+      fixtures assert; they assert the CLASS. So the automatic consistency check closes the part
+      that matters, and the rest can stay an accepted limitation stated in the docs.
 
 - [x] **Does the bench-run failure narrative go in the application?**
-      Two classifier defects found, root-caused, fixed and turned into a test suite in
-      one day, with the fix committed. Most applications assert methodology; this can
-      show it. Ranaji's call whether it reads as rigour or as inexperience — the
-      recommendation is rigour, stated plainly.
-      **Note:** yes, please go with rigor. — 3 Sep: Closed. The failure narrative goes in, stated as rigour.
+      CONFIRMED 3 Sep: it goes in, stated as rigour. Two classifier defects found, root-caused,
+      fixed and turned into a test suite, with commits to show it, plus a controlled before-and-
+      after on one phone. Most applications assert methodology; this shows it. Belongs in box 11
+      next to the technical-challenges question.
+      *Moved: 2026-09-03*
+      **Note:** yes, please go with rigor. — 3 Sep: Closed. The failure narrative goes in, stated
+      as rigour.
 
 ## 8. Deferred on purpose
 
@@ -488,11 +670,18 @@ Not problems. Decisions already made to not do these yet.
       Not before the grant decision.
 - [-] **A submission endpoint**
       Not before 20 records exist.
-- [~] **A WebUSB browser tool — NO LONGER DEFERRED** _(reopened 30 Aug)_
-      Moved out of "deferred" because the reason for deferring it collapsed. See section
-      7b, "Which machine does the real tool run on?". This is now a decision that gates
-      whether the matrix being collected is evidence at all, not a nice-to-have for later.
-      **Note:** Let's start on this. — 3 Sep: Agreed, with one distinction that matters for the 61 days left. TESTING whether WebUSB can read what Tier A needs is an afternoon, it de-risks the matrix, and it should happen now. BUILDING a WebUSB tool is weeks and it is not what the grant funds — the grant funds the verifier. Recommend: run the test this week, let it settle the platform question, and keep the build behind the verifier.
+- [~] **A WebUSB browser tool — NO LONGER DEFERRED**
+      AGREED 3 Sep to start, with one distinction that matters for the days remaining. TESTING
+      whether WebUSB reads what Tier A needs is an afternoon, it de-risks the matrix, and it
+      happens now. BUILDING a WebUSB tool is weeks and is not what the grant funds — the grant
+      funds the verifier. SEQUENCE: run the test this week, let it settle the platform question,
+      keep the build behind the verifier.
+      *Moved: 2026-09-03*
+      **Note:** Let's start on this. — 3 Sep: Agreed, with one distinction that matters for the 61
+      days left. TESTING whether WebUSB can read what Tier A needs is an afternoon, it de-risks
+      the matrix, and it should happen now. BUILDING a WebUSB tool is weeks and it is not what the
+      grant funds — the grant funds the verifier. Recommend: run the test this week, let it settle
+      the platform question, and keep the build behind the verifier.
 - [-] **A landing page or any website**
       Out of scope. That is RePurpose, not Flashguard.
 - [-] **Wave 3 online recruitment**
