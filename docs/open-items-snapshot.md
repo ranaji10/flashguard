@@ -455,6 +455,29 @@ matters and it is easier to find beside the question that prompted it.
       and the thing being scored is whether the number is JUSTIFIED, not whether it is low. A 32k
       ask with visible arithmetic beats a 50k round number.
 
+- [ ] **Who is liable when it says safe and a phone bricks?**
+      POSITION RECORDED 3 Sep: the device owner is liable; the tool's job is to report honestly
+      what it found. That is consistent with the participation note and it is the right answer.
+      UNRESOLVED, and it needs deciding before the text is written: the second half of that
+      position — that the tool should give “the probability of a safe repurposing” — describes a
+      DIFFERENT PRODUCT. Flashguard returns safe / unsafe / cannot-verify, three values and no
+      probability, and the discipline is that it abstains rather than scores. A probability
+      invites someone to act on 0.8, which is the false-safe pathway the design exists to close.
+      If a score for end users is wanted, it belongs in RePurpose. DECIDE WHICH ONE IS BEING
+      PROPOSED.
+      *Moved: 2026-09-03*
+      **Note:** the person owning the device should be liable if the phone is bricked. The tool
+      should accurately capture the probability of a safe repurposing / booting based on what we
+      find on the device and what insights the device matrix brings. — 3 Sep: Your position on
+      ownership is the right one and it is what the participation note already implies. But there
+      is a real tension in the second half worth catching now: “probability of a safe repurposing”
+      is a DIFFERENT PRODUCT from what the proposal describes. Flashguard as specified returns
+      safe / unsafe / cannot-verify — three values, no probability — and the whole discipline is
+      that it abstains rather than scores when it cannot be sure. A probability invites a user to
+      act on 0.8, which is exactly the false-safe pathway the design exists to close. If you want
+      a score for the end user, it belongs in RePurpose, not Flashguard. Decide which one you are
+      proposing before the text is written.
+
 - [ ] **The tester-safety paragraph, and liability framing**
       APPROVED 3 Sep: include it. A short paragraph on what happens if a volunteer's device is
       damaged, and on exactly what leaves their machine. Most of the substance already exists —
