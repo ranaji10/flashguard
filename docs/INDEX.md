@@ -29,6 +29,7 @@ Read before writing the proposal or changing a design.
 | `docs/reasoning/verdict-contract.md` | The verifier specification. safe / unsafe / cannot-verify, and what each means. |
 | `docs/reasoning/verifier-plan.md` | Fingerprint vs corpus vs verifier, done criteria, the paired metric, what false-safe is measured against. |
 | `docs/reasoning/recipe-format.md` | The v0.1 JSON recipe shape accepted by the verifier and why it is declarative. |
+| `docs/reasoning/safe-case.md` | Why v0.1 has no defensible safe case and the minimum semantic addition needed for v0.2. |
 | `docs/reasoning/recipe-format-findings.md` | Five independent translations from OpenAndroidInstaller configs and the gaps they expose. |
 | `docs/reasoning/delivery-platform.md` | Browser-first direction, what it changes about the matrix, what the bench kit stops proving. |
 | `docs/reasoning/testing-protocol.md` | How defects get caught before a device is plugged in. Pure functions, fixtures, the bash 3.2 rule. |
