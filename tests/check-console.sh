@@ -10,7 +10,12 @@
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 HTML="$HERE/../bench-kit/START-HERE.html"
-JS="$(mktemp /tmp/bench-console.XXXXXX.js)"
+# BSD mktemp (macOS) requires the template to END in X; GNU allows a suffix after it.
+# Written and tested on Linux, this produced a file literally named
+# "bench-console.XXXXXX.js" on the Mac -- the same name every run, so every run
+# collided. Third defect of this exact class after `declare -A` and the bash 3.2
+# sweep. Make the temp file portably, then rename.
+JS="$(mktemp /tmp/bench-console.XXXXXX)" && mv "$JS" "$JS.js" && JS="$JS.js"
 
 python3 - "$HTML" "$JS" <<'PY'
 import io,re,sys

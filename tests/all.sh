@@ -2,6 +2,7 @@
 # Everything that can be checked without a device. Run before every commit.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
+soft=0
 echo; echo "  PORTABILITY"; bash "$HERE/check-portability.sh" || exit 1
 echo; echo "  PARSE"; bash "$HERE/check-console.sh" || exit 1
 if command -v node >/dev/null 2>&1; then
@@ -9,12 +10,17 @@ if command -v node >/dev/null 2>&1; then
 fi
 echo; echo "  CLASSIFIER"; bash "$HERE/run.sh" || exit 1
 echo "  ANDROID DERIVATION"; bash "$HERE/run-android.sh" || exit 1
+echo "  VERIFIER"
+bash "$HERE/run-verify.sh"; rc=$?
+[ "$rc" = 1 ] && exit 1
+[ "$rc" = 2 ] && { echo "  ^ not build-failing, but verifier implementation is still required"; soft=1; }
 echo "  INDEX"
 bash "$HERE/check-index.sh"; rc=$?
 [ "$rc" = 1 ] && exit 1
-[ "$rc" = 2 ] && echo "  ^ not build-failing, but recruitment cannot start"
+[ "$rc" = 2 ] && { echo "  ^ not build-failing, but recruitment cannot start"; soft=1; }
 echo "  WHAT WOULD GO PUBLIC"; bash "$HERE/check-public-safe.sh" || exit 1
 echo "  DESCRIPTOR PRIVACY"; bash "$HERE/check-descriptor-privacy.sh" || exit 1
 echo "  DATA"; python3 "$HERE/../data/merge.py" --check >/dev/null 2>&1 \
   && echo "  contributions validate" || echo "  contributions have problems, run data/merge.py --check"
+[ "$soft" = 1 ] && exit 2
 echo

@@ -36,6 +36,17 @@ check '\bcoproc\b'              'coproc needs bash 4'
 check ';;&'                     ';;& in case needs bash 4'
 check '&>>'                     '&>> needs bash 4'
 
+# Not a bash-version issue, but the same failure shape: written on Linux, broken on the
+# Mac. BSD mktemp requires the template to end in X. GNU allows a suffix after it.
+hits=$(grep -rnE 'mktemp[^;|&]*X\.[A-Za-z0-9]' "$HERE/../bench-kit/scripts" "$HERE"/*.sh 2>/dev/null \
+       | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' | grep -v 'check-portability' || true)
+if [ -n "$hits" ]; then
+  echo "  BANNED: mktemp template with a suffix after the Xs -- BSD mktemp (macOS) refuses it"
+  printf '%s\n' "$hits" | sed 's/^/      /'
+  echo "      Use: f=\$(mktemp /tmp/name.XXXXXX) && mv \"\$f\" \"\$f.ext\""
+  fail=1
+fi
+
 if [ "$fail" = 0 ]; then
   echo "  no bash-4-only constructs (bash 3.2 hosts are supported)"
   echo "  running bash: ${BASH_VERSION:-unknown}"
