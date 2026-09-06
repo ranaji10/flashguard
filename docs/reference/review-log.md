@@ -38,4 +38,36 @@ traceable behind it, that is worth noting as a failed review rather than as a fi
 
 ---
 
-*No reviews recorded yet. The first one goes above this line, newest at the top.*
+## 2026-09-07 — 474df9e — the workflow doc reporting itself as a disagreement
+
+Reviewed blind by the CLI, first real use of this workflow. It answered all five questions,
+cited lines, and found nothing. Verified independently: the commit is one line in one file
+and every description it gave is accurate. An empty review is recorded because a log of only
+non-empty reviews is a biased log.
+
+Two things a second pass found that the review did not.
+
+- [x] The review quoted the commit message, which is **not in the packet** — `git diff`
+      and `git diff --stat` carry no message and the header prints only the hash. It had a
+      shell, ran `git log`, and read the producer's account of the change before answering
+      question 1, which asks what changed that was *not* asked for.
+      Fixed: the packet now tells the reviewer not to read the commit message, the log, or
+      any file explaining why, and `docs/reference/review-workflow.md` says to notice it when
+      a review quotes one.
+- [x] `tests/check-disputed.sh:22` the commit under review fixed the **document** to get
+      past the grep, rather than the grep. The pattern matched the bare word anywhere on any
+      line, and already carried two filenames excluded by substring — invisible exemptions,
+      the same shape as the publication scan that exempted the only file that could fail it.
+      The next document to explain the convention would have hit it again.
+      Fixed: a marker is now a line whose first non-space characters are a comment opener and
+      then the word. The two skipped paths are skipped by path, for a stated reason, and the
+      skip is printed. `review-workflow.md` has its accurate wording back.
+
+Neither is a criticism of the review. The first is the packet's fault and is now the packet's
+fix. The second is the kind of thing a blind reviewer is least placed to see, because it
+requires asking whether the change was the right shape rather than whether it was correct —
+and the commit message it had already read said the change was a fix.
+
+---
+
+*Older reviews go below. Newest at the top.*

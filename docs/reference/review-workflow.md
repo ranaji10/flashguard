@@ -112,6 +112,21 @@ The second one names nothing. There is nothing to open, nothing to fix, and noth
 tick off later. It is the sound of a reviewer that found nothing and did not want to say
 so. Ignore it entirely.
 
+**One thing to check that is easy to miss: where did it get that?**
+
+The first real review through this workflow opened with *"the commit message says..."* and
+quoted it accurately. The commit message is **not in the packet** — it was left out on
+purpose. The reviewer had a shell, ran `git log`, and read the producer's own account of the
+change before answering question 1, which asks what changed that was *not* asked for. You
+cannot answer that from the document that says what was asked for.
+
+It was not wrong about anything, and the review was a good one. But the packet now tells the
+reviewer plainly not to read the commit message, the log, or any file explaining why. Reading
+the repository to understand a changed line is expected. Reading the rationale is not.
+
+If a review quotes the commit message, it went outside the packet. That is worth noticing
+even when the answer is right, because the next time it may be right for the wrong reason.
+
 **Three specific things that mean the session is bad and should be discarded:**
 
 - It reports build status. The packet says "Do NOT report build status: the suite above
@@ -244,7 +259,7 @@ What to do:
 1. Add it to the tracker as a proper item with a body saying where it stands.
 2. Tick it in the log with `moved to tracker`.
 
-Example: `docs/reasoning/safe-case.md:39` carries an open disagreement marker about whether
+Example: `docs/reasoning/safe-case.md:39` carries an open `DISPUTED:` marker about whether
 `variant` mismatch is a verifier concept. No test can settle it. It needs your ruling. If a
 review keeps flagging it, that is not the reviewer being thorough, it is the log holding a
 question that has nowhere else to live.

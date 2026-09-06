@@ -60,6 +60,12 @@ Read .github/copilot-instructions.md and docs/reasoning/verifier-plan.md first.
 
 Cite lines. If you find nothing, say so plainly rather than inventing a concern.
 Do NOT report build status: the suite above already did that.
+
+Do NOT read the commit message, the commit log, or any file describing why this change was
+made. They are the producer's own account of the work, and this packet leaves them out on
+purpose. Question 1 asks what changed that was not asked for; you cannot answer it from the
+document that says what was asked for. The diff is the subject. Reading the repository to
+understand a changed line is expected; reading the rationale is not.
 ASK
 
 # stderr, so it survives '| pbcopy' and is never captured into the packet itself
