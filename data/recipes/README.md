@@ -21,7 +21,7 @@ that refuses everything.
 | `bad-slot-assumption-01` | unsafe | Assumes A/B on a single-partition device |
 | `bad-locked-bootloader-01` | unsafe | Operation needs unlock, device reports locked |
 | `cannotverify-01` | cannot-verify | Device and recipe the matrix has no data for |
-| `cannotverify-codename-01` | cannot-verify | Codename nearly matches but carries a regional suffix. See the /e/OS case in `docs/prior-art.md`. |
+| `cannotverify-codename-01` | cannot-verify | Codename nearly matches but carries a regional suffix. See the /e/OS case in `docs/reasoning/prior-art.md`. |
 
 ## Growing it without owning hardware
 

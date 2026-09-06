@@ -132,6 +132,6 @@ Honest limits, since the grant will be read by people who will ask:
   recognise; it does not eliminate it.
 - **Anything past detection.** These tests cover classification, not the verifier's
   verdict logic. That needs its own golden corpus, and the false-safe gate is
-  specified in `docs/verdict-contract.md`.
+  specified in `docs/reasoning/verdict-contract.md`.
 - **The console's behaviour, as opposed to its syntax.** A parse check is not a
   browser. Screen-by-screen testing is still by hand.

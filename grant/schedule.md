@@ -1,72 +1,115 @@
-# Schedule to 3 November
+# Milestones
 
-Ten weeks. Solo grant applications fail here more often than on substance: the proposal
-is fine and the evidence it promised to cite was never produced in time.
+*Rewritten 6 September 2026, from a calendar into a payment plan. NLnet pays on completion,
+never upfront: "you divide your project into milestones... Once you reach a milestone you
+send in a request for payment." A calendar cannot be invoiced.*
 
-Three dates are load-bearing. Everything else can slip.
+## The rule every milestone here has to satisfy
 
-| | Date | Must be true |
-|---|---|---|
-| **H1** | **16 September** | Public repository exists with the read-only Tier A spike. Q1 and Q2 both need a link. |
-| **H2** | **14 October** | At least 10 live Android records across 3+ chipset families, both partition schemes represented. |
-| **H3** | **27 October** | All seven answers drafted at final length. One week of margin, deliberately. |
+**Someone who is not on this project must be able to check it is done, from published
+artefacts alone, without asking.** "Corpus built" is not checkable. "`data/recipes/` contains
+40 recipes, each with a verdict and a stated reason, and `coverage.py` reports a false-safe
+rate against them" is.
 
----
+## Before the grant: what already exists
 
-## Week by week
+Not claimable, and not padding either. It is the evidence that the plan is real.
 
-**26 Aug – 2 Sep · The bench run**
-Run the seven seed devices on the Acer at Tier A. Validate schema 0.2 against contact with
-reality and record what had to be invented. Create the repository, private for now.
-*Output: 8 to 9 records, a schema revision, a repo.*
+- Device matrix with 1 complete and 3 partial Android fingerprints, 8 physical devices.
+- 9 real USB descriptors, `iSerial` stripped, 6 promoted to test fixtures with human ground
+  truth.
+- A 7-check test suite that runs with no device attached.
+- Two classifier defects found, root-caused, fixed, and turned into regression tests.
+- Read-only tooling with deny rules verified firing at two independent layers.
 
-**3 Sep · Call opens**
-Read the Restack, CodeSupply and ELFA descriptions the day they appear and decide which
-one this belongs in. Confirm the actual form fields against the draft and fix any
-mismatch. Half a day, and it prevents the most avoidable failure available.
+## M1 — Verifier and first corpus
 
-**3 – 16 Sep · Corpus and spike**
-Import OpenAndroidInstaller's device configurations, normalise them, derive expected
-verdicts. Build the read-only Tier A spike. Make the repository public. **H1.**
-*This is the block that makes the validation claim defensible. Protect it.*
+**Done when:**
 
-**8 – 21 Sep · Wave 1, three friends**
-Ship `bench-kit/protocol.md`, the example record and the participation note. You are
-debugging the protocol, not collecting data. Sit with one of them while they do it.
-*Output: a protocol that survives someone who is not you, and a completion funnel.*
+- `verify(fingerprint, recipe)` exists as a pure function matching
+  `docs/reasoning/verdict-contract.md`: no device I/O, no network, no filesystem on the
+  verify path.
+- `data/recipes/` holds at least 10 recipes, 5 safe and 5 deliberately unsafe, each carrying
+  the human reason for its verdict.
+- `tests/all.sh` fails the build on a single false safe.
+- `coverage.py` reports the false-safe count and the decided share as a pair, with
+  `DECIDED_SHARE_FLOOR` set from the first real run.
+- The ten-config hand-labelling experiment is written up, including if it failed.
 
-**22 Sep – 12 Oct · Wave 2, one room**
-A repair café or hackerspace evening in Prague. Book it in the first week of September,
-because these are scheduled well ahead and a late ask gets a November slot.
-*Output: the bulk of H2, in one evening, plus a named community for Q7.*
+**Checkable by:** cloning the repo and running `bash tests/all.sh`.
 
-**Late Sep – 14 Oct · Verifier and corpus**
-Verdict contract to v1.0. Golden corpus running with the false-safe gate wired in. First
-published coverage report. **H2.**
+## M2 — Corpus at scale
 
-**7 – 27 Oct · Drafting**
-Q1 and Q5 first, they carry the most weight. Q3 and Q4 need the budget decided, so decide
-it early rather than discovering in week nine that it is unresolved. **H3.**
+**Done when:**
 
-**28 Oct – 2 Nov · Margin**
-Read it cold. Give it to one person who does not know the project. Cut anything that
-sounds like a platform.
+- At least 40 recipes derived from OpenAndroidInstaller device configs, LineageOS and
+  postmarketOS install instructions, each with a verdict and a reason.
+- Provenance and licence recorded per recipe. OpenAndroidInstaller's configs are GPL; where
+  a recipe derives from one, that is stated.
+- False-safe rate zero across the whole corpus, decided share at or above the floor.
 
-**3 Nov, 12:00 CET · Deadline.** Submit on 2 November. Not on the morning.
+**Checkable by:** the published corpus and the coverage output.
 
----
+## M3 — Device matrix, with volunteers
 
-## What to drop if time runs short
+**Done when:**
 
-In this order. Decide now, while it is cheap, rather than in week nine.
+- 10 or more Android records carrying all seven verifier fields, across 3 or more chipset
+  families, both partition schemes represented.
+- Records from more than one tester, with descriptors returned and privacy-checked.
+- The attrition log published: devices that could not be captured, and why.
 
-1. Wave 3 online recruitment. Waves 1 and 2 are enough for H2.
-2. Fastboot-side reads (`03-fastboot.sh`). The adb fingerprint carries the record.
-3. Corpus size beyond the first 40 or so imported recipes.
+**Checkable by:** `python3 data/coverage.py`, which prints this criterion as a scoreboard.
 
-## What must not be dropped
+## M4 — Browser-side detection
 
-- The public repository. Q2 is materially weaker without it.
-- The false-safe gate. It is the measurable deliverable and the part of this application
-  that is hardest for anyone else to write.
-- Reading all three programme descriptions on 3 September.
+**Done when:**
+
+- A no-install browser path identifies and classifies a device, agreeing with the
+  descriptors already captured.
+- The limits are documented per platform, including where an install is unavoidable.
+- `capture_route` distinguishes browser-obtained records from Linux-live ones in the matrix.
+
+**Checkable by:** running it, and by the platform limits document.
+
+**Depends on** the probe in `tests/webusb-probe.html`, which is half an hour and should
+happen before this milestone is costed.
+
+## M5 — Release and handover
+
+**Done when:**
+
+- Public repository, everything under a recognised open source licence in its entirety,
+  written outcomes open access.
+- Corpus and matrix published CC0.
+- Documentation a stranger can follow without asking a question.
+- At least one upstream project (OpenAndroidInstaller, LineageOS, postmarketOS) contacted,
+  with the outcome recorded whatever it was.
+
+## Costing
+
+Deliberately not filled in yet, and the reason matters.
+
+NLnet grants are almost entirely **time**. There is no infrastructure line here: the
+verifier is a pure function, the console a static file, no server and no hosting bill. So
+the budget is days per milestone times a rate, plus a small line for devices and travel to a
+repair cafe or hackerspace.
+
+Cost effectiveness is 30 percent of the score, and what is scored is whether the number is
+**justified**, not whether it is low. A 32k ask with visible arithmetic beats a 50k round
+number. Fill this in once M1 has actually been built, because the first milestone is the
+only honest calibration for the rest.
+
+| Milestone | Days | Rate | Amount |
+|---|---|---|---|
+| M1 Verifier and first corpus | | | |
+| M2 Corpus at scale | | | |
+| M3 Device matrix | | | |
+| M4 Browser-side detection | | | |
+| M5 Release and handover | | | |
+| Devices and travel | | | |
+| **Total** | | | |
+
+*First proposals cap at 50 k€. Restack's 150 k€ per-proposal and 500 k€ lifetime ceilings
+apply to later ones, so 50 k€ is not the programme maximum and should not be described as
+one.*

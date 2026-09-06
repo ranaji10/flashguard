@@ -3,7 +3,7 @@
 Given a **device fingerprint** and a **candidate provisioning recipe**, return
 **safe / unsafe / cannot-verify** *without executing the recipe on hardware*.
 
-Read `docs/verdict-contract.md` before touching verification logic. It is the
+Read `docs/reasoning/verdict-contract.md` before touching verification logic. It is the
 specification; the code is measured against it, not the other way round.
 
 ## Naming, which is a scope tool
@@ -54,10 +54,38 @@ is the most expensive kind of help an assistant can offer here.
 4. **Recipes are untrusted input.** Schema-validate before parsing. Never
    interpolate a recipe field into a shell or an eval.
 
+## Every document is indexed, and the index is enforced
+
+`docs/INDEX.md` maps each decision to the file that holds it. `tests/check-index.sh` fails
+the build when a path named in the index or in OPEN.md does not exist, and when a file under
+`docs/` is not listed in the index. A new document must be indexed or the suite fails.
+
+This exists because on 6 September an audit found eleven decisions written into no file at
+all, and three files claiming to cover work they predated. The tracker said the second bench
+run was written up; the write-up did not exist. Nothing checked, so nothing caught it.
+
+**When a decision is made in conversation, it is not made until it is in a file.** Write it
+where it will be read, add it to the index, and run `bash tests/all.sh`.
+
+`docs/` is split: `reasoning/` for why things are the way they are, read before changing a
+design or writing the proposal; `reference/` for facts and procedures you look up, with
+`reference/runs/` for dated logs.
+
+## No machine learning, and no vocabulary that suggests otherwise
+
+Flashguard contains no model, no training and no inference. `classify.sh` is a deterministic
+decision procedure over USB descriptor fields; `classifier_confidence` is a hand-assigned
+constant per rule. Never describe any part of this project in ML or AI terms, never add a
+component that would need them, and keep the plain statement in `README.md` intact.
+
+NLnet Restack places AI-related projects out of scope unless they already have over a
+million active human users. The exclusion is not a risk to the design. It is a risk to how
+the design reads.
+
 ## Facts about hardware are read, never recalled
 
 Before stating any disk name, mount path, device model or machine name -- and
-before writing any command that contains one -- read `docs/bench-hardware.md`.
+before writing any command that contains one -- read `docs/reference/bench-hardware.md`.
 Do not answer from the conversation, and do not answer from memory of an earlier
 session. If the fact is not in that file, say it is not recorded and ask, rather
 than supplying a plausible one.
@@ -66,7 +94,7 @@ This rule exists because a confidently wrong path or disk name inside `rm -rf`
 or `cp -R` destroys a bench run, and because it has already happened once: an
 earlier session repeated a stale USB stick name after being corrected.
 
-If a hardware fact changes, update `docs/bench-hardware.md` in the same turn.
+If a hardware fact changes, update `docs/reference/bench-hardware.md` in the same turn.
 
 ## Changes to the classifier are tested before they are believed
 
@@ -74,7 +102,7 @@ If a hardware fact changes, update `docs/bench-hardware.md` in the same turn.
 device, no I/O, no side effects. Every change to it must be run against the
 saved descriptors:
 
-    bash tests/run.sh
+    bash tests/all.sh
 
 The kit targets **bash 3.2**, because macOS still ships it. No `declare -A`, no
 `mapfile`, no `${v,,}`. `tests/check-portability.sh` enforces this; `bash -n` does

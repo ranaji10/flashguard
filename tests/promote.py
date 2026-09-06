@@ -26,6 +26,41 @@ import json, pathlib, sys
 # Verdicts that mean "I could not tell". None of these can be an expectation.
 ABSTENTIONS = {"unknown", "ptp_or_mtp", "not_detected", "cdc_other"}
 
+# What a descriptor must actually contain for a claimed class to be believable.
+# Added 6 Sep after Ranaji asked why the check was not being done at this end. It is now.
+# A tester who mislabels in a way the EVIDENCE CONTRADICTS is caught here; a tester who says
+# "A5" about an A3 is not, and cannot be -- but the fixtures assert the CLASS, not the model
+# name, so that is a stated limitation rather than a hole.
+REQUIRES = {
+    "adb":          lambda t: "255/66/1" in t,
+    "fastboot":     lambda t: "255/66/3" in t,
+    "mass_storage": lambda t: any(x.startswith("8/") for x in t),
+    "ptp_camera":   lambda t: any(x.startswith("6/") for x in t),
+    "mtp":          lambda t: any(x.startswith("6/") for x in t),
+    "cdc_modem":    lambda t: any(x.startswith("2/") for x in t),
+}
+
+
+def triples(text):
+    """class/subclass/protocol for every interface in a lsusb -v descriptor."""
+    out, c, sub = [], None, None
+    for line in text.splitlines():
+        f = line.split()
+        if len(f) >= 2 and f[0] == "bInterfaceClass":
+            c = f[1]
+        elif len(f) >= 2 and f[0] == "bInterfaceSubClass":
+            sub = f[1]
+        elif len(f) >= 2 and f[0] == "bInterfaceProtocol" and c is not None:
+            out.append(f"{c}/{sub}/{f[1]}")
+            c = sub = None
+    return out
+
+
+def contradicts(text, cls):
+    """True when the descriptor cannot support the claimed class."""
+    need = REQUIRES.get(cls)
+    return bool(need) and not need(triples(text))
+
 HERE = pathlib.Path(__file__).parent
 MATRIX = HERE.parent / "data" / "device-matrix.jsonl"
 DESCDIR = HERE / "real-descriptors"
@@ -50,6 +85,9 @@ def main():
             why = "identity_source is not tester_identified"
         elif not r.get("classification_correct"):
             why = "the tester corrected the classification; set #!expect by hand"
+        elif contradicts(path.read_text(), cls):
+            why = (f"the descriptor contains no interface consistent with '{cls}' -- "
+                   "the evidence contradicts the label, so this cannot be an assertion")
         elif cls in ABSTENTIONS:
             # "classification_correct" on an abstention means the tester agreed the
             # tool could not tell -- NOT that "unknown" is the device's true class.

@@ -95,6 +95,7 @@ def main():
         print("\n  median minutes/device  %.0f" % sorted(durations)[len(durations) // 2])
 
     tier_a_gate(records, androids)
+    verifier_gate(records)
 
 
 SEVEN = ["manufacturer", "product_model", "chipset_family", "android_version",
@@ -149,6 +150,53 @@ def tier_a_gate(records, androids):
         print("\n    A field that is genuinely not exposed by the device is a finding,")
         print("    not a defect. Older hardware often exposes no partition or bootloader")
         print("    property at all, and the verifier has to abstain on exactly those.")
+    print()
+
+
+
+
+# The floor is deliberately None until the corpus exists. A verifier that answers
+# cannot-verify for everything has a false-safe rate of exactly zero, so the gate is
+# meaningless on its own -- but naming a number before there is anything to measure would
+# be a guess dressed as a target. Set it from the first real corpus run, then never lower
+# it without saying why in docs/reasoning/verifier-plan.md.
+DECIDED_SHARE_FLOOR = None
+
+
+def verifier_gate(records):
+    """The paired gate: zero false safes AND a minimum share actually decided.
+
+    Reported together, always, so 'zero false safes' can never be read as
+    'it refuses everything'. See docs/reasoning/verifier-plan.md.
+    """
+    runs = [v for r in records for v in r.get("verifier_runs", [])]
+    print("  VERIFIER GATE")
+    if not runs:
+        print("    no verifier runs yet -- data/recipes/ is empty and verify() does not exist")
+        print("    both numbers below are unmeasurable until it does\n")
+        print("    [ ] false safes == 0                     no corpus")
+        print("    [ ] decided share >= floor               no corpus, and no floor set")
+        print()
+        return
+
+    false_safe = sum(1 for v in runs
+                     if v.get("expected") == "unsafe" and v.get("verdict") == "safe")
+    decided = sum(1 for v in runs if v.get("verdict") in ("safe", "unsafe"))
+    share = decided / len(runs)
+
+    ok_fs = false_safe == 0
+    print("    [%s] false safes == 0                     %d of %d runs"
+          % ("x" if ok_fs else " ", false_safe, len(runs)))
+    if DECIDED_SHARE_FLOOR is None:
+        print("    [ ] decided share >= floor               %.0f%% decided, NO FLOOR SET" %
+              (100 * share))
+        print("\n    Set DECIDED_SHARE_FLOOR now that there is something to measure.")
+    else:
+        ok_ds = share >= DECIDED_SHARE_FLOOR
+        print("    [%s] decided share >= %.0f%%                  %.0f%% decided"
+              % ("x" if ok_ds else " ", 100 * DECIDED_SHARE_FLOOR, 100 * share))
+    if not ok_fs:
+        print("\n    A FALSE SAFE FAILS THE BUILD. It is the one unacceptable error.")
     print()
 
 

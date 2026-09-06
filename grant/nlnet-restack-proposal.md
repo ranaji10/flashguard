@@ -215,7 +215,7 @@ Heimdall, Odin and SP Flash Tool execute with no safety model at all.
 ecosystem partner rather than a comparator, but its categorisation scheme should inform
 our schema instead of being reinvented.
 
-Full scan with sources: `docs/prior-art.md`.
+Full scan with sources: `docs/reasoning/prior-art.md`.
 
 ---
 

@@ -50,7 +50,7 @@ Added 30 August 2026 after counting what is actually in the repository.
       instrumentation and no deliverable.
 
       **What "done" means for a first version:** a pure function matching
-      `docs/verdict-contract.md`; ten recipes in `data/recipes/`, five safe and five
+      `docs/reasoning/verdict-contract.md`; ten recipes in `data/recipes/`, five safe and five
       deliberately unsafe; the false-safe gate wired into `tests/all.sh` and failing the
       build on a single false safe; abstain rate reported alongside. Roughly 200-300
       lines. Tier A being incomplete does not block this: the verifier takes a
@@ -99,7 +99,7 @@ Six of these are now settled. The reasoning is in OPEN.md and the repo, not just
       **Note:** You asked for clarity rather than a choice. This is the reasoning; say so if you disagree.
 - [x] **Contact address: an email for testers**
       It only ever meant one email address in the participation note, so a tester can send records, ask when something breaks, and withdraw their data. Nothing to do with where testers are located.
-      **Note:** Question answered. Still needs an actual address filled into docs/participation-note.md.
+      **Note:** Question answered. Still needs an actual address filled into docs/reference/participation-note.md.
 - [ ] **Requested amount and person-months**
       EUR 20k to 40k is plausible. NLnet pays per completed milestone on request, never upfront, so the figure has to break into milestones you can evidence one at a time.
       *Blocks: Q3, Q4*
@@ -154,9 +154,9 @@ Q2 was rebuilt from your CVs on 26 August. It was previously written around Anna
 
 ## 4. Drafts to read critically
 
-- [ ] **docs/participation-note.md**
+- [ ] **docs/reference/participation-note.md**
       The withdrawal clause especially. Also needs the contact address filled in.
-- [ ] **docs/verdict-contract.md**
+- [ ] **docs/reasoning/verdict-contract.md**
       The intellectual core, with four unresolved design questions at the end.
 - [ ] **grant/nlnet-restack-proposal.md, Q1**
       Check the two-corpus validation claim is one you are willing to be held to.
@@ -263,7 +263,7 @@ Q2 was rebuilt from your CVs on 26 August. It was previously written around Anna
 ## 7. Raised and passed over
 
 - [x] **Classifier could not tell a phone from a camera. Fixed.**
-      The finding of the first bench run, and it belongs in Q6. USB interface class 0x06 covers both PTP (cameras) and MTP (phones in file-transfer mode). v1 mapped 0x06 straight to ptp_camera, so two real Android phones in nine USB modes were all recorded as cameras and coverage.py reported 0 live positives from a session that physically contained two. This is the /e/OS codename problem in a different costume and strictly worse: that one produced a harmless false negative, this one hands a verifier the wrong device class, which is a false-safe pathway. v2 resolves 0x06 by interface string then vendor ID; replayed against the 13 records it corrects all nine and leaves the four correct ones alone. Written up in docs/bench-run-2026-08-29.md.
+      The finding of the first bench run, and it belongs in Q6. USB interface class 0x06 covers both PTP (cameras) and MTP (phones in file-transfer mode). v1 mapped 0x06 straight to ptp_camera, so two real Android phones in nine USB modes were all recorded as cameras and coverage.py reported 0 live positives from a session that physically contained two. This is the /e/OS codename problem in a different costume and strictly worse: that one produced a harmless false negative, this one hands a verifier the wrong device class, which is a false-safe pathway. v2 resolves 0x06 by interface string then vendor ID; replayed against the 13 records it corrects all nine and leaves the four correct ones alone. Written up in docs/reference/runs/bench-run-2026-08-29.md.
       **Note:** Exactly what a bench run is for. Worth citing in Q6 next to the hero2ltexx case.
 - [ ] **Deny rules cannot see inside script files**
       Found while verifying the guardrails. Deny rules inspect the command Claude types, not what that command then reads. 'bash script.sh' is matched as 'bash script.sh'; a destructive line inside the script is invisible to the permission layer. Environment runners like docker exec and npx are not unwrapped either. This gap is live for this project because the bench kit runs as 'bash 01-detect.sh'. Mitigation is procedural, not technical: read what a script contains before running it, and keep the printed stop list on the wall.
@@ -481,7 +481,7 @@ matters and it is easier to find beside the question that prompted it.
 - [ ] **The tester-safety paragraph, and liability framing**
       APPROVED 3 Sep: include it. A short paragraph on what happens if a volunteer's device is
       damaged, and on exactly what leaves their machine. Most of the substance already exists —
-      docs/participation-note.md, the allowlisted property reads, iSerial stripped at capture,
+      docs/reference/participation-note.md, the allowlisted property reads, iSerial stripped at capture,
       tests/check-descriptor-privacy.sh before publication. This is writing, not building. WHAT
       REMAINS: draft the paragraph when the proposal is restructured.
       *Moved: 2026-09-03*
@@ -568,7 +568,7 @@ matters and it is easier to find beside the question that prompted it.
 - [x] **Should testers return their descriptors?** _(answered 30 Aug: yes)_
       No grant downside; the opposite — a CC0 corpus of real USB descriptors is more
       durable than the matrix it produced, and NLnet's model is reusable open output.
-      **Still to do before asking anyone:** say it in `docs/participation-note.md`, say
+      **Still to do before asking anyone:** say it in `docs/reference/participation-note.md`, say
       that `iSerial` is stripped at capture, and say that
       `tests/check-descriptor-privacy.sh` runs before publication. Right now a tester
       would be sending a folder nobody told them about.
@@ -602,9 +602,9 @@ matters and it is easier to find beside the question that prompted it.
       testers' files landing in a personal Drive, which makes Ranaji the data controller for
       whatever is in them. A shared upload folder link needs no code and no account and is a fine
       wave-1 answer; the one-click push earns its complexity at wave 3. WHAT REMAINS: pick the
-      wave-1 destination and write it into docs/participation-note.md, which is what unblocks
+      wave-1 destination and write it into docs/reference/participation-note.md, which is what unblocks
       recruitment.
-      *Blocks: recruitment, and docs/participation-note.md*
+      *Blocks: recruitment, and docs/reference/participation-note.md*
       *Moved: 2026-09-03*
       **Note:** Ideally it should all be uploaded to a google or one drive. We can decide on the
       exact execution of this later. Off the top of mind, the kit can push the files to a linked
@@ -715,7 +715,7 @@ Not problems. Decisions already made to not do these yet.
 - [x] **Second bench run, 29-30 Aug 2026**
       10 records, 8 physical devices, first Android fingerprints, first complete record,
       9 real descriptors, one new device class, four assistant defects caught by the suite.
-      Written up in `docs/bench-run-2026-08-29.md` and `docs/testing-protocol.md`.
+      Written up in `docs/reference/runs/bench-run-2026-08-29.md` and `docs/reasoning/testing-protocol.md`.
 - [x] **The Acer now dual-boots Ubuntu**
       No longer dependent on the live USB for the bench machine. Does not change the
       question in 7b about what the *product* runs on — if anything it sharpens it, since

@@ -3,6 +3,17 @@
 **Flashguard** — the verifier, and the only thing the grant funds.
 *RePurpose* is the working title for the wider ambition beyond this grant, and is out of scope here.
 
+## No machine learning
+
+Flashguard contains none. The verifier is a pure function over a device fingerprint and a
+provisioning recipe. `bench-kit/scripts/classify.sh` is a deterministic decision procedure
+over USB descriptor fields, and `classifier_confidence` is a constant assigned by hand to
+each rule, not a model output. Nothing here is trained, inferred or learned.
+
+This is said plainly because the vocabulary invites the wrong reading, and because NLnet's
+Restack programme places AI-related projects out of scope unless they already have more
+than a million active human users.
+
 Given a **device fingerprint** and a **candidate provisioning recipe**, this returns
 **safe / unsafe / cannot-verify** without executing the recipe on hardware. It combines
 static analysis of the recipe against the device's real partition and bootloader state

@@ -1,6 +1,6 @@
 # Device matrix record schema
 
-`schema_version: 0.3`  ·  One JSON object per line in `device-matrix.jsonl`.
+`schema_version: 0.4`  ·  One JSON object per line in `device-matrix.jsonl`.
 
 Changed from 0.1 after the first bench run raised three defects: blank was
 indistinguishable from unknown, one physical device could present in two USB classes
@@ -59,6 +59,8 @@ A missing key is a defect, not a third kind of absence. Write the sentinel.
     "method": "linux-live | windows-chrome | other",
     "browser": "not_applicable | Chrome 128 | Edge"
   },
+  "capture_route": "linux-live | browser | package",
+
 
   "connection": "USB-C | USB-A",
   "cable_notes": "",
@@ -125,6 +127,20 @@ disagreed with the scan. The console now asks before running the scan, every tim
 `unidentified` records still belong in the matrix: a device nobody can name is a real and common
 condition, and the tool has to behave sensibly on one.
 
+**`capture_route`** New in 0.4, added 6 September after the delivery platform was decided.
+How this record was obtained: `linux-live` (the bench kit on an Ubuntu session, with root and
+a clean USB baseline), `browser` (WebUSB, no install), or `package` (a downloadable tool on
+the owner's own OS).
+
+This exists because **the matrix is being collected under conditions the product will not
+have.** `sudo lsusb -v` on a live Linux session sees more than a browser does. A record
+obtained by a route the shipped tool cannot use is still useful evidence about devices, but
+it cannot be used to claim the tool will work — and without this field the two are
+indistinguishable after the fact.
+
+Every record captured before 6 September is `linux-live`. See
+`docs/reasoning/delivery-platform.md`.
+
 **`device_local_id`** New in 0.3, and the field that makes the dataset countable.
 One physical phone reports a **different USB product ID in every mode**. The Samsung A5
 on the first bench run gave `0x6860`, `0x6866`, `0x686c` and `0x6845` across four
@@ -185,7 +201,7 @@ for hand-made records.
 **`duration_minutes`** How long this device actually took. Feeds the completion-rate
 analysis, which is a finding about accessibility, not bookkeeping.
 
-**`consent_ack`** The tester confirmed they read `docs/participation-note.md` before
+**`consent_ack`** The tester confirmed they read `docs/reference/participation-note.md` before
 running anything. A record without it is not published.
 
 ---
