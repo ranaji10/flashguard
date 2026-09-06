@@ -8,15 +8,19 @@ for finding defects and useless for tracking them: every review began and ended 
 same session, and a finding nobody acted on simply vanished. This file is the memory the
 reviewer is deliberately denied.
 
-**How to use it.**
+**How to use it.** Five commands, two pastes, and nothing to retype.
 
 1. `bash tests/review-packet.sh | pbcopy` — paste into a fresh session as the first
    and only message. No summary, no context. Let it answer.
-2. Paste its findings under a new heading below, one `- [ ]` per finding, with the file
-   and line it cited.
-3. `bash tests/review-carry.sh` — hand that output to the *same* session as a second
-   pass, and ask which earlier findings are fixed, still true, or no longer meaningful.
-4. Tick by hand. Only a person ticks a box.
+2. Copy its whole answer. It ends with a paste-ready block, because the packet asks for
+   one — filing a review must not mean reading five paragraphs and hand-writing
+   checkboxes from them, or it becomes the step that gets skipped.
+3. `pbpaste | bash tests/review-log-add.sh "short label"` — files it here with the
+   right heading and today's date, keeps the full answer in a collapsed block, and
+   refuses a ticked box.
+4. `bash tests/review-carry.sh | pbcopy` — paste into the **same** session as a second
+   pass, and it says which earlier findings are fixed, still true, or no longer meaningful.
+5. Tick by hand, then commit. Only a person ticks a box.
 
 **The rule that keeps this honest.** A finding that survives three reviews has stopped
 being a finding and become a decision. Move it into the tracker and tick it here with a
@@ -30,13 +34,22 @@ traceable behind it, that is worth noting as a failed review rather than as a fi
 
 ## Format
 
+Written by `tests/review-log-add.sh`, so this is what it produces rather than what anyone
+has to remember:
+
     ## 2026-09-06 — 250698b — verdict gap write-up
     - [ ] `flashguard/verify.py:151` coverage reports safe_case_available without a
           reader ever being told what would change it
     - [x] `tests/all.sh:12` soft failure aggregated but exit code not propagated
           — fixed in 141a6f1
 
+Each entry keeps the reviewer's whole answer underneath in a collapsed block, so "was this
+actually reviewed" stays answerable. `review-carry.sh` skips fenced blocks, so a finding
+quoted inside the stored answer is not counted a second time.
+
 ---
+
+<!-- NEWEST REVIEW DIRECTLY BELOW -->
 
 ## 2026-09-07 — 474df9e — the workflow doc reporting itself as a disagreement
 

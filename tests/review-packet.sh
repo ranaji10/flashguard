@@ -66,6 +66,18 @@ made. They are the producer's own account of the work, and this packet leaves th
 purpose. Question 1 asks what changed that was not asked for; you cannot answer it from the
 document that says what was asked for. The diff is the subject. Reading the repository to
 understand a changed line is expected; reading the rationale is not.
+
+FINISH WITH THIS BLOCK, exactly, so it can be filed without being retyped:
+
+  FINDINGS
+  - [ ] `path/to/file.py:88` what is wrong, in one sentence, wrapped and indented
+        under itself if it needs a second line
+  - [ ] `path/to/other.sh:12` the next one
+
+One unticked box per finding, each naming a file and a line. NEVER write a ticked box:
+only a person ticks, and a reviewer that ticks its own findings has marked its own
+homework. If you found nothing, write FINDINGS and then "none" -- an empty review is a
+result, and a log of only non-empty reviews is a biased log.
 ASK
 
 # stderr, so it survives '| pbcopy' and is never captured into the packet itself

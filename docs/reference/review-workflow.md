@@ -147,46 +147,43 @@ inventing them to be useful, and the log will fill with noise until you stop rea
 
 ---
 
-## Step 6 — write the findings into the log
+## Step 6 — file it, without retyping anything
 
-Open the file:
-
-```
-open -a "Visual Studio Code" docs/reference/review-log.md
-```
-
-or just click it in the VS Code sidebar.
-
-Add a heading at the **top**, above the previous review, and one line per finding:
+The reviewer's answer now ends with a paste-ready block, because the packet asks for one:
 
 ```
-## 2026-09-14 — 4bb57e3 — verdict field split
-- [ ] `data/coverage.py:88` information-loss rate divides by zero on an empty corpus,
-      so 0 of 0 prints as 0% and reads as "no loss"
+FINDINGS
+- [ ] `data/coverage.py:88` the information-loss rate divides by zero on an empty
+      corpus, so 0 of 0 prints as 0% and reads as "no loss"
 - [ ] `data/recipes/fp4-independent-facts.json:5` both verdict fields set to unsafe
       with no differs_because
 ```
 
-Rules that make this work rather than decorate:
+Copy the whole answer — all of it, not just that block — and:
 
-- **The date and the commit hash.** The hash is in the packet's first lines
-  (`reviewing: the last commit, 4bb57e3`). Without it you cannot tell later which state of
-  the code a finding was about.
-- **One `- [ ]` per finding.** The box is the whole mechanism. Anything not in a box is
-  invisible to `review-carry.sh`.
-- **Copy the file and line the review cited.** Not your paraphrase of the problem. In
-  three weeks you will not remember which line it meant, and the reviewer that reads it
-  next will not either.
-- **A wrapped finding is fine.** Indent the continuation lines and they stay part of the
-  same finding.
-- **Record an empty review too.** Put the heading in with no boxes under it. A log that
-  only contains reviews that found something will convince you, wrongly, that every review
-  finds something.
+```
+pbpaste | bash tests/review-log-add.sh "verdict field split"
+```
 
-**Only you tick a box.** Not Copilot, not the reviewer, not me. The box means *a human
-looked and agreed it is done*, and the moment an assistant can tick it, it means nothing.
+The label is how you will recognise this review in six weeks. That is the only thing you
+have to invent.
 
----
+It writes the heading with today's date and the commit hash, files each `- [ ]` as a
+tracked finding, keeps your whole answer underneath in a collapsed block so "was this
+actually reviewed" stays answerable, and prints how many findings it recorded.
+
+**It refuses a ticked box.** If the reviewer wrote `- [x]`, the script stops and says so.
+Only a person ticks, and a reviewer that ticks its own findings has marked its own homework.
+
+**Empty reviews are filed too.** If it found nothing, the block says `none`, and the entry
+is recorded with no boxes. A log containing only reviews that found something will convince
+you, wrongly, that every review finds something.
+
+**Why this is a script and not an instruction.** The first time a review came back, filing
+it meant reading five paragraphs and hand-writing checkboxes from them. That works once.
+Done every time, it is the step that gets skipped, and then the log quietly stops being
+written while the ritual still appears to run. Which is the three-review rule's failure, one
+level up.
 
 ## Step 7 — the second pass, into the same session
 
@@ -276,9 +273,10 @@ review rule is the thing that keeps this one honest.
 
 ```
 cd ~/Repurpose/project
-bash tests/review-packet.sh | pbcopy      # then: fresh CLI, paste, nothing else
-                                          # then: findings into review-log.md
-bash tests/review-carry.sh                # paste into the SAME session, second
+bash tests/review-packet.sh | pbcopy          # fresh CLI, paste, nothing else
+pbpaste | bash tests/review-log-add.sh "label" # copy its whole answer first
+bash tests/review-carry.sh | pbcopy           # paste into the SAME session
+                                              # tick by hand, then commit
 ```
 
 ## What each file does
@@ -286,6 +284,7 @@ bash tests/review-carry.sh                # paste into the SAME session, second
 | File | Does |
 |---|---|
 | `tests/review-packet.sh` | Builds the blind packet: suite result, diff, five questions |
+| `tests/review-log-add.sh` | Files the answer into the log: heading, date, hash, and it refuses a ticked box |
 | `docs/reference/review-log.md` | What each review found; boxes ticked by hand only |
 | `tests/review-carry.sh` | The second pass: unticked findings from earlier reviews |
 | `.github/copilot-review-instructions.md` | The rules the reviewer is told to read first |

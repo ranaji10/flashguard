@@ -87,6 +87,7 @@ Read before writing the proposal or changing a design.
 | `tests/handoff.sh` | Prints the handoff block. Run it before switching tools. |
 | `tests/review-packet.sh` | Builds the packet for a reviewing assistant: suite, diff, and the five questions. |
 | `tests/review-carry.sh` | The SECOND pass: unticked findings from earlier reviews. Never run before the blind answer is in. |
+| `tests/review-log-add.sh` | Files a review into the log with the right heading, keeps the full answer, and refuses a ticked box. |
 | `tests/tracker-export.py` | Regenerates `OPEN.md` and the snapshot from the tracker source. This is what "sync" runs. |
 | `.githooks/pre-commit` | Runs the suite before every commit. Enable with `git config core.hooksPath .githooks`. |
 | `tests/check-disputed.sh` | Collects `DISPUTED:` markers — disagreements no test can settle, needing Ranaji's ruling. |

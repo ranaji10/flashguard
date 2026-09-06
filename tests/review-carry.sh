@@ -28,8 +28,7 @@ fi
 # Unticked findings, oldest first, each with the review heading it came from.
 # grep -c prints 0 and exits 1 when nothing matches, so '|| echo 0' would append a SECOND
 # zero and the arithmetic below would see "0\n0". Swallow the status, keep grep's count.
-open_count=$(grep -c '^- \[ \]' "$LOG" 2>/dev/null) || true
-open_count=${open_count:-0}
+open_count=$(awk '/^```/{f=!f;next} f{next} /^- \[ \]/{c++} END{print c+0}' "$LOG")
 
 echo "===== CARRIED FINDINGS  $(date -u +%Y-%m-%dT%H:%MZ) ====="
 if [ "$open_count" -eq 0 ]; then
@@ -46,6 +45,12 @@ fi
 # printing only its first line hands the reviewer half a sentence. Sections come out OLDEST
 # FIRST, because age is the thing being judged, and the log itself is newest-first.
 awk '
+  # The log keeps each review verbatim in a fenced block underneath its findings, so the
+  # same "- [ ]" lines appear twice in the file: once as the tracked finding and once
+  # inside the quoted answer. Counting both would carry every finding twice and make the
+  # three-review rule fire a review early. Fences are skipped.
+  /^```/ { fence = !fence; next }
+  fence  { next }
   /^## / {
     n++; head[n]=$0; body[n]=""; next
   }
