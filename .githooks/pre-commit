@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Run the suite before every commit. Deterministic, free, and it does not forget.
+#
+# Enable once per clone:   git config core.hooksPath .githooks
+# Bypass deliberately:     git commit --no-verify
+#
+# Exit 1 from the suite blocks the commit: something is broken or a document is lying.
+# Exit 2 does not: those are decisions waiting (placeholders, the absent verifier, open
+# disagreements), and blocking commits on a decision only teaches you to use --no-verify.
+set -u
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT" || exit 0
+[ -f tests/all.sh ] || exit 0
+
+out=$(bash tests/all.sh 2>&1); rc=$?
+if [ "$rc" = 1 ]; then
+  printf '%s\n' "$out" | grep -E 'FAIL|BANNED|DANGLING|ORPHAN|BROKEN|DIVERGED|iSERIAL|CREDENTIAL|LIBRARY' | head -12
+  echo
+  echo "  COMMIT BLOCKED. Fix the above, or 'git commit --no-verify' if you know why."
+  exit 1
+fi
+if [ "$rc" = 2 ]; then
+  printf '%s\n' "$out" | grep -E 'NOT IMPLEMENTED|PLACEHOLDERS|DISAGREEMENT' | head -6 | sed 's/^/  /'
+  echo "  (decisions waiting, not blocking)"
+fi
+exit 0

@@ -1,6 +1,7 @@
 # Golden corpus
 
-Every recipe here carries an `expected` verdict. The runner produces actual verdicts
+Every recipe here carries an `expected_verdict` and a human-written
+`expected_verdict_reason`. The runner produces actual verdicts
 for all of them, appends the results to a log that is never rewritten, and fails the
 build if a single **false safe** appears.
 

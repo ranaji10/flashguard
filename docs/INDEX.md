@@ -77,6 +77,8 @@ Read before writing the proposal or changing a design.
 | `tests/webusb-probe.html` | Can a browser read what Tier A needs? **Not yet run.** |
 | `tests/check-index.sh` | Enforces this file: dangling paths, unindexed docs, broken editor instruction files, diverged copies. |
 | `tests/handoff.sh` | Prints the handoff block. Run it before switching tools. |
+| `tests/review-packet.sh` | Builds the packet for a reviewing assistant: suite, diff, and the five questions. |
+| `.githooks/pre-commit` | Runs the suite before every commit. Enable with `git config core.hooksPath .githooks`. |
 | `tests/check-disputed.sh` | Collects `DISPUTED:` markers — disagreements no test can settle, needing Ranaji's ruling. |
 | `tests/check-public-safe.sh` | What would become public if the repo flipped today. Tracked files only. |
 | `.vscode/settings.json` | Workspace settings: Copilot review and generation rules, and the exclusions that keep `library/` out of editor tooling. |

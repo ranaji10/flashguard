@@ -1,6 +1,8 @@
 {
   "schema_version": "0.1",
   "recipe_id": "fp4-recovery",
+  "expected_verdict": "unsafe",
+  "expected_verdict_reason": "The real config requires normal and critical bootloader unlock before recovery. This recipe omits those irreversible unlock steps, so treating it as safe would understate the procedure's risk.",
   "source": {
     "device_facts_from": "https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/FP4.yaml",
     "consulted": "2026-09-06",

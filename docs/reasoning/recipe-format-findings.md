@@ -21,6 +21,10 @@ the current format needs an asset and `write-image` operation, while the config 
 describes a temporary recovery boot rather than naming a recipe asset. The unlock
 flow, critical unlock, wipes, reboot, and re-enabling USB debugging were dropped.
 
+**Safety finding:** this is deliberately `unsafe`. A recipe that omits the normal and
+critical unlock steps describes a less dangerous procedure than the real one. If a
+verifier accepted that understated recipe as `safe`, it would create a false safe.
+
 **Upstream-only facts:** official unlock-code instructions, two distinct unlock
 operations, user confirmations, destructive reset, and the temporary-versus-persistent
 distinction.
@@ -40,6 +44,10 @@ The config says to use Heimdall to flash recovery but does not provide the asset
 identity in the portion represented by this format. The physical button sequence and
 manual cable removal were dropped.
 
+**Safety finding:** this is `cannot-verify`, not `safe`. The config does not show an
+unlock prerequisite, but the recovery asset is not identified, so the recipe cannot
+establish that the write is safe.
+
 **Upstream-only facts:** Samsung-specific download mode, Heimdall, and the manual
 button choreography.
 
@@ -58,6 +66,10 @@ machine-checkable input. The unlock code website, wipes, reboots, and USB-debugg
 reset were dropped. The recovery asset and `boot` partition were invented to satisfy
 the v0.1 shape.
 
+**Safety finding:** this is deliberately `unsafe`. The omitted normal and critical
+unlock steps are irreversible prerequisites; a safe verdict on this shortened recipe
+would be a false safe for the actual procedure.
+
 **Upstream-only facts:** prerequisite state transitions, two unlock scopes, user
 confirmation, and a destructive reset between stages.
 
@@ -74,6 +86,10 @@ existence of a temporary recovery stage.
 it invents their asset identities and treats the temporary recovery boot as a
 `write-image` to `boot`. The slot-copy operation, repeated recovery boot, Android 12
 requirement, and unlock reset were dropped.
+
+**Safety finding:** this is deliberately `unsafe`. The real config requires bootloader
+unlock before the additional-partition and recovery operations. Omitting that step
+silently understates risk and must not permit a `safe` result.
 
 **Upstream-only facts:** the `additional_steps` selection mechanism, a stateful
 multi-step workflow, slot-to-slot copying, a recovery boot that is not a normal
@@ -92,6 +108,10 @@ menu eligibility check, vendor unlock code, optional already-unlocked branch, an
 privacy-sensitive user instruction were dropped. The format has no place to say that
 the unlock precondition is conditional on a hardware-reported eligibility value.
 
+**Safety finding:** this is deliberately `unsafe`. The omitted eligibility and vendor
+unlock steps are prerequisites for the real recovery procedure. A `safe` result for
+this shortened recipe would be a false safe.
+
 **Upstream-only facts:** vendor-specific eligibility evidence, a conditional branch,
 an external unlock-code flow, and a recovery action described as a temporary boot.
 
@@ -106,6 +126,12 @@ identity and A/B versus single partition, but it cannot preserve prerequisites,
 temporary boots, slot-copy relationships, conditional branches, user confirmations,
 or the distinction between an image write and a temporary recovery boot.
 
+This is a safety finding, not only a format-expressiveness finding. Four recipes omit
+irreversible unlock steps present in the source configs, so the shortened recipes look
+less dangerous than the real procedures. A verifier that judged one of those recipes
+`safe` would create a false safe. The fifth recipe abstains because its asset is not
+identified; it must not receive a safe verdict merely because no unlock step appears.
+
 Evidence that would have contradicted this conclusion would be five configs whose
 device facts included named assets, target partitions, unlock preconditions, and a
 linear declarative operation list with no interactive or stateful steps. These five
@@ -113,9 +139,16 @@ configs do not provide that evidence.
 
 ## Proposed changes for decision
 
-Do not change the format in this turn. Before implementation, decide whether v0.2
-should add: an explicit prerequisite/state section for bootloader and unlock facts;
-operation kinds for temporary boot and slot copy; conditional/vendor checks; and
-asset provenance or an explicit `asset_unidentified` form. The decision should also
-settle whether `variant` is a verifier concept or merely a required placeholder,
-because the upstream configs mostly expose supported device-code aliases instead.
+Do not change the format in this turn. Before implementation, v0.2 must prevent a
+recipe from silently understating its own risk. At minimum, it should require an
+explicit completeness declaration or source-step coverage, represent unlock and
+other irreversible prerequisites as machine-checkable operations, and make omitted
+or unidentified assets produce `cannot-verify` rather than disappear. A recipe that
+claims to cover only a subset of a source workflow should be unable to receive
+`safe` unless that boundary is explicit and independently justified.
+
+The other proposed v0.2 changes remain: operation kinds for temporary boot and slot
+copy; conditional/vendor checks; and asset provenance or an explicit
+`asset_unidentified` form. The decision should also settle whether `variant` is a
+verifier concept or merely a required placeholder, because the upstream configs
+mostly expose supported device-code aliases instead.

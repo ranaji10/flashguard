@@ -47,6 +47,13 @@ requires `asset_id`, `role`, `product_device`, and `variant`; asset IDs are uniq
 Each operation requires `kind`, `partition`, and `asset_id`, and its asset ID must
 refer to an entry in `assets`. Operation order is significant.
 
+Corpus recipes also carry `expected_verdict` and `expected_verdict_reason`. These
+are human-established labels, not verifier output. `expected_verdict` is one of
+`safe`, `unsafe`, or `cannot-verify`; the reason records the evidence and why the
+label was assigned. A recipe with an incomplete translation of a source procedure
+must not receive `safe` merely because the omitted steps are absent from its own
+operations.
+
 Version 0.1 supports only the declarative `write-image` operation. It names a
 partition and an already-identified asset; it contains no shell, fastboot, adb, or
 filesystem command. Unknown operation kinds are outside the model and therefore
