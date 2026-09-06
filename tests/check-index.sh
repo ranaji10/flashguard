@@ -36,19 +36,30 @@ fail=0; soft=0
 paths=$(grep -ohE '`[A-Za-z_][A-Za-z0-9_./-]*\.(md|sh|py|js|html|jsonl|json|txt)`' \
           "$ROOT/docs/INDEX.md" "$ROOT/OPEN.md" "$ROOT/../OPEN.md" 2>/dev/null \
         | tr -d '`' | sort -u)
-missing=""
+missing=""; private=""
 for p in $paths; do
   case "$p" in
     */*) ;;                       # a real path
     *) continue ;;                # a bare filename, too ambiguous to resolve
   esac
   case "$p" in _superseded/*|library/*) continue ;; esac
+  # A gitignored path is deliberately private -- the tracker and its export carry
+  # third-party names and never enter git. It exists on this machine and will NOT exist
+  # in a clone, so "missing" here would fail the build for a stranger and prove nothing.
+  # Name it instead of checking it.
+  if git -C "$ROOT" check-ignore -q "$p" 2>/dev/null; then
+    private="$private $p"; continue
+  fi
   [ -e "$ROOT/$p" ] || [ -e "$ROOT/../$p" ] || missing="$missing $p"
 done
 if [ -n "$missing" ]; then
   echo "  DANGLING: named in an index but not on disk:"
   for p in $missing; do echo "      $p"; done
   fail=1
+fi
+if [ -n "$private" ]; then
+  echo "  PRIVATE, so not checked here (untracked by design, absent in a clone):"
+  for p in $private; do echo "      $p"; done
 fi
 
 # ---- 2. orphaned docs -------------------------------------------------------

@@ -125,7 +125,8 @@ work grades the account. Commit, do not push, then:
 
 That is the whole handoff. Findings come back into `docs/reference/review-log.md` as
 unticked boxes, and `bash tests/review-carry.sh` re-surfaces them in later reviews until
-someone ticks them by hand.
+someone ticks them by hand. The full ritual, every command in order, is in
+`docs/reference/review-workflow.md`.
 
 ## Handing back to a Claude session
 

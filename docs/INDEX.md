@@ -45,6 +45,7 @@ Read before writing the proposal or changing a design.
 | `docs/reference/bench-hardware.md` | USB sticks, mount paths, machines, every device and its state. **Read before quoting any path.** |
 | `docs/reference/participation-note.md` | What testers agree to. Canonical copy; `bench-kit/participation-note.md` must match it byte for byte. |
 | `docs/reference/handoff.md` | How to hand work between VS Code and a Claude session, and how open-items provenance is tracked. |
+| `docs/reference/review-workflow.md` | Every command of the review ritual in order, what each one prints, and why the reviewer is never given a summary. |
 | `docs/reference/upstream-contacts.md` | Who to approach at the three upstream projects, how, and why they would care. **Names not yet researched.** |
 | `docs/reference/tier-a-bench-protocol.md` | The Tier A protocol in full. |
 | `docs/reference/device-test-kit.md` | Kit design notes. |

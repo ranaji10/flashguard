@@ -6,6 +6,12 @@
 #
 #     bash tests/review-packet.sh | pbcopy
 #
+# PIPED TO pbcopy IT PRINTS NOTHING TO THE SCREEN, because that is what a pipe does: the
+# packet goes to the clipboard, not to the terminal. A confirmation line goes to stderr so
+# the terminal is never silent. Drop the pipe to read it instead:
+#
+#     bash tests/review-packet.sh | less
+#
 # It ends with the five questions. Those are the whole point: an assistant asked "does
 # this look right?" says yes. An assistant asked "what did this decide that was not in a
 # file?" has to go and look.
@@ -55,3 +61,12 @@ Read .github/copilot-instructions.md and docs/reasoning/verifier-plan.md first.
 Cite lines. If you find nothing, say so plainly rather than inventing a concern.
 Do NOT report build status: the suite above already did that.
 ASK
+
+# stderr, so it survives '| pbcopy' and is never captured into the packet itself
+{
+  echo
+  echo "  review packet built: $WHERE"
+  echo "  $(git diff --stat "$BASE" | tail -1 | sed 's/^ *//')"
+  echo "  If you piped this to pbcopy it is on the clipboard now. Paste it into a FRESH"
+  echo "  session as the first and only message. No summary, no context, nothing after it."
+} >&2
