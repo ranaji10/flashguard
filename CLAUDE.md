@@ -54,6 +54,22 @@ is the most expensive kind of help an assistant can offer here.
 4. **Recipes are untrusted input.** Schema-validate before parsing. Never
    interpolate a recipe field into a shell or an eval.
 
+## Two assistants, one rulebook
+
+This repository is worked on from two places: Claude sessions (research, audits, sweeps,
+anything needing the web) and VS Code with Copilot (day-to-day code). Copilot does not read
+this file. It reads `.github/copilot-instructions.md`, which is an ABRIDGED version of the
+rules here.
+
+**Hand off with a commit, never with prose.** Run `bash tests/handoff.sh` and paste its
+output into the receiving session. "I fixed the classifier" is unverifiable and invites the
+other side to build on a belief; a SHA cannot be misremembered. Full protocol in
+`docs/reference/handoff.md`.
+
+**This file stays the source of truth.** When a rule changes here, change it there too, and
+keep that file short: repeated and verbose instructions crowd out the code being reviewed and
+make Copilot worse, not better.
+
 ## Every document is indexed, and the index is enforced
 
 `docs/INDEX.md` maps each decision to the file that holds it. `tests/check-index.sh` fails

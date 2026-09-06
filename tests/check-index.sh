@@ -76,7 +76,24 @@ if [ -n "$holders" ]; then
   soft=1
 fi
 
-# ---- 4. the two participation notes must agree ------------------------------
+# ---- 4. instruction files referenced from editor settings must exist --------
+# VS Code does not warn when a { "file": ... } instruction points at nothing. Copilot
+# would review with only the inline rules and say so to nobody. Same "passes because it
+# did not run" shape the suite exists to catch.
+if [ -f "$ROOT/.vscode/settings.json" ]; then
+  refs=$(grep -oE '"file"[[:space:]]*:[[:space:]]*"[^"]+"' "$ROOT/.vscode/settings.json" \
+         | sed -E 's/.*"file"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/' | sort -u)
+  gone=""
+  for r in $refs; do [ -e "$ROOT/$r" ] || gone="$gone $r"; done
+  if [ -n "$gone" ]; then
+    echo "  BROKEN EDITOR INSTRUCTION: .vscode/settings.json points at a file that is gone:"
+    for r in $gone; do echo "      $r"; done
+    echo "      Copilot would silently review with fewer rules than you think."
+    fail=1
+  fi
+fi
+
+# ---- 5. the two participation notes must agree ------------------------------
 A="$ROOT/docs/reference/participation-note.md"; B="$ROOT/bench-kit/participation-note.md"
 if [ -f "$A" ] && [ -f "$B" ]; then
   if ! cmp -s "$A" "$B"; then
@@ -87,6 +104,18 @@ if [ -f "$A" ] && [ -f "$B" ]; then
   fi
 else
   echo "  MISSING one of the participation-note copies"; fail=1
+fi
+
+# ---- 6. OPEN.md and its in-repo snapshot must agree -------------------------
+# OPEN.md is generated from the tracker and copied into the repo. If one side edits the
+# snapshot directly, the tracker silently stops being the record. This is the same failure
+# as the two participation notes, one level up.
+O="$ROOT/../OPEN.md"; S="$ROOT/docs/open-items-snapshot.md"
+if [ -f "$O" ] && [ -f "$S" ] && ! cmp -s "$O" "$S"; then
+  echo "  DIVERGED: OPEN.md and docs/open-items-snapshot.md"
+  echo "      The snapshot is GENERATED. Do not edit it directly -- change the tracker,"
+  echo "      export, then: cp ../OPEN.md docs/open-items-snapshot.md"
+  fail=1
 fi
 
 if [ "$fail" = 0 ] && [ "$soft" = 0 ]; then

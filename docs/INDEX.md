@@ -39,6 +39,7 @@ Read before writing the proposal or changing a design.
 |---|---|
 | `docs/reference/bench-hardware.md` | USB sticks, mount paths, machines, every device and its state. **Read before quoting any path.** |
 | `docs/reference/participation-note.md` | What testers agree to. Canonical copy; `bench-kit/participation-note.md` must match it byte for byte. |
+| `docs/reference/handoff.md` | How to hand work between VS Code and a Claude session, and how open-items provenance is tracked. |
 | `docs/reference/upstream-contacts.md` | Who to approach at the three upstream projects, how, and why they would care. **Names not yet researched.** |
 | `docs/reference/tier-a-bench-protocol.md` | The Tier A protocol in full. |
 | `docs/reference/device-test-kit.md` | Kit design notes. |
@@ -72,10 +73,12 @@ Read before writing the proposal or changing a design.
 | `tests/all.sh` | Everything checkable without a device. Run before every commit. |
 | `tests/promote.py` | Descriptors to fixtures, with the ground-truth and consistency gates. |
 | `tests/webusb-probe.html` | Can a browser read what Tier A needs? **Not yet run.** |
-| `tests/check-index.sh` | Enforces this file. |
+| `tests/check-index.sh` | Enforces this file: dangling paths, unindexed docs, broken editor instruction files, diverged copies. |
+| `tests/handoff.sh` | Prints the handoff block. Run it before switching tools. |
 | `tests/check-public-safe.sh` | What would become public if the repo flipped today. Tracked files only. |
 | `.vscode/settings.json` | Workspace settings: Copilot review and generation rules, and the exclusions that keep `library/` out of editor tooling. |
-| `.github/copilot-review-instructions.md` | The review rules Copilot is pointed at. |
+| `.github/copilot-instructions.md` | Repo-wide rules Copilot reads automatically in every chat. Abridged from `CLAUDE.md`, which stays the source of truth. |
+| `.github/copilot-review-instructions.md` | The longer review-only rules, pointed at from settings. |
 
 ## Decided and deliberately not built
 
