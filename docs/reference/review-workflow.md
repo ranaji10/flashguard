@@ -244,7 +244,7 @@ What to do:
 1. Add it to the tracker as a proper item with a body saying where it stands.
 2. Tick it in the log with `moved to tracker`.
 
-Example: `docs/reasoning/safe-case.md:39` carries an open `DISPUTED:` marker about whether
+Example: `docs/reasoning/safe-case.md:39` carries an open disagreement marker about whether
 `variant` mismatch is a verifier concept. No test can settle it. It needs your ruling. If a
 review keeps flagging it, that is not the reviewer being thorough, it is the log holding a
 question that has nowhere else to live.
