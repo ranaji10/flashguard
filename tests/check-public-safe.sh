@@ -11,6 +11,11 @@
 # It cannot judge whether a sentence is unwise. It catches the mechanical leaks: an address,
 # a home path, a credential, a serial number, a name that belongs to someone who did not
 # sign up for this.
+#
+# IT USED TO EXEMPT docs/open-items-snapshot.md, which was the one tracked file carrying
+# third-party names -- so the check looked clean by refusing to look. The snapshot and the
+# tracker are gitignored now instead. An exemption inside a scanner is not a mitigation; it
+# is the scanner agreeing not to notice.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(cd "$HERE/.." && pwd)"
 cd "$ROOT" || exit 1
@@ -19,7 +24,7 @@ fail=0
 look(){ # label, pattern, [allowlist regex]
   local label="$1" pat="$2" alw="${3:-}"
   local hits
-  hits=$(git grep -nIiE "$pat" -- . 2>/dev/null | grep -v '^docs/open-items-snapshot.md:' || true)
+  hits=$(git grep -nIiE "$pat" -- . 2>/dev/null || true)
   [ -n "$alw" ] && hits=$(printf '%s\n' "$hits" | grep -viE "$alw" || true)
   if [ -n "$hits" ]; then
     echo "  $label"

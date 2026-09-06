@@ -19,3 +19,10 @@ node_modules/
 
 # Captures land here during a run; they are merged into data/ afterwards
 bench-kit/device-matrix.jsonl
+
+# The open-items tracker and its export. PRIVATE, deliberately untracked.
+# They carry names and contract details belonging to people who did not sign up for this
+# repository. tests/check-public-safe.sh scans TRACKED files only, so keeping these out of
+# git is what actually protects them -- an exemption inside the scanner only hid them.
+docs/tracker/
+docs/open-items-snapshot.md

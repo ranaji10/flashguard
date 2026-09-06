@@ -17,9 +17,10 @@ exist. Nothing checked, so nothing caught it.
 |---|---|
 | What are the rules of this repository? | `CLAUDE.md` |
 | What is the verifier supposed to do? | `docs/reasoning/verdict-contract.md` |
-| Why does it not exist yet, and what is "done"? | `docs/reasoning/verdict-gap.md` | Why the verifier abstains where a human says unsafe, and why that gap is a measurement rather than a defect. |
-| `docs/reasoning/verifier-plan.md` |
-| What is outstanding? | `OPEN.md`, generated from the tracker |
+| What counts as done, and what is it measured against? | `docs/reasoning/verifier-plan.md` |
+| Why does it abstain where a human says unsafe? | `docs/reasoning/verdict-gap.md` |
+| What is outstanding? | `OPEN.md`, generated from `docs/tracker/open-items.html` |
+| Which copy of the tracker wins? | `docs/reference/sync-protocol.md` |
 
 ## Reasoning — why things are the way they are
 
@@ -51,6 +52,9 @@ Read before writing the proposal or changing a design.
 | `docs/reference/runs/bench-run-2026-08-30.md` | Run 2. First fingerprints, the controlled comparison, four defects, `cdc_modem`. |
 | `docs/reference/runs/tester-attrition.md` | Devices that could not be captured, and the schema gap that exposed. |
 | `docs/open-items-snapshot.md` | Copy of `OPEN.md` inside the repo. Generated. |
+| `docs/reference/sync-protocol.md` | The two copies of the tracker, which one wins, and what the word "sync" means to Copilot and to a Claude session. |
+| `docs/reference/review-log.md` | What each blind review found, and whether it was ever fixed. Ticked by hand only. |
+| `docs/tracker/open-items.html` | **The tracker itself.** Double-click to open. Published copy lives at claude.ai; same source, two copies. |
 
 ## Grant
 
@@ -73,13 +77,15 @@ Read before writing the proposal or changing a design.
 | `data/schema.md` | The record format, v0.4. |
 | `data/merge.py` | Contributions to canonical matrix. Validates, dedupes, reconciles. |
 | `data/coverage.py` | Tier A scoreboard and the paired verifier gate. |
-| `data/recipes/` | The corpus. **Empty.** |
+| `data/recipes/` | The corpus. Five recipes, all `cannot-verify`, none safe. |
 | `tests/all.sh` | Everything checkable without a device. Run before every commit. |
 | `tests/promote.py` | Descriptors to fixtures, with the ground-truth and consistency gates. |
 | `tests/webusb-probe.html` | Can a browser read what Tier A needs? **Not yet run.** |
 | `tests/check-index.sh` | Enforces this file: dangling paths, unindexed docs, broken editor instruction files, diverged copies. |
 | `tests/handoff.sh` | Prints the handoff block. Run it before switching tools. |
 | `tests/review-packet.sh` | Builds the packet for a reviewing assistant: suite, diff, and the five questions. |
+| `tests/review-carry.sh` | The SECOND pass: unticked findings from earlier reviews. Never run before the blind answer is in. |
+| `tests/tracker-export.py` | Regenerates `OPEN.md` and the snapshot from the tracker source. This is what "sync" runs. |
 | `.githooks/pre-commit` | Runs the suite before every commit. Enable with `git config core.hooksPath .githooks`. |
 | `tests/check-disputed.sh` | Collects `DISPUTED:` markers — disagreements no test can settle, needing Ranaji's ruling. |
 | `tests/check-public-safe.sh` | What would become public if the repo flipped today. Tracked files only. |
