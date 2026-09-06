@@ -17,7 +17,8 @@ exist. Nothing checked, so nothing caught it.
 |---|---|
 | What are the rules of this repository? | `CLAUDE.md` |
 | What is the verifier supposed to do? | `docs/reasoning/verdict-contract.md` |
-| Why does it not exist yet, and what is "done"? | `docs/reasoning/verifier-plan.md` |
+| Why does it not exist yet, and what is "done"? | `docs/reasoning/verdict-gap.md` | Why the verifier abstains where a human says unsafe, and why that gap is a measurement rather than a defect. |
+| `docs/reasoning/verifier-plan.md` |
 | What is outstanding? | `OPEN.md`, generated from the tracker |
 
 ## Reasoning — why things are the way they are
