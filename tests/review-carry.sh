@@ -26,15 +26,19 @@ if [ ! -f "$LOG" ]; then
 fi
 
 # Unticked findings, oldest first, each with the review heading it came from.
-open_count=$(grep -c '^- \[ \]' "$LOG" 2>/dev/null || echo 0)
+# grep -c prints 0 and exits 1 when nothing matches, so '|| echo 0' would append a SECOND
+# zero and the arithmetic below would see "0\n0". Swallow the status, keep grep's count.
+open_count=$(grep -c '^- \[ \]' "$LOG" 2>/dev/null) || true
+open_count=${open_count:-0}
 
 echo "===== CARRIED FINDINGS  $(date -u +%Y-%m-%dT%H:%MZ) ====="
 if [ "$open_count" -eq 0 ]; then
   echo "Nothing outstanding. Every finding in $LOG is ticked."
   echo
   echo "That is only good news if the log has entries. It has:"
-  grep -c '^## ' "$LOG" | sed 's/^/  /'
-  echo "  review(s) recorded."
+  reviews=$(grep -c '^## 20' "$LOG" 2>/dev/null) || true
+  echo "  ${reviews:-0} review(s) recorded. Zero means nothing has been reviewed yet, or"
+  echo "  a review happened and its findings were never written down."
   exit 0
 fi
 
