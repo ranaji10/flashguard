@@ -3,6 +3,21 @@
 **Flashguard** — the verifier, and the only thing the grant funds.
 *RePurpose* is the working title for the wider ambition beyond this grant, and is out of scope here.
 
+## After cloning
+
+Enable the pre-commit hook once. It runs `tests/all.sh` before every commit, blocks when
+something is broken or a document claims something untrue, and reports decisions waiting
+(the absent verifier, unfilled tester placeholders, open disagreements) without blocking.
+
+```
+git config core.hooksPath .githooks
+```
+
+Git does not ship hooks with a clone, by design, so this cannot be automatic. Skip it and
+the suite still runs by hand: `bash tests/all.sh`.
+
+To bypass the hook deliberately: `git commit --no-verify`.
+
 ## No machine learning
 
 Flashguard contains none. The verifier is a pure function over a device fingerprint and a

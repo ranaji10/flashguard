@@ -79,3 +79,29 @@ the corpus is built, not after.
 
 Not capability inference. Not path generation. Not a probability score. Not a flashing tool.
 Each of those is RePurpose, and `CLAUDE.md` treats a proposal to add one as out of scope.
+
+## The corpus has no `safe` recipe, and that may not be an oversight
+
+*Noted 6 September 2026, after the first five recipes were written from real
+OpenAndroidInstaller configs.*
+
+    unsafe         4
+    cannot-verify  1
+    safe           0
+
+Every recipe written from a real device config came out `unsafe` or `cannot-verify`. None
+came out `safe`.
+
+That could mean the five configs happened to be dangerous ones. It could also mean
+something worse: **the v0.1 format cannot express a procedure that is genuinely safe.** The
+findings record that prerequisites, unlock state, temporary boots and slot relationships
+are all dropped. A recipe missing its preconditions is one a careful verifier must refuse,
+so the format may be structurally incapable of producing a safe case.
+
+If that is true, the verifier is a no-op: it abstains or refuses, always, and the false-safe
+rate is zero for the reason that makes it meaningless.
+
+**This must be settled before, or as part of, the first implementation.** The question is
+not "write a safe recipe" — it is: *can a safe recipe exist in this format at all, and if
+not, what minimum addition makes one possible?* Answering it by inventing a synthetic recipe
+that happens to pass would be the corpus equivalent of a test that passes against a stub.
