@@ -47,12 +47,19 @@ requires `asset_id`, `role`, `product_device`, and `variant`; asset IDs are uniq
 Each operation requires `kind`, `partition`, and `asset_id`, and its asset ID must
 refer to an entry in `assets`. Operation order is significant.
 
-Corpus recipes also carry `expected_verdict` and `expected_verdict_reason`. These
-are human-established labels, not verifier output. `expected_verdict` is one of
-`safe`, `unsafe`, or `cannot-verify`; the reason records the evidence and why the
-label was assigned. A recipe with an incomplete translation of a source procedure
-must not receive `safe` merely because the omitted steps are absent from its own
-operations.
+Corpus recipes carry two assessments:
+
+- `human_assessment` is what a person who read the real device config concludes
+  about the procedure.
+- `expected_verdict` is what a correct verifier should return given the recipe as
+  written. It is the only assessment used by the false-safe gate.
+
+Both are one of `safe`, `unsafe`, or `cannot-verify`. `expected_verdict_reason`
+records why the human assigned the verifier expectation. When the two assessments
+are equal, `verdict_gap_reason` is still required to state why the recipe carries
+no information loss for that case. When they differ, it names what the format could
+not carry. A recipe with an incomplete translation of a source procedure must not
+receive `safe` merely because the omitted steps are absent from its own operations.
 
 Version 0.1 supports only the declarative `write-image` operation. It names a
 partition and an already-identified asset; it contains no shell, fastboot, adb, or

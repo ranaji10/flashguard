@@ -1,8 +1,10 @@
 {
   "schema_version": "0.1",
   "recipe_id": "avicii-additional-partitions",
-  "expected_verdict": "unsafe",
+  "human_assessment": "unsafe",
+  "expected_verdict": "cannot-verify",
   "expected_verdict_reason": "The real config requires bootloader unlock before additional-partition and recovery operations. This recipe omits that irreversible step, so treating it as safe would understate the procedure's risk.",
+  "verdict_gap_reason": "The recipe cannot carry the source config's unlock prerequisite, so the human can identify the danger while the verifier must abstain from the recipe alone.",
   "source": {
     "device_facts_from": "https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/avicii.yaml",
     "consulted": "2026-09-06",

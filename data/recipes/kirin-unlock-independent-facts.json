@@ -1,8 +1,10 @@
 {
   "schema_version": "0.1",
   "recipe_id": "kirin-recovery-after-unlock",
-  "expected_verdict": "unsafe",
+  "human_assessment": "unsafe",
+  "expected_verdict": "cannot-verify",
   "expected_verdict_reason": "The real config requires an eligibility check and vendor unlock-code operation before recovery. This recipe omits those unlock steps, so treating it as safe would understate the procedure's risk.",
+  "verdict_gap_reason": "The recipe cannot carry the source config's eligibility check and vendor unlock prerequisite, so the human can identify the danger while the verifier must abstain from the recipe alone.",
   "source": {
     "device_facts_from": "https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/kirin.yaml",
     "consulted": "2026-09-06",

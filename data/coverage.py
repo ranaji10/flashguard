@@ -55,6 +55,7 @@ def corpus_runs():
         result = verify(dict(recipe.get("target", {})), recipe)
         runs.append({
             "recipe_id": recipe.get("recipe_id", name),
+            "human_assessment": recipe.get("human_assessment"),
             "expected": recipe.get("expected_verdict"),
             "verdict": result.get("verdict"),
         })
@@ -72,6 +73,11 @@ def report_corpus_runs():
     false_safe = sum(1 for run in runs
                      if run["expected"] == "unsafe" and run["verdict"] == "safe")
     decided = sum(1 for run in runs if run["verdict"] in ("safe", "unsafe"))
+    definite_human = sum(1 for run in runs
+                         if run["human_assessment"] in ("safe", "unsafe"))
+    information_loss = sum(1 for run in runs
+                           if run["human_assessment"] in ("safe", "unsafe")
+                           and run["expected"] not in ("safe", "unsafe"))
     print("    recipes                 %d" % len(runs))
     print("    safe                    %d" % counts.get("safe", 0))
     print("    unsafe                  %d" % counts.get("unsafe", 0))
@@ -79,6 +85,9 @@ def report_corpus_runs():
     print("    false safes             %d" % false_safe)
     print("    decided                 %d / %d (%.0f%%)" %
           (decided, len(runs), 100.0 * decided / len(runs)))
+    print("    information loss        %d / %d definite human assessments (%.0f%%)" %
+          (information_loss, definite_human,
+           100.0 * information_loss / definite_human if definite_human else 0))
     print("    These are format fixtures, not hardware validation.")
     print()
 

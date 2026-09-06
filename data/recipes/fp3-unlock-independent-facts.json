@@ -1,8 +1,10 @@
 {
   "schema_version": "0.1",
   "recipe_id": "fp3-recovery-after-unlock",
-  "expected_verdict": "unsafe",
+  "human_assessment": "unsafe",
+  "expected_verdict": "cannot-verify",
   "expected_verdict_reason": "The real config requires both normal and critical bootloader unlock before recovery. This recipe omits those irreversible unlock steps, so treating it as safe would understate the procedure's risk.",
+  "verdict_gap_reason": "The recipe cannot carry the two source-config unlock prerequisites, so the human can identify the danger while the verifier must abstain from the recipe alone.",
   "source": {
     "device_facts_from": "https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/FP3.yaml",
     "consulted": "2026-09-06",

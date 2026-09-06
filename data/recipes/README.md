@@ -1,7 +1,10 @@
 # Golden corpus
 
-Every recipe here carries an `expected_verdict` and a human-written
-`expected_verdict_reason`. The runner produces actual verdicts
+Every recipe here carries a `human_assessment`, an `expected_verdict`, and a
+human-written `expected_verdict_reason`. `human_assessment` records what a person
+reading the real device config concludes; `expected_verdict` records what the
+verifier should return from the recipe as written. `verdict_gap_reason` explains
+what the format could not carry, or why the two assessments agree. The runner produces actual verdicts
 for all of them, appends the results to a log that is never rewritten, and fails the
 build if a single **false safe** appears.
 
@@ -34,7 +37,7 @@ published.
 - **LineageOS** publishes per-device install instructions for hundreds of models.
 - **postmarketOS** maintains a categorised device support matrix.
 
-Import them, derive expected verdicts, and the verifier can be validated against
+Read them independently, assign both assessments, and the verifier can be validated against
 hundreds of genuine recipes on day one. Physical devices are then reserved for the
 one thing only hardware gives you: the read-only fingerprint at Tier A.
 
@@ -43,5 +46,5 @@ one of the arguments for the same licence here.
 
 ## Every miss becomes a permanent case
 
-A misclassification or a missed catch is added here as a new recipe with its expected
-verdict, before the rule that would have caught it is written. The corpus only grows.
+A misclassification or a missed catch is added here as a new recipe with both
+assessments, before the rule that would have caught it is written. The corpus only grows.

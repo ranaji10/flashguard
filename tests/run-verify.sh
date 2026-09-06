@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# The verifier is intentionally absent until its first implementation lands.
-# Keep that absence visible without making unrelated checks look green.
+# Keep the verifier contract and corpus verdict-gap checks visible in the suite.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
@@ -12,3 +11,4 @@ if [ ! -f "$ROOT/flashguard/verify.py" ]; then
 fi
 
 python3 "$HERE/test_verify_contract.py"
+python3 "$HERE/test_verdict_gap.py"
