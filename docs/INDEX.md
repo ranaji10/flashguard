@@ -29,6 +29,7 @@ Read before writing the proposal or changing a design.
 | `docs/reasoning/verdict-contract.md` | The verifier specification. safe / unsafe / cannot-verify, and what each means. |
 | `docs/reasoning/verifier-plan.md` | Fingerprint vs corpus vs verifier, done criteria, the paired metric, what false-safe is measured against. |
 | `docs/reasoning/recipe-format.md` | The v0.1 JSON recipe shape accepted by the verifier and why it is declarative. |
+| `docs/reasoning/recipe-format-findings.md` | Five independent translations from OpenAndroidInstaller configs and the gaps they expose. |
 | `docs/reasoning/delivery-platform.md` | Browser-first direction, what it changes about the matrix, what the bench kit stops proving. |
 | `docs/reasoning/testing-protocol.md` | How defects get caught before a device is plugged in. Pure functions, fixtures, the bash 3.2 rule. |
 | `docs/reasoning/prior-art.md` | OpenAndroidInstaller, LineageOS, postmarketOS. Positioning and corpus sources. |
@@ -76,6 +77,7 @@ Read before writing the proposal or changing a design.
 | `tests/webusb-probe.html` | Can a browser read what Tier A needs? **Not yet run.** |
 | `tests/check-index.sh` | Enforces this file: dangling paths, unindexed docs, broken editor instruction files, diverged copies. |
 | `tests/handoff.sh` | Prints the handoff block. Run it before switching tools. |
+| `tests/check-disputed.sh` | Collects `DISPUTED:` markers — disagreements no test can settle, needing Ranaji's ruling. |
 | `tests/check-public-safe.sh` | What would become public if the repo flipped today. Tracked files only. |
 | `.vscode/settings.json` | Workspace settings: Copilot review and generation rules, and the exclusions that keep `library/` out of editor tooling. |
 | `.github/copilot-instructions.md` | Repo-wide rules Copilot reads automatically in every chat. Abridged from `CLAUDE.md`, which stays the source of truth. |

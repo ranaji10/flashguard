@@ -60,6 +60,27 @@ a tester is blocked.
 - **Never mark an item done in `OPEN.md` or `docs/INDEX.md`** on the strength of having
   written about it.
 
+## Disagreements are settled by the suite, or escalated — never by picking
+
+When you and a reviewer disagree, or you are unsure between two defensible options:
+
+1. **If a test could settle it, write the test.** That is the answer, not a discussion.
+2. **If no test can settle it, mark it and stop.** Do not choose quietly and move on.
+
+```
+# DISPUTED: should `variant` be a verifier concept or a placeholder?
+#   position A: a verifier concept -- upstream configs expose device-code aliases
+#   position B: a placeholder -- no observed device reports a variant
+#   settles it: no test can. Needs a decision from Ranaji.
+```
+
+`tests/check-disputed.sh` collects these and reports them at exit 2, loud and not
+build-failing. A marker whose "settles it" line names a test you could have written is
+laziness, not honesty: write the test.
+
+Never resolve a disagreement by rewriting the question, and never mark something DISPUTED
+to avoid doing the work.
+
 ## Generated files — never edit directly
 
 - `docs/open-items-snapshot.md` is generated from the open-items tracker. Change the tracker,

@@ -1,0 +1,30 @@
+{
+  "schema_version": "0.1",
+  "recipe_id": "fp4-recovery",
+  "source": {
+    "device_facts_from": "https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/FP4.yaml",
+    "consulted": "2026-09-06",
+    "authored": "independent",
+    "verdict_reason": "The config identifies FP4 as an A/B device and includes a temporary custom-recovery step."
+  },
+  "target": {
+    "product_device": "FP4",
+    "variant": "FP4",
+    "partition_scheme": "A/B"
+  },
+  "assets": [
+    {
+      "asset_id": "temporary-recovery",
+      "role": "recovery",
+      "product_device": "FP4",
+      "variant": "FP4"
+    }
+  ],
+  "operations": [
+    {
+      "kind": "write-image",
+      "partition": "boot",
+      "asset_id": "temporary-recovery"
+    }
+  ]
+}

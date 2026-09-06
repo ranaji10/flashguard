@@ -5,8 +5,8 @@ set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
 
-if [ ! -f "$ROOT/verify.py" ]; then
-  echo "  VERIFIER NOT IMPLEMENTED: verify.py is absent"
+if [ ! -f "$ROOT/flashguard/verify.py" ]; then
+  echo "  VERIFIER NOT IMPLEMENTED: flashguard/verify.py is absent"
   echo "      Contract tests are present but cannot run until the first verifier exists."
   exit 2
 fi

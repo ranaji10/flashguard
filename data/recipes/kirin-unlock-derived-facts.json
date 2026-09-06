@@ -1,0 +1,30 @@
+{
+  "schema_version": "0.1",
+  "recipe_id": "kirin-recovery-after-unlock",
+  "source": {
+    "device_facts_from": "https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/kirin.yaml",
+    "consulted": "2026-09-06",
+    "authored": "independent",
+    "verdict_reason": "The config identifies Sony Xperia 10 codename kirin as A/B and gates unlocking on a device-menu eligibility check and a vendor unlock code."
+  },
+  "target": {
+    "product_device": "kirin",
+    "variant": "kirin",
+    "partition_scheme": "A/B"
+  },
+  "assets": [
+    {
+      "asset_id": "temporary-recovery",
+      "role": "recovery",
+      "product_device": "kirin",
+      "variant": "kirin"
+    }
+  ],
+  "operations": [
+    {
+      "kind": "write-image",
+      "partition": "boot",
+      "asset_id": "temporary-recovery"
+    }
+  ]
+}

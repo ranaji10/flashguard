@@ -14,6 +14,10 @@ echo "  VERIFIER"
 bash "$HERE/run-verify.sh"; rc=$?
 [ "$rc" = 1 ] && exit 1
 [ "$rc" = 2 ] && { echo "  ^ not build-failing, but verifier implementation is still required"; soft=1; }
+echo "  DISPUTED"
+bash "$HERE/check-disputed.sh"; rc=$?
+[ "$rc" = 2 ] && soft=1
+[ "$rc" = 2 ] || echo "  no open disagreements"
 echo "  INDEX"
 bash "$HERE/check-index.sh"; rc=$?
 [ "$rc" = 1 ] && exit 1

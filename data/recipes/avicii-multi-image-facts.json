@@ -1,0 +1,52 @@
+{
+  "schema_version": "0.1",
+  "recipe_id": "avicii-additional-partitions",
+  "source": {
+    "device_facts_from": "https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/avicii.yaml",
+    "consulted": "2026-09-06",
+    "authored": "independent",
+    "verdict_reason": "The config identifies avicii as an A/B device, names dtbo and vbmeta as additional partitions, and includes a temporary recovery stage."
+  },
+  "target": {
+    "product_device": "avicii",
+    "variant": "avicii",
+    "partition_scheme": "A/B"
+  },
+  "assets": [
+    {
+      "asset_id": "dtbo",
+      "role": "dtbo",
+      "product_device": "avicii",
+      "variant": "avicii"
+    },
+    {
+      "asset_id": "vbmeta",
+      "role": "vbmeta",
+      "product_device": "avicii",
+      "variant": "avicii"
+    },
+    {
+      "asset_id": "temporary-recovery",
+      "role": "recovery",
+      "product_device": "avicii",
+      "variant": "avicii"
+    }
+  ],
+  "operations": [
+    {
+      "kind": "write-image",
+      "partition": "dtbo",
+      "asset_id": "dtbo"
+    },
+    {
+      "kind": "write-image",
+      "partition": "vbmeta",
+      "asset_id": "vbmeta"
+    },
+    {
+      "kind": "write-image",
+      "partition": "boot",
+      "asset_id": "temporary-recovery"
+    }
+  ]
+}
