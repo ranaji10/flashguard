@@ -17,8 +17,58 @@ def _reason(code, result, fields, message):
     }
 
 
+def _invalid_recipe_reason(message):
+    return {
+        "verdict": "cannot-verify",
+        "reasons": [_reason("invalid-recipe", "abstain", ["recipe"], message)],
+        "coverage": {"schema_version": None, "modelled_operations": [], "safe_case_available": False},
+    }
+
+
+def _validate_recipe(recipe):
+    if not isinstance(recipe, dict):
+        return "Invalid recipe: expected a JSON object."
+    required = ("schema_version", "recipe_id", "target", "assets", "operations")
+    missing = [key for key in required if key not in recipe]
+    if missing:
+        return "Invalid recipe: missing required field(s): " + ", ".join(missing) + "."
+    if recipe.get("schema_version") != "0.1":
+        return "Invalid recipe: unsupported schema_version."
+    target = recipe.get("target")
+    if not isinstance(target, dict):
+        return "Invalid recipe: target must be an object."
+    target_fields = ("product_device", "variant", "partition_scheme")
+    if any(field not in target for field in target_fields):
+        return "Invalid recipe: target is missing a required field."
+    assets = recipe.get("assets")
+    operations = recipe.get("operations")
+    if not isinstance(assets, list) or not isinstance(operations, list):
+        return "Invalid recipe: assets and operations must be arrays."
+    asset_ids = []
+    for asset in assets:
+        if not isinstance(asset, dict):
+            return "Invalid recipe: every asset must be an object."
+        if any(field not in asset for field in ("asset_id", "role", "product_device", "variant")):
+            return "Invalid recipe: every asset needs identity fields."
+        asset_ids.append(asset["asset_id"])
+    if len(asset_ids) != len(set(asset_ids)):
+        return "Invalid recipe: asset_id values must be unique."
+    for operation in operations:
+        if not isinstance(operation, dict):
+            return "Invalid recipe: every operation must be an object."
+        if any(field not in operation for field in ("kind", "partition", "asset_id")):
+            return "Invalid recipe: every operation needs kind, partition, and asset_id."
+        if operation["asset_id"] not in asset_ids:
+            return "Invalid recipe: operation refers to an unknown asset_id."
+    return None
+
+
 def verify(fingerprint, recipe):
     """Return a verdict for a fingerprint and a validated v0.1 recipe."""
+    invalid = _validate_recipe(recipe)
+    if invalid:
+        return _invalid_recipe_reason(invalid)
+
     reasons = []
     unsafe = False
     abstained = False

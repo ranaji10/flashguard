@@ -30,6 +30,17 @@ SAFE_RECIPE = {
 
 
 class VerifyContractTest(unittest.TestCase):
+    def test_malformed_recipe_abstains_as_invalid_recipe(self):
+        result = verify(
+            {"product_device": "oriole", "variant": "global", "partition_scheme": "A/B"},
+            {"schema_version": "0.1"},
+        )
+
+        self.assertEqual(result["verdict"], "cannot-verify")
+        self.assertTrue(
+            any("invalid recipe" in reason["message"].lower() for reason in result["reasons"])
+        )
+
     def test_missing_fingerprint_evidence_abstains(self):
         result = verify({}, SAFE_RECIPE)
 

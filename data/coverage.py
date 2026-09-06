@@ -9,6 +9,12 @@ from collections import Counter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PATH = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "device-matrix.jsonl")
+RECIPE_DIR = os.path.join(HERE, "recipes")
+ROOT = os.path.dirname(HERE)
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
+from flashguard import verify
 
 ANDROID_CLASSES = {"adb", "fastboot"}
 
@@ -33,6 +39,48 @@ def load(path):
 def bar(label, count, total, width=28):
     fill = 0 if not total else int(round(width * count / total))
     return "  %-22s %s %d" % (label[:22], "#" * fill + "." * (width - fill), count)
+
+
+def corpus_runs():
+    runs = []
+    if not os.path.isdir(RECIPE_DIR):
+        return runs
+    for name in sorted(os.listdir(RECIPE_DIR)):
+        if not name.endswith(".json"):
+            continue
+        path = os.path.join(RECIPE_DIR, name)
+        with open(path, encoding="utf-8") as fh:
+            recipe = json.load(fh)
+        # The declared target is an explicit format fixture, not a hardware claim.
+        result = verify(dict(recipe.get("target", {})), recipe)
+        runs.append({
+            "recipe_id": recipe.get("recipe_id", name),
+            "expected": recipe.get("expected_verdict"),
+            "verdict": result.get("verdict"),
+        })
+    return runs
+
+
+def report_corpus_runs():
+    runs = corpus_runs()
+    print("  CORPUS REPLAY")
+    if not runs:
+        print("    no recipe files")
+        print()
+        return
+    counts = Counter(run["verdict"] for run in runs)
+    false_safe = sum(1 for run in runs
+                     if run["expected"] == "unsafe" and run["verdict"] == "safe")
+    decided = sum(1 for run in runs if run["verdict"] in ("safe", "unsafe"))
+    print("    recipes                 %d" % len(runs))
+    print("    safe                    %d" % counts.get("safe", 0))
+    print("    unsafe                  %d" % counts.get("unsafe", 0))
+    print("    cannot-verify           %d" % counts.get("cannot-verify", 0))
+    print("    false safes             %d" % false_safe)
+    print("    decided                 %d / %d (%.0f%%)" %
+          (decided, len(runs), 100.0 * decided / len(runs)))
+    print("    These are format fixtures, not hardware validation.")
+    print()
 
 
 def main():
@@ -169,13 +217,14 @@ def verifier_gate(records):
     Reported together, always, so 'zero false safes' can never be read as
     'it refuses everything'. See docs/reasoning/verifier-plan.md.
     """
+    report_corpus_runs()
     runs = [v for r in records for v in r.get("verifier_runs", [])]
     print("  VERIFIER GATE")
     if not runs:
-        print("    no verifier runs yet -- data/recipes/ is empty and verify() does not exist")
-        print("    both numbers below are unmeasurable until it does\n")
-        print("    [ ] false safes == 0                     no corpus")
-        print("    [ ] decided share >= floor               no corpus, and no floor set")
+        print("    no matrix verifier runs yet -- corpus replay is reported above")
+        print("    matrix-backed rates remain unmeasurable until verifier_runs are recorded\n")
+        print("    [ ] false safes == 0                     no matrix runs")
+        print("    [ ] decided share >= floor               no matrix runs, and no floor set")
         print()
         return
 

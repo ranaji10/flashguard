@@ -1,16 +1,17 @@
 # The verifier: what it is, and what "done" means
 
-*Written 6 September 2026. The verifier does not exist. This file is the specification that
-makes that fact actionable rather than just true.*
+*Written 6 September 2026. The v0.1 verifier exists; this file records what remains
+unproven and what "done" means.*
 
 **Read `docs/reasoning/verdict-contract.md` first.** That is the contract; this is the plan
 for satisfying it.
 
 ## The state of things
 
-The repository is roughly 6,400 lines and none of them are the verifier. There is no
-`verify(fingerprint, recipe)`. `data/recipes/` holds a README. The false-safe rate — the
-primary metric, the build gate, the centre of the proposal — has no subject to measure.
+The v0.1 verifier is `flashguard/verify.py`, and `data/recipes/` holds five independently
+authored recipes. The corpus replay currently produces five `cannot-verify` results and
+zero decided results, so the false-safe rate is zero for the wrong reason: the format has
+no defensible `safe` case yet.
 
 Everything built so far is instrumentation for collecting the **inputs** to a function
 nobody has written. Good instrumentation: it found real defects and produced a complete
@@ -21,11 +22,11 @@ seven-field record. But it is not the thing the grant funds.
 | | What it is | Where it lives | State |
 |---|---|---|---|
 | **Fingerprint** | What a real device reports: model, chipset, partition scheme, bootloader state | `data/device-matrix.jsonl` | 1 complete, 3 partial |
-| **Corpus** | Provisioning recipes with human-established verdicts | `data/recipes/` | **empty** |
-| **Verifier** | The function between them | nowhere | **does not exist** |
+| **Corpus** | Provisioning recipes with human-established verdicts | `data/recipes/` | 5 recipes |
+| **Verifier** | The function between them | `flashguard/verify.py` | v0.1 exists |
 
-The corpus is the harder of the two missing pieces, because a recipe without a
-human-established verdict tests nothing.
+The corpus is still too small to establish a useful decided-share floor, and v0.1's
+recipes all abstain because their format cannot express a defensible safe procedure.
 
 ## Done, for a first version
 

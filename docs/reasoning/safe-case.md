@@ -35,3 +35,8 @@ omits a prerequisite, or leaves an asset unidentified, the result must be
 This is the minimum semantic addition, not a proposed final schema. The exact v0.2
 field names and operation kinds still need a design decision before the format changes.
 No synthetic safe recipe is added: the current real corpus provides no evidence for one.
+
+# DISPUTED: should `variant` mismatch be a verifier concept?
+#   position A: yes -- asset and target variants are safety-relevant identity evidence
+#   position B: no -- the current corpus exposes device-code aliases, not a settled variant concept
+#   settles it: no test can — needs a decision from Ranaji

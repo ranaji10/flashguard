@@ -38,12 +38,12 @@ a platform, an app, a website, a probability score — all out of scope. They be
 "RePurpose", a separate future ambition. Over-scoping is the most common reason funding
 applications like this one are rejected.
 
-## What does not exist yet
+## Current state
 
-There is no `verify(fingerprint, recipe)` and `data/recipes/` is empty. Everything built so
-far collects the *inputs* to a function nobody has written. See
-`docs/reasoning/verifier-plan.md` for what "done" means. Do not extend the bench kit unless
-a tester is blocked.
+The v0.1 pure verifier exists at `flashguard/verify.py`, and five independently authored
+recipes exist under `data/recipes/`. The corpus replay reports five `cannot-verify` results,
+zero decided results, and zero false safes. V0.1 has no defensible `safe` case; see
+`docs/reasoning/safe-case.md`. Do not extend the bench kit unless a tester is blocked.
 
 ## Nothing is done until a command proves it
 

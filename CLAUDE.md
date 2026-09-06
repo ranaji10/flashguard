@@ -14,25 +14,16 @@ Flashguard, it is out of scope for this grant. Say so and stop.
 
 Applicant: Ranaji Deb, sole applicant, in his own name.
 
-## What is not built yet, and what that means for every session
+## Current state
 
-As of 30 August 2026 the verifier **does not exist**. There is no
-`verify(fingerprint, recipe)`, and `data/recipes/` holds no corpus. What exists is
-a bench kit for collecting fingerprints, a device matrix, and a test suite for the
-classifier — all of it instrumentation for producing the *inputs* to a function
-nobody has written.
+The v0.1 pure verifier exists at `flashguard/verify.py`, and five independently
+authored corpus recipes exist under `data/recipes/`. The corpus replay reports five
+`cannot-verify` results, zero decided results, and zero false safes. V0.1 has no
+defensible `safe` case; see `docs/reasoning/safe-case.md`.
 
-Two rules follow, and they bind an assistant more than they bind Ranaji, because
-the bench kit is more immediately gratifying to improve and an assistant will drift
-there by default:
-
-1. **Do not extend the bench kit unless a tester is blocked.** It works. It produced
-   a complete seven-field record on 29 August. Polishing it further is motion, not
-   progress.
-2. **When asked what to do next, the answer is the verifier** until one exists that
-   runs against a corpus and reports a false-safe rate.
-
-Delete this section when `verify()` exists and the gate runs.
+The bench kit remains frozen unless a tester is blocked. It produced a complete
+seven-field record on 29 August; further polishing is out of scope while the
+verifier's corpus and safety contract are being settled.
 
 ## Scope guardrail
 
