@@ -42,11 +42,35 @@ if [ "$open_count" -eq 0 ]; then
   exit 0
 fi
 
+# Findings are collected whole -- a finding wrapped over several lines is one finding, and
+# printing only its first line hands the reviewer half a sentence. Sections come out OLDEST
+# FIRST, because age is the thing being judged, and the log itself is newest-first.
 awk '
-  /^## / { head=$0 }
+  /^## / {
+    n++; head[n]=$0; body[n]=""; next
+  }
   /^- \[ \]/ {
-    if (head != last) { print ""; print head; last=head }
-    print "  " $0
+    cur=n; body[n]=body[n] "\n  " $0; open[n]++; next
+  }
+  /^- \[[xX]\]/ { cur=0; next }
+  /^[[:space:]]+[^[:space:]]/ {
+    # a wrapped continuation of the finding above it
+    if (cur==n && open[n]>0) body[n]=body[n] "\n  " $0
+    next
+  }
+  { cur=0 }
+  END {
+    for (i=n; i>=1; i--) {
+      if (open[i]>0) {
+        later=i-1   # sections above it in the file are the NEWER reviews
+        age = later==0 ? "(newest review)" \
+                       : "(carried through " later " later review" (later==1?"":"s") ")"
+        print ""
+        if (later>=2) print "  >>> SURVIVED " later " REVIEWS. This is a decision now, not a finding."
+        print head[i] "  " age
+        print substr(body[i],2)
+      }
+    }
   }
 ' "$LOG"
 
