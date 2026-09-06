@@ -45,6 +45,21 @@ far collects the *inputs* to a function nobody has written. See
 `docs/reasoning/verifier-plan.md` for what "done" means. Do not extend the bench kit unless
 a tester is blocked.
 
+## Nothing is done until a command proves it
+
+- **Write the failing check first.** Before implementing, produce a test that fails now and
+  passes only when the work is correct. Run it. Show it failing. A claim with no executable
+  check behind it is not a claim, it is a hope.
+- **End every piece of work with the command that proves it**, and its output. If no command
+  could fail were the work absent, say so rather than reporting completion.
+- **Tense is not decoration.** Describe what EXISTS in the present tense and what does not in
+  the conditional. `verify()` does not exist. Never write a docstring, comment, README line
+  or commit message that describes unimplemented behaviour as though it works — a document
+  that describes a thing convincingly is how this project already lost a week: a run log
+  claimed to cover work it predated, and nothing checked.
+- **Never mark an item done in `OPEN.md` or `docs/INDEX.md`** on the strength of having
+  written about it.
+
 ## Generated files — never edit directly
 
 - `docs/open-items-snapshot.md` is generated from the open-items tracker. Change the tracker,

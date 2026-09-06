@@ -61,6 +61,12 @@ anything needing the web) and VS Code with Copilot (day-to-day code). Copilot do
 this file. It reads `.github/copilot-instructions.md`, which is an ABRIDGED version of the
 rules here.
 
+**Nothing is done until a command proves it.** Write the failing check before the
+implementation, run it, show it failing. End work with the command that proves it and its
+output. Describe what exists in the present tense and what does not in the conditional —
+a run log that claimed to cover work it predated cost this project a week, and it read
+perfectly well.
+
 **Hand off with a commit, never with prose.** Run `bash tests/handoff.sh` and paste its
 output into the receiving session. "I fixed the classifier" is unverifiable and invites the
 other side to build on a belief; a SHA cannot be misremembered. Full protocol in
