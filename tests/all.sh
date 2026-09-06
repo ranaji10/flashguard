@@ -22,6 +22,7 @@ echo "  INDEX"
 bash "$HERE/check-index.sh"; rc=$?
 [ "$rc" = 1 ] && exit 1
 [ "$rc" = 2 ] && { echo "  ^ not build-failing, but recruitment cannot start"; soft=1; }
+echo "  TRACKER"; bash "$HERE/check-tracker.sh" || exit 1
 echo "  WHAT WOULD GO PUBLIC"; bash "$HERE/check-public-safe.sh" || exit 1
 echo "  DESCRIPTOR PRIVACY"; bash "$HERE/check-descriptor-privacy.sh" || exit 1
 echo "  DATA"; python3 "$HERE/../data/merge.py" --check >/dev/null 2>&1 \

@@ -83,6 +83,7 @@ Read before writing the proposal or changing a design.
 | `tests/promote.py` | Descriptors to fixtures, with the ground-truth and consistency gates. |
 | `tests/webusb-probe.html` | Can a browser read what Tier A needs? **Not yet run.** |
 | `tests/check-index.sh` | Enforces this file: dangling paths, unindexed docs, broken editor instruction files, diverged copies. |
+| `tests/check-tracker.sh` | Enforces the tracker: no dead paths, a banner that is not older than the data, and a "what changed" filter that is not silently empty. |
 | `tests/handoff.sh` | Prints the handoff block. Run it before switching tools. |
 | `tests/review-packet.sh` | Builds the packet for a reviewing assistant: suite, diff, and the five questions. |
 | `tests/review-carry.sh` | The SECOND pass: unticked findings from earlier reviews. Never run before the blind answer is in. |

@@ -93,12 +93,21 @@ without parsing HTML. When Ranaji says **sync**, and nothing else:
 2. For every item in `appdata` that carries a `note`, decide whether the note has overtaken
    the item body `d`.
 3. Where it has, **rewrite `d`** so it states where the item stands NOW: the decision if one
-   was made, what it changed, and what remains. Set `touched` to today's date, and set
-   `state.updated` to the same date so the "Moved this sweep" filter works.
+   was made, what it changed, and what remains. Set `touched` to today's date on every item
+   you changed, and **change nothing else**. Do NOT set `state.updated`, and do NOT touch
+   `stamp`. `state.updated` is derived from the newest `touched` at render time, and the
+   stamp's sweep line is written by whoever did a full sweep. Setting either by hand once
+   already emptied the "Moved recently" filter and left the banner claiming a date no item
+   carried.
 4. **Never edit, summarise or delete a `note`.** Notes are Ranaji's own words and they are the
    trail, not the status. Seven of them were once overwritten with an assistant's summaries
    and it was caught only by accident. Append to a note, dated, or leave it alone.
 5. Run `python3 tests/tracker-export.py`, then `bash tests/all.sh`, then commit.
+   `tests/check-tracker.sh` runs inside the suite and fails the build if the tracker names a
+   file that does not exist, if the banner is older than the newest item that moved, or if
+   the filter that shows what changed would show nothing. Three dead paths from the `docs/`
+   split survived a week in this file before that check existed, because `check-index.sh`
+   only matches paths written in backticks and the tracker writes them as prose.
 
 The test for a synced item: **if the note were deleted, would the body still be true and
 useful?** An item whose body still reads like the original question, with the answer only in
