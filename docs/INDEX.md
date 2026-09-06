@@ -31,7 +31,7 @@ Read before writing the proposal or changing a design.
 | `docs/reasoning/delivery-platform.md` | Browser-first direction, what it changes about the matrix, what the bench kit stops proving. |
 | `docs/reasoning/testing-protocol.md` | How defects get caught before a device is plugged in. Pure functions, fixtures, the bash 3.2 rule. |
 | `docs/reasoning/prior-art.md` | OpenAndroidInstaller, LineageOS, postmarketOS. Positioning and corpus sources. |
-| `docs/reasoning/verifier-readiness-review.md` | The original design review. Historical, superseded in parts. |
+| `docs/reasoning/verifier-readiness-review.md` | The original design review, 26 Aug. **Carries a superseded-in-parts header naming exactly which conclusions were overtaken.** Method still sound; figures and plans are not. |
 
 ## Reference — facts and procedures you look up
 
@@ -73,6 +73,7 @@ Read before writing the proposal or changing a design.
 | `tests/promote.py` | Descriptors to fixtures, with the ground-truth and consistency gates. |
 | `tests/webusb-probe.html` | Can a browser read what Tier A needs? **Not yet run.** |
 | `tests/check-index.sh` | Enforces this file. |
+| `tests/check-public-safe.sh` | What would become public if the repo flipped today. Tracked files only. |
 
 ## Decided and deliberately not built
 

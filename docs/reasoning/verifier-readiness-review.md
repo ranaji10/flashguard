@@ -1,3 +1,26 @@
+> ## Superseded in parts — read this first
+>
+> *Header added 6 September 2026.*
+>
+> Written **26 August 2026**, before either bench run, before the classifier existed, and
+> before the NLnet open call was read. It sits in `reasoning/` because its method is still
+> sound, but several of its conclusions have since been overtaken by contact with hardware
+> and with the funder. **Do not quote a figure or a plan from this file without checking the
+> replacement.**
+>
+> | What this file says | Now superseded by |
+> |---|---|
+> | Delivery assumes a Linux bench environment | `docs/reasoning/delivery-platform.md` — browser first, the bench kit is a means to an end |
+> | The verifier is described as forthcoming, with no done criteria | `docs/reasoning/verifier-plan.md` — it still does not exist, and "done" is now defined |
+> | False-safe rate as a single headline metric | `docs/reasoning/verifier-plan.md` — it is a **pair**; zero alone is trivially gameable by abstaining on everything |
+> | Classifier design reasoned from first principles | `docs/reasoning/testing-protocol.md` and the two run logs — two defects were found only by contact with real devices |
+> | Prior-art figures (88 devices, 523 stars, 380 issues) | Read on 26 August. **All of them move.** Re-confirm before quoting. |
+> | Schedule as a calendar | `grant/schedule.md` — rewritten as milestones with payable criteria |
+>
+> What still holds: the tiering (A read-only, B simulation, C never before a grant
+> decision), the abstain-under-uncertainty discipline, the pure-function shape, and the
+> argument that a verifier which cannot say "I do not know" is worse than none.
+
 # Verifier Readiness Review
 
 > Assessment of the Repurpose folder and seven changes to strengthen the NLnet application.
