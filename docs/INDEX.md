@@ -74,6 +74,8 @@ Read before writing the proposal or changing a design.
 | `tests/webusb-probe.html` | Can a browser read what Tier A needs? **Not yet run.** |
 | `tests/check-index.sh` | Enforces this file. |
 | `tests/check-public-safe.sh` | What would become public if the repo flipped today. Tracked files only. |
+| `.vscode/settings.json` | Workspace settings: Copilot review and generation rules, and the exclusions that keep `library/` out of editor tooling. |
+| `.github/copilot-review-instructions.md` | The review rules Copilot is pointed at. |
 
 ## Decided and deliberately not built
 

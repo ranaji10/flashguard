@@ -1,0 +1,46 @@
+{
+  // Workspace settings for Flashguard. These apply ONLY when this folder is open, so
+  // they cannot follow you into unrelated projects, and they travel with the repository.
+  //
+  // OPEN ~/Repurpose/project AS THE WORKSPACE ROOT, not ~/Repurpose. Doing so puts
+  // library/ (338 MB of borrowed, differently-licensed material) and _superseded/
+  // entirely outside what any editor tooling can see. That is a stronger guarantee than
+  // any instruction below, because it removes the content rather than asking politely.
+
+  "github.copilot.chat.reviewSelection.instructions": [
+    { "file": ".github/copilot-review-instructions.md" },
+    { "text": "A wrong 'safe' verdict can brick a phone. Flag anything that turns an uncertain result into a confident one; missing evidence must stay 'unknown', never a default." },
+    { "text": "classify.sh, derive.sh and the verifier are pure functions over text. Flag any device I/O, network, filesystem or global state added to them." },
+    { "text": "Nothing may write to a device. Flag fastboot flash/erase/format/oem/flashing, adb root/remount/disable-verity, dd, mkfs." },
+    { "text": "Never read or store serial numbers, IMEI, IMSI, MAC, ICCID or Android ID. Flag getprop without an allowlist, 'adb devices' (use adb get-state), and lsusb -v that keeps iSerial." },
+    { "text": "Shell must run on bash 3.2. Flag declare -A, mapfile, readarray, ${v,,}, ${v^^}, coproc." },
+    { "text": "No machine-learning vocabulary. Nothing here is trained or inferred." }
+  ],
+
+  "github.copilot.chat.codeGeneration.instructions": [
+    { "file": ".github/copilot-review-instructions.md" },
+    { "text": "Shell must run on bash 3.2, which macOS ships. Never use declare -A, mapfile, readarray, ${v,,} or ${v^^}." },
+    { "text": "Never generate a command that writes to, flashes, erases or unlocks a device." },
+    { "text": "Never read a device serial: use 'adb get-state', not 'adb devices'; strip iSerial from lsusb output." },
+    { "text": "Prefer returning 'unknown' over inferring a value from an absent property." },
+    { "text": "Never reproduce content from ../library/. It is borrowed material under other licences and must not enter this GPL repository." }
+  ],
+
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    { "text": "Say what changed and why it matters, in plain sentences. No conventional-commit prefixes." },
+    { "text": "If the change fixes a defect, name what the defect would have caused." }
+  ],
+
+  // A safety net for the case where ~/Repurpose is opened instead of ~/Repurpose/project.
+  // Hidden from the explorer, excluded from search, and not watched.
+  "files.exclude":  { "**/library": true, "**/_superseded": true },
+  "search.exclude": { "**/library": true, "**/_superseded": true, "**/tests/real-descriptors": true },
+  "files.watcherExclude": { "**/library/**": true, "**/_superseded/**": true },
+
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.eol": "\n",
+  "[shellscript]": { "editor.tabSize": 2, "editor.insertSpaces": true },
+  "[python]": { "editor.tabSize": 4 },
+  "[markdown]": { "editor.wordWrap": "bounded", "editor.wrappingColumn": 92 }
+}
