@@ -95,7 +95,21 @@ if not fail:
     n = len(items)
     recent = len([i for _, i in items
                   if since and i.get("touched") and i["touched"] >= since])
-    print("  %d tracker items, %d moved in the seven days to %s; every path named exists"
-          % (n, recent, newest or "?"))
+    stamp2 = d.get("stamp") or {}
+    upd = d.get("updated") or ""
+    for _, i in items:
+        if i.get("touched") and i["touched"] > upd:
+            upd = i["touched"]
+    fp = "%s|%s|%s" % (upd, stamp2.get("swept") or "", stamp2.get("commit") or "")
+    for _, i in items:
+        fp += "|%s:%s:%s:%d:%d" % (i["id"], i["status"], i.get("touched") or "",
+                                   len(i.get("d") or ""), len(i.get("note") or ""))
+    h = 5381
+    for ch in fp:
+        h = ((h * 33) ^ ord(ch)) & 0xFFFFFFFF
+    print("  %d tracker items, %d moved in the seven days to %s; version %08x"
+          % (n, recent, newest or "?", h))
+    print("      every path named exists. The page prints this version in its banner --"
+          " if it shows another, that copy is behind.")
 sys.exit(fail)
 PY

@@ -12,14 +12,49 @@ each other.*
 
 They are the **same source**. The file is what gets published; the published page rebuilds
 that same file when Save is pressed. They diverge the moment one side is edited alone,
-and nothing detects that automatically — the repository cannot reach claude.ai and the
+and neither can detect that on its own — the repository cannot reach claude.ai and the
 page cannot reach the repository.
 
 **So the rule is: one side at a time, and export before switching.**
 
-Opened from Finder, the page works fully except Save, which says so plainly rather than
-failing silently. Everything typed is kept in that browser, and Export still produces the
-markdown.
+## The third copy, which was invisible
+
+There was a third copy nobody had counted: **the browser's own.** The page keeps what you
+type in `localStorage` so a note survives a closed tab before Save is pressed. That is
+worth having. What it did was worse than that.
+
+`localApply()` wrote its stored statuses and notes over the freshly loaded data for every
+item it had an entry for, and the "unpublished" flag only decided whether a message was
+shown. So a browser that had ever touched this page kept quietly re-applying its old
+snapshot over every version published afterwards. The same bytes rendered two different
+ways, and the browser won every argument with the file without saying so.
+
+Fixed 7 September:
+
+- **Opened from a file, browser storage is off entirely.** Double-click the file and you
+  see the file. Nothing is read, nothing is written.
+- **On the published page, stored edits carry the version they were made against** and are
+  re-applied only when that still matches. When it does not, the page shows what was
+  published, says how many unpublished changes this browser is holding, and gives you two
+  buttons: *Put my changes back*, or *Discard them*. Nothing merges behind anyone's back.
+- **Both copies print a version fingerprint** in the banner, and `OPEN.md` carries the same
+  string in its header. Three places compute it independently — the page in the browser,
+  `tests/tracker-export.py`, and `tests/check-tracker.sh` — so "are these the same version"
+  is answered by looking, not by trusting.
+
+## How to tell, in five seconds
+
+Open both. Compare the `version` in the banner.
+
+| What you see | What it means | What to do |
+|---|---|---|
+| Same fingerprint | The two copies agree | Nothing |
+| Page is behind the file | The file was edited and not republished | Ask a Claude session to republish from the file |
+| File is behind the page | Notes were typed and saved on the page | Export from the page, or ask a session to read it back |
+| A yellow banner offering two buttons | This browser is holding unpublished edits made against an older version | Read what it says, then choose |
+
+Opened from Finder the page works fully except Save, which says so plainly rather than
+failing silently. Export still produces the markdown.
 
 ## "sync", said to Copilot
 
