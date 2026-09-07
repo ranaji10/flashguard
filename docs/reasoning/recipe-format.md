@@ -66,6 +66,20 @@ partition and an already-identified asset; it contains no shell, fastboot, adb, 
 filesystem command. Unknown operation kinds are outside the model and therefore
 produce `cannot-verify`, rather than being guessed at.
 
+## Version 0.2 addition
+
+Version 0.2 keeps the v0.1 fields valid and adds `prerequisites`,
+`install_method`, and `source_fields_unused`. It drops `assets` and
+`operations.asset_id`; operations remain declarative `{kind, partition}` records.
+Each prerequisite is an object with open-vocabulary `state`, `required`,
+`declared_by`, and `source_evidence`. A declaration is not fingerprint evidence:
+`safe` requires the fingerprint to confirm every required state.
+
+The `prerequisites` key has three distinct meanings: absent means the author did
+not record whether prerequisites were considered; `{}` means the author declares
+that none are needed; and `null` is invalid because the authoring state is not
+machine-checkable. The verifier must preserve those distinctions.
+
 The target and every referenced asset carry device identity because a recipe can
 be structurally valid while an image belongs to another model or variant. The
 partition scheme is explicit because an A/B assumption must not be inferred from
