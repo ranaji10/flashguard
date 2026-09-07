@@ -1,0 +1,4 @@
+is_ab_device: true
+device_code: fixture-phone
+supported_device_codes:
+  - fixture-phone-global

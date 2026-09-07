@@ -1,0 +1,5 @@
+metadata:
+  device_name: Fixture Phone
+steps:
+  install:
+    - content: The bootloader must be unlocked before continuing.

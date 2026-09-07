@@ -33,6 +33,7 @@ Read before writing the proposal or changing a design.
 | `docs/reasoning/recipe-format.md` | The v0.1 JSON recipe shape accepted by the verifier and why it is declarative. |
 | `docs/reasoning/safe-case.md` | Why v0.1 has no defensible safe case and the minimum semantic addition needed for v0.2. |
 | `docs/reasoning/recipe-format-findings.md` | Five independent translations from OpenAndroidInstaller configs and the gaps they expose. |
+| `docs/reasoning/prerequisite-survey.md` | Definitions and measured prerequisite, partition, and identity field counts across three upstream sources. |
 | `docs/reasoning/delivery-platform.md` | Browser-first direction, what it changes about the matrix, what the bench kit stops proving. |
 | `docs/reasoning/testing-protocol.md` | How defects get caught before a device is plugged in. Pure functions, fixtures, the bash 3.2 rule. |
 | `docs/reasoning/prior-art.md` | OpenAndroidInstaller, LineageOS, postmarketOS. Positioning and corpus sources. |
@@ -78,6 +79,8 @@ Read before writing the proposal or changing a design.
 | `data/schema.md` | The record format, v0.4. |
 | `data/merge.py` | Contributions to canonical matrix. Validates, dedupes, reconciles. |
 | `data/coverage.py` | Tier A scoreboard and the paired verifier gate. |
+| `data/prerequisite_survey.py` | Pure text-in, record-out classifier for upstream prerequisite evidence. |
+| `data/survey_upstream.py` | Filesystem runner that counts the cloned upstream sources without importing their text. |
 | `data/recipes/` | The corpus. Five recipes, all `cannot-verify`, none safe. |
 | `tests/all.sh` | Everything checkable without a device. Run before every commit. |
 | `tests/promote.py` | Descriptors to fixtures, with the ground-truth and consistency gates. |

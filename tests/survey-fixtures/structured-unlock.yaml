@@ -1,0 +1,4 @@
+device_code: fixture-phone
+steps:
+  unlock_bootloader:
+    - command: fastboot_unlock

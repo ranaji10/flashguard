@@ -14,6 +14,8 @@ echo "  VERIFIER"
 bash "$HERE/run-verify.sh"; rc=$?
 [ "$rc" = 1 ] && exit 1
 [ "$rc" = 2 ] && { echo "  ^ not build-failing, but verifier implementation is still required"; soft=1; }
+echo "  PREREQUISITE SURVEY"
+python3 "$HERE/test_prerequisite_survey.py" || exit 1
 echo "  DISPUTED"
 bash "$HERE/check-disputed.sh"; rc=$?
 [ "$rc" = 2 ] && soft=1
