@@ -53,9 +53,14 @@ quoted inside the stored answer is not counted a second time.
 
 ## 2026-09-08 — 0e2041d — double checking before verifier build
 
-- [ ] tests/review-log-add.sh:4atches on substring, so a branch
-      name or explicit BASE containing "uncommitted" (e.g. fix-uncommitted-bug) would
-      produce a uncommitted-on- SHAreviewed committed work
+- [x] `tests/review-log-add.sh:43` decided whether a review covered uncommitted
+      work by matching the substring "uncommitted" inside a human sentence, so an
+      explicit BASE like `fix-uncommitted-bug` would have filed committed work as
+      uncommitted. Fixed in c85da82: the packet writes a MODE token as its own
+      field, so nothing has to infer the mode from prose.
+      (This finding also arrived truncated, the second in a row. cad6129 now
+      catches a line number running into mid-word text, which is that
+      failure's signature.)
 
 <details><summary>the review, as it came back</summary>
 
