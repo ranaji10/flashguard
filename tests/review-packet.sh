@@ -35,6 +35,15 @@ else
   BASE="HEAD~1"; WHERE="the last commit, $(git log -1 --format=%h)"
 fi
 
+# Record what this packet actually covered, so review-log-add.sh files it against the
+# right thing. On 8 September a packet was built while two trailing-newline edits were
+# uncommitted: it reviewed those two characters, and the log filed the result against the
+# previous COMMIT -- recording a clean review of a 269-line measurement that had never been
+# looked at. A false record of assurance is worse than no review, because carry then reports
+# nothing outstanding and everyone relaxes.
+printf '%s|%s|%s\n' "$WHERE" "$(git log -1 --format=%h)" "$(date -u +%Y-%m-%dT%H:%MZ)" \
+  > "$(git rev-parse --git-dir)/review-packet-ref"
+
 echo "===== REVIEW PACKET  $(date -u +%Y-%m-%dT%H:%MZ) ====="
 echo "reviewing: $WHERE"
 echo

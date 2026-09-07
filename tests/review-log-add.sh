@@ -31,7 +31,24 @@ LOG="docs/reference/review-log.md"
 MARK="<!-- NEWEST REVIEW DIRECTLY BELOW -->"
 
 LABEL="${1:-}"
-SHA="${2:-$(git log -1 --format=%h)}"
+REF="$(git rev-parse --git-dir)/review-packet-ref"
+
+# What the packet ACTUALLY reviewed, not what happens to be HEAD now. A packet built on a
+# dirty tree reviews uncommitted work, and filing that against the last commit claims the
+# commit was reviewed when it was not.
+if [ -n "${2:-}" ]; then
+  SHA="$2"
+elif [ -f "$REF" ]; then
+  W="$(cut -d'|' -f1 "$REF")"; H="$(cut -d'|' -f2 "$REF")"
+  case "$W" in
+    *uncommitted*) SHA="uncommitted-on-$H" ;;
+    *)             SHA="$H" ;;
+  esac
+else
+  SHA="$(git log -1 --format=%h)"
+  echo "  no packet reference found; filing against HEAD. If the packet reviewed" >&2
+  echo "  uncommitted work, this heading will name the wrong thing." >&2
+fi
 
 if [ -z "$LABEL" ]; then
   echo "usage: pbpaste | bash tests/review-log-add.sh \"short label\" [sha]" >&2

@@ -51,6 +51,58 @@ quoted inside the stored answer is not counted a second time.
 
 <!-- NEWEST REVIEW DIRECTLY BELOW -->
 
+## 2026-09-08 — 999ad74 — before the verifier build
+
+**VOID. This did not review 999ad74.** The packet was built while two trailing-newline
+edits were uncommitted, so it diffed those two characters and nothing else, and the filer
+stamped it with the last commit hash. The 269-line coverage measurement in 999ad74 has
+never been reviewed. Kept rather than deleted, because a log that quietly loses its own
+mistakes is not a record.
+
+Fixed: `review-packet.sh` now writes what it covered to `.git/review-packet-ref`, and
+`review-log-add.sh` files against that rather than assuming HEAD.
+
+Nothing found. Recorded because a log of only non-empty reviews is a biased log, and because "has this been reviewed at all" is a question worth being able to answer.
+
+<details><summary>the review, as it came back</summary>
+
+```
+The diff is clear: both files had their final line missing a trailing newline, and the only change is adding that trailing newline. Let me confirm there's nothing else by checking what the review packet's "1 OPEN DISAGREEMENT" and "PLACEHOLDERS" refer to, since those are suite outputs not part of my review scope.
+
+The diff is two files, each with a single-character change: a missing newline at end-of-file is added. That's the entire content.
+
+1. What changed that was not asked for?
+
+Nothing substantive changed. Both edits add a trailing newline to the final line of the file — data/recipe_format_coverage.py:119 and docs/reasoning/recipe-format-coverage.md:143. No logic, no prose, no data was altered. Whether this was asked for or not, it changes nothing that matters.
+
+2. What did it decide that was not already in a file?
+
+Nothing. No decision is expressed in either edit.
+
+3. Does any test pass for a reaing correct?
+
+Not from this diff. The change ng newline). It cannot affecttest outcomes in either direction.
+
+4. Does any file, name or comment describe something as existing that does not?
+
+No. The content of both files is unchanged except for the newline character.
+
+5. Does anything here create a path to a false safe?
+
+No. Neither file is on the verification path. recipe_format_coverage.py is a measurement
+script; recipe-format-coverage.. Neither touchesflashguard/verify.py or any verdict logic.
+
+---
+
+FINDINGS
+none
+```
+
+</details>
+
+---
+
+
 ## 2026-09-07 — 047af5a — recipes indeed have prerequisites
 
 - [x] `tests/tracker-export.py:60` the `fingerprint()` docstring still said the hash
