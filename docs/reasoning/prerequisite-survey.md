@@ -50,10 +50,11 @@ of prerequisite and partition fields.
 OpenAndroidInstaller is surveyed as structured YAML under its device-config directory.
 postmarketOS is surveyed as `deviceinfo` files in pmaports; shell assignments are
 treated as structured fields, while comments and free-text values are prose. LineageOS
-is surveyed as wiki/device documentation, not as a machine-readable config corpus.
-Its pages may be counted for prose mentions and identity when the page body names
-them, but structural-field counts are reported as not mechanically surveyable rather
-than estimated.
+metadata is surveyed as the machine-readable YAML under `_data/devices/`, which is why
+the results include structural counts for 103 unlock and 281 partition records. The
+737 install pages are separately linked to a shared template and per-device metadata;
+their template-aware procedure pass is still outstanding, so the metadata counts are
+a floor for LineageOS procedure evidence, not the answer for the rendered guides.
 
 ## Fixtures and method
 
