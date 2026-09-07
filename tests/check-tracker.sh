@@ -102,11 +102,12 @@ if not fail:
             upd = i["touched"]
     fp = "%s|%s|%s" % (upd, stamp2.get("swept") or "", stamp2.get("commit") or "")
     for _, i in items:
-        fp += "|%s:%s:%s:%d:%d" % (i["id"], i["status"], i.get("touched") or "",
-                                   len(i.get("d") or ""), len(i.get("note") or ""))
+        fp += "|%s:%s:%s:%s:%s" % (i["id"], i["status"], i.get("touched") or "",
+                                   i.get("d") or "", i.get("note") or "")
     h = 5381
-    for ch in fp:
-        h = ((h * 33) ^ ord(ch)) & 0xFFFFFFFF
+    _u = fp.encode("utf-16-le")
+    for _k in range(0, len(_u), 2):
+        h = ((h * 33) ^ int.from_bytes(_u[_k:_k + 2], "little")) & 0xFFFFFFFF
     print("  %d tracker items, %d moved in the seven days to %s; version %08x"
           % (n, recent, newest or "?", h))
     print("      every path named exists. The page prints this version in its banner --"

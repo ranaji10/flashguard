@@ -65,11 +65,22 @@ def fingerprint(state):
                       stamp.get("swept") or "", stamp.get("commit") or "")
     for sec in state["sections"]:
         for i in sec["items"]:
-            s += "|%s:%s:%s:%d:%d" % (i["id"], i["status"], i.get("touched") or "",
-                                      len(i.get("d") or ""), len(i.get("note") or ""))
+            s += "|%s:%s:%s:%s:%s" % (i["id"], i["status"], i.get("touched") or "",
+                                      i.get("d") or "", i.get("note") or "")
+    return _djb2(s)
+
+
+def _djb2(s):
+    """djb2 over UTF-16 code units, which is what String.charCodeAt gives the page.
+
+    Iterating Python characters would agree only inside the BMP, so one emoji in a
+    note would make the file and the page disagree about being the same version --
+    a false alarm from the mechanism that exists to prevent false confidence.
+    """
     h = 5381
-    for ch in s:
-        h = ((h * 33) ^ ord(ch)) & 0xFFFFFFFF
+    units = s.encode("utf-16-le")
+    for k in range(0, len(units), 2):
+        h = ((h * 33) ^ int.from_bytes(units[k:k + 2], "little")) & 0xFFFFFFFF
     return "%08x" % h
 
 
