@@ -29,6 +29,10 @@ below.
   I/O, no network, no filesystem, no global state.
 - Add a test fixture in the same commit as a new device class or vendor.
 - Run `bash tests/all.sh` before committing.
+- **Bound what you read and what you print.** Never cat a whole file to find one thing, and
+  never paste a full log into a reply: use `sed -n 'A,Bp'`, `grep -n`, `head`, or the error
+  count. A wall of output is context spent to say nothing, and it buries the line that
+  mattered.
 - Prefer abstaining and saying so over guessing.
 
 ## Scope
@@ -85,36 +89,16 @@ to avoid doing the work.
 
 ## "sync" — the one-word command
 
-The tracker source is `docs/tracker/open-items.html`. Its data is a single
-`<script id="appdata" type="application/json">` block, so it can be read and rewritten
-without parsing HTML. When Ranaji says **sync**, and nothing else:
+The procedure is `docs/reference/sync-protocol.md`. **Read it before running a sync**, and
+follow it rather than improvising: this file carries only the two rules that cause damage if
+you get them wrong.
 
-1. Read `docs/tracker/open-items.html`.
-2. For every item in `appdata` that carries a `note`, decide whether the note has overtaken
-   the item body `d`.
-3. Where it has, **rewrite `d`** so it states where the item stands NOW: the decision if one
-   was made, what it changed, and what remains. Set `touched` to today's date on every item
-   you changed, and **change nothing else**. Do NOT set `state.updated`, and do NOT touch
-   `stamp`. `state.updated` is derived from the newest `touched` at render time, and the
-   stamp's sweep line is written by whoever did a full sweep. Setting either by hand once
-   already emptied the "Moved recently" filter and left the banner claiming a date no item
-   carried.
-4. **Never edit, summarise or delete a `note`.** Notes are Ranaji's own words and they are the
-   trail, not the status. Seven of them were once overwritten with an assistant's summaries
-   and it was caught only by accident. Append to a note, dated, or leave it alone.
-5. Run `python3 tests/tracker-export.py`, then `bash tests/all.sh`, then commit.
-   `tests/check-tracker.sh` runs inside the suite and fails the build if the tracker names a
-   file that does not exist, if the banner is older than the newest item that moved, or if
-   the filter that shows what changed would show nothing. Three dead paths from the `docs/`
-   split survived a week in this file before that check existed, because `check-index.sh`
-   only matches paths written in backticks and the tracker writes them as prose.
-
-The test for a synced item: **if the note were deleted, would the body still be true and
-useful?** An item whose body still reads like the original question, with the answer only in
-the note underneath, has been annotated rather than synced.
-
-Full rules, including what the published copy at claude.ai can and cannot do, are in
-`docs/reference/sync-protocol.md`.
+- **Never edit, summarise or delete a `note`.** Notes are Ranaji's own words and they are the
+  trail, not the status. Seven were once overwritten with an assistant's summaries and it was
+  caught only by accident. Append, dated, or leave it alone.
+- **Set `touched` on the items you changed and nothing else.** Not `state.updated`, not
+  `stamp`. Setting either by hand once emptied the "Moved recently" filter and left the
+  banner claiming a date no item carried.
 
 ## Generated files — never edit directly
 
@@ -126,16 +110,9 @@ Full rules, including what the published copy at claude.ai can and cannot do, ar
 
 ## Being reviewed
 
-Your work is reviewed by a session that has never seen this conversation, and that is
-deliberate. Do not write it a summary — a reviewer given the producer's account of the
-work grades the account. Commit, do not push, then:
-
-    bash tests/review-packet.sh | pbcopy
-
-That is the whole handoff. Findings come back into `docs/reference/review-log.md` as
-unticked boxes, and `bash tests/review-carry.sh` re-surfaces them in later reviews until
-someone ticks them by hand. The full ritual, every command in order, is in
-`docs/reference/review-workflow.md`.
+Commit, do not push, then `bash tests/review-packet.sh | pbcopy`. That is the whole handoff.
+**Never write the reviewer a summary**: a reviewer given the producer's account of the work
+grades the account. The full ritual is `docs/reference/review-workflow.md`.
 
 ## Handing back to a Claude session
 
