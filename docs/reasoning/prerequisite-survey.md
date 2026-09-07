@@ -111,11 +111,20 @@ the mechanically surveyable configuration units below:
 | partition scheme | 281 | 0 | 456 | 737 |
 | device identity | 737 | 0 | 0 | 737 |
 
-The install pages are a different source shape: they are template-backed wiki prose,
-with device-specific content assembled through includes. This text-only survey did
-not render those includes, so their prerequisite, partition, and identity prose
-counts are **not mechanically surveyable**. The denominator is 737 pages, but no
-prose-only or not-at-all estimate is supplied for them.
+The install pages are a different source shape: each page includes the shared
+structured `templates/device_install.md`, and its `device` front-matter value selects
+the corresponding `_data/devices/*.yml` record. The template branches on structured
+per-device variables including `custom_unlock_cmd`, `before_install`,
+`before_recovery_install`, `install_method`, `is_ab_device`, `uses_twrp`, and recovery
+fields. Therefore the procedure shape is mechanically recoverable from the template
+and metadata without parsing rendered HTML: unlock/recovery prerequisites, firmware
+requirements, partition scheme, install method, and branch-dependent operations can
+be enumerated.
+
+The current text-only runner did not implement that template evaluation, so it does
+not claim counts for the 737 install-page procedures. This is an implementation gap
+in the survey, not evidence that the pages are unsurveyable. The denominator is 737
+pages; procedure-field counts remain unreported until a template-aware pass is run.
 
 The survey command was:
 

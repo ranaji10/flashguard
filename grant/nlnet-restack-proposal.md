@@ -60,7 +60,8 @@ installation is the barrier. Flashing is model-specific, and a single wrong step
 incompatible image, a mis-ordered command, a bootloader assumed unlockable that is not —
 can permanently brick the device.
 
-Tooling that *executes* provisioning is mature. OpenAndroidInstaller covers 88 devices,
+Tooling that *executes* provisioning is mature. OpenAndroidInstaller covers 90 devices
+(count read 7 September 2026),
 LineageOS ships a browser installer, vendors ship their own flashers. Tooling that
 *verifies* does not exist. None of these can answer, before anything runs, whether a
 given recipe is safe for a given device, and none exposes that judgement as a component
@@ -188,7 +189,7 @@ for community firmware is mature; verification tooling does not exist.**
 
 **OpenAndroidInstaller** (<https://github.com/openandroidinstaller-dev/openandroidinstaller>)
 is the closest existing project. GPL-3.0-or-later, actively maintained, per-device
-configuration files covering 88 devices across Fairphone, Pixel, Motorola, OnePlus,
+configuration files covering 90 devices (count read 7 September 2026) across Fairphone, Pixel, Motorola, OnePlus,
 Samsung, Sony and Xiaomi. It is a real achievement and it is the tool this project is
 built to serve. Its own README states the position precisely: *"use at your own risk!
 While many people tested the application so far and we heard of no bricked devices, things
