@@ -51,6 +51,61 @@ quoted inside the stored answer is not counted a second time.
 
 <!-- NEWEST REVIEW DIRECTLY BELOW -->
 
+## 2026-09-07 — 047af5a — recipes indeed have prerequisites
+
+- [x] `tests/tracker-export.py:60` the `fingerprint()` docstring still said the hash
+      covers "the lengths of the body and note" while the code hashes the content. It
+      described the behaviour this commit removed. Fixed 7 Sep.
+
+**This entry arrived corrupted, and that is worth keeping rather than tidying away.** The
+stored answer below is missing runs of characters ("or commexisting that does not", "a
+versiohe project tracker"), and the finding line was unreadable as filed. The clipboard was
+copied while the CLI was still rendering, so `pbpaste` took a partly-written buffer. The
+finding itself was correct and has been rewritten above from the readable fragments.
+`tests/review-log-add.sh` now refuses input that looks truncated, because a finding nobody
+can read is carried forward for ever and can never be honestly ticked.
+
+<details><summary>the review, as it came back</summary>
+
+```
+Here is my review.
+
+Answers
+
+1. What changed that was not asked for?
+
+Nothing. Both files contain the same change: the fingerprint string now includes the full body and note content instead of their lengths, and the hash iterates UTF-16 code units instead of Python ord() on characters. The JS page (not version-controlled) already carries the matching update. The scope is tight.
+
+2. What did it decide that was not already in a file?
+
+Nothing new was decided. The fingerprint's purpose (detect drift between file and published page) and the hash algorithm (djb2) are unchanged. The implementation was corrected, not redesigned.
+
+3. Does any test pass for a reason other than the code being correct?
+
+No. check-tracker.sh computes the fingerprint independently from tracker-export.py (one parses the HTML inline, the other is a standalone script), and both must agree with the JavaScript page for the version banner to match. The hash is computed against real tracker data, not a stub.
+
+4. Does any file, name or commexisting that does not?
+
+Yes. tests/tracker-export.py:60cstring says the hash covers "the lengths of the body and note". The code on lines 68–69 now hashes the bodies themselves.
+The docstring describes the oldat this commit replaced.
+
+5. Does anything here create a
+
+No. The fingerprint is a versiohe project tracker. It has noconnection to flashguard/verify.py or the verdict logic.
+
+---
+
+FINDINGS
+- [ ] tests/tracker-export.py:6ths of the body and note" but the
+  code now hashes the full content, not lengths; it describes the pre-fix behavior
+  that this commit removed
+```
+
+</details>
+
+---
+
+
 ## 2026-09-07 — 474df9e — the workflow doc reporting itself as a disagreement
 
 Reviewed blind by the CLI, first real use of this workflow. It answered all five questions,

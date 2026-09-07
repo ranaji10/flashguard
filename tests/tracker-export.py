@@ -57,8 +57,10 @@ def fingerprint(state):
 
     Two copies of the tracker exist on purpose: the file and the published page. This is how
     "are these the same version" gets answered by looking rather than by trusting. It covers
-    only what a person edits or a sweep moves -- status, touched, the stamp, and the lengths
-    of the body and note -- so reformatting does not change it and an edit always does.
+    what a person edits or a sweep moves: status, touched, the stamp, and the body and note
+    CONTENT. It hashed their lengths until 047af5a, which meant a reword of the same length
+    reported the two copies as identical -- a check saying "the same" about two things that
+    differ.
     """
     stamp = state.get("stamp") or {}
     s = "%s|%s|%s" % (state.get("updated") or "",

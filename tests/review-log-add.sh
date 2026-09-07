@@ -17,6 +17,14 @@
 #
 # It will not accept a ticked box. Only a person ticks, and a reviewer that ticks its own
 # findings has marked its own homework.
+#
+# It also will not accept input that looks TRUNCATED. On 7 September a review was filed from
+# a clipboard copied while the CLI was still rendering, and pbpaste took a partly-written
+# buffer: whole runs of characters were missing, and the finding line read
+# "tracker-export.py:6ths of the body and note" -- unreadable, unfixable, and destined to be
+# carried forward for ever because nobody can honestly tick something they cannot read. The
+# guard costs one re-copy. Set SKIP_SANITY=1 to file anyway when a terse review is genuinely
+# correct and simply does not look like the usual shape.
 set -u
 cd "$(git rev-parse --show-toplevel)" || exit 1
 LOG="docs/reference/review-log.md"
@@ -41,7 +49,7 @@ trap 'rm -f "$IN"' EXIT
 cat > "$IN"
 
 python3 - "$LOG" "$MARK" "$LABEL" "$SHA" "$IN" <<'PY'
-import datetime, re, sys
+import datetime, os, re, sys
 
 log, mark, label, sha, inp = sys.argv[1:6]
 raw = open(inp, encoding="utf-8").read().rstrip()
@@ -65,6 +73,26 @@ for ln in lines:
         findings.append("      " + ln.strip())
     else:
         keep = False
+
+# ---- looks-truncated guard ------------------------------------------------
+if not os.environ.get("SKIP_SANITY"):
+    complaints = []
+    # every question answered? a partly-copied buffer usually loses the tail.
+    missing = [n for n in "12345" if not re.search(r'^\s*%s[.)]' % n, raw, re.M)]
+    if missing:
+        complaints.append("the answer has no question %s. The packet asks five, so this "
+                          "looks like a partial copy." % ", ".join(missing))
+    # a finding must name something openable.
+    for f in findings:
+        if not f.startswith("- [ ]"):
+            continue
+        if not re.search(r'[\w./-]+\.(py|sh|md|js|json|jsonl|html|yaml)(:\d+)?', f):
+            complaints.append("this finding names no file you could open:\n      %s" % f)
+    if complaints:
+        sys.exit("this does not look like a whole review:\n  - " +
+                 "\n  - ".join(complaints) +
+                 "\n\nRe-copy the answer once the CLI has finished printing, and try again."
+                 "\nIf it really is fine, SKIP_SANITY=1 pbpaste | bash tests/review-log-add.sh ...")
 
 today = datetime.date.today().isoformat()
 out = ["## %s — %s — %s" % (today, sha, label), ""]
