@@ -40,3 +40,8 @@ No synthetic safe recipe is added: the current real corpus provides no evidence 
 #   position A: yes -- asset and target variants are safety-relevant identity evidence
 #   position B: no -- the current corpus exposes device-code aliases, not a settled variant concept
 #   settles it: no test can — needs a decision from Ranaji
+
+# DISPUTED: should a safe verdict expire when fingerprint evidence may be stale after an OTA?
+#   position A: yes -- a fingerprint is a snapshot and safe evidence should have a freshness boundary
+#   position B: no -- expiry belongs to the caller because the verifier receives no time model
+#   settles it: no test can — needs a decision from Ranaji

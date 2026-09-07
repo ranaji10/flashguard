@@ -12,3 +12,5 @@ fi
 
 python3 "$HERE/test_verify_contract.py"
 python3 "$HERE/test_verdict_gap.py"
+python3 "$HERE/test_verify_v2.py"
+python3 "$HERE/test_false_safe_gate.py"

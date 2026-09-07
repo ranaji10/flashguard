@@ -9,7 +9,7 @@ from collections import Counter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PATH = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "device-matrix.jsonl")
-RECIPE_DIR = os.path.join(HERE, "recipes")
+RECIPE_DIRS = (os.path.join(HERE, "recipes"), os.path.join(HERE, "recipes-v0.2"))
 ROOT = os.path.dirname(HERE)
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
@@ -41,34 +41,94 @@ def bar(label, count, total, width=28):
     return "  %-22s %s %d" % (label[:22], "#" * fill + "." * (width - fill), count)
 
 
-def corpus_runs():
+def corpus_runs(recipe_dir):
     runs = []
-    if not os.path.isdir(RECIPE_DIR):
+    if not os.path.isdir(recipe_dir):
         return runs
-    for name in sorted(os.listdir(RECIPE_DIR)):
+    for name in sorted(os.listdir(recipe_dir)):
         if not name.endswith(".json"):
             continue
-        path = os.path.join(RECIPE_DIR, name)
+        path = os.path.join(recipe_dir, name)
         with open(path, encoding="utf-8") as fh:
             recipe = json.load(fh)
         # The declared target is an explicit format fixture, not a hardware claim.
-        result = verify(dict(recipe.get("target", {})), recipe)
+        # THE FINGERPRINT COMES FROM THE MATRIX, NEVER FROM THE RECIPE.
+        #
+        # This replay used to pass the recipe's own `target` block as the fingerprint, so
+        # every recipe was checked against itself: device identity matched by construction,
+        # and any required state the recipe happened to name about itself would have counted
+        # as evidence that the device was in it. That is a false safe manufactured by the
+        # harness rather than found by the verifier, and it is the same circularity
+        # promote.py refuses when a descriptor's expected class came from the classifier.
+        #
+        # A recipe with no matching real device gets an EMPTY fingerprint: no evidence, so
+        # the verifier abstains and says which field it wanted. That is the honest answer,
+        # and it makes `decided` bounded by how many devices have actually been captured.
+        fingerprint, source = fingerprint_for(recipe)
+        result = verify(fingerprint, recipe)
         runs.append({
             "recipe_id": recipe.get("recipe_id", name),
             "human_assessment": recipe.get("human_assessment"),
             "expected": recipe.get("expected_verdict"),
             "verdict": result.get("verdict"),
+            "paired": source is not None,
+            "fingerprint_source": source,
         })
     return runs
 
 
+def matrix_fingerprints():
+    """Real device fingerprints from the matrix, keyed by product_device, lowercased."""
+    index = {}
+    records, _ = load(PATH)
+    for r in records:
+        android = (r.get("detected") or {}).get("android") or {}
+        device = android.get("product_device")
+        if not device or device == "not_applicable":
+            continue
+        # first capture wins; later ones are the same device in another mode
+        index.setdefault(device.lower(), (android, r.get("record_id") or r.get("device_key")))
+    return index
+
+
+def fingerprint_for(recipe):
+    """The real fingerprint for this recipe's target device, or an empty one.
+
+    Returns (fingerprint, source). source is None when no device in the matrix matches,
+    which is a statement about the matrix rather than about the verifier.
+    """
+    target = recipe.get("target") or {}
+    device = (target.get("product_device") or "").lower()
+    hit = matrix_fingerprints().get(device)
+    if hit is None:
+        return {}, None
+    return dict(hit[0]), hit[1]
+
+
+def enforce_false_safe_gate(runs):
+    false_safe = sum(1 for run in runs if run["expected"] == "unsafe" and run["verdict"] == "safe")
+    if false_safe:
+        print("    FALSE SAFE: %d -- BUILD MUST FAIL" % false_safe)
+        raise SystemExit(1)
+
+
 def report_corpus_runs():
-    runs = corpus_runs()
     print("  CORPUS REPLAY")
-    if not runs:
-        print("    no recipe files")
-        print()
-        return
+    all_runs = []
+    for label, recipe_dir in (("v0.1", RECIPE_DIRS[0]), ("v0.2", RECIPE_DIRS[1])):
+        runs = corpus_runs(recipe_dir)
+        all_runs.extend(runs)
+        print("    %s" % label)
+        if not runs:
+            print("      no recipe files")
+            continue
+        report_corpus_group(runs)
+    enforce_false_safe_gate(all_runs)
+    print("    These are format fixtures, not hardware validation.")
+    print()
+
+
+def report_corpus_group(runs):
     counts = Counter(run["verdict"] for run in runs)
     false_safe = sum(1 for run in runs
                      if run["expected"] == "unsafe" and run["verdict"] == "safe")
@@ -78,18 +138,22 @@ def report_corpus_runs():
     information_loss = sum(1 for run in runs
                            if run["human_assessment"] in ("safe", "unsafe")
                            and run["expected"] not in ("safe", "unsafe"))
-    print("    recipes                 %d" % len(runs))
-    print("    safe                    %d" % counts.get("safe", 0))
-    print("    unsafe                  %d" % counts.get("unsafe", 0))
-    print("    cannot-verify           %d" % counts.get("cannot-verify", 0))
-    print("    false safes             %d" % false_safe)
-    print("    decided                 %d / %d (%.0f%%)" %
-          (decided, len(runs), 100.0 * decided / len(runs)))
-    print("    information loss        %d / %d definite human assessments (%.0f%%)" %
-          (information_loss, definite_human,
-           100.0 * information_loss / definite_human if definite_human else 0))
-    print("    These are format fixtures, not hardware validation.")
-    print()
+    print("      recipes                 %d" % len(runs))
+    print("      safe                    %d" % counts.get("safe", 0))
+    print("      unsafe                  %d" % counts.get("unsafe", 0))
+    print("      cannot-verify           %d" % counts.get("cannot-verify", 0))
+    print("      false safes             %d" % false_safe)
+    print("      decided                 %d / %d (%.0f%%)" %
+      (decided, len(runs), 100.0 * decided / len(runs)))
+    print("      information loss        %d / %d definite human assessments (%.0f%%)" %
+      (information_loss, definite_human,
+       100.0 * information_loss / definite_human if definite_human else 0))
+    paired = sum(1 for run in runs if run.get("paired"))
+    print("      paired with a real device %d / %d" % (paired, len(runs)))
+    if paired < len(runs):
+        print("      decided cannot exceed paired: a recipe with no captured device has no")
+        print("      evidence to check against, so it abstains. That is a gap in the matrix,")
+        print("      not in the verifier, and it closes by capturing devices.")
 
 
 def main():
