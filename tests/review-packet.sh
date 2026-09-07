@@ -27,12 +27,15 @@
 set -u
 cd "$(git rev-parse --show-toplevel)" || exit 1
 
+# MODE is the machine field. WHERE is for humans. A reader that has to infer the mode by
+# looking for a word inside a sentence will one day find it in "explicit range
+# fix-uncommitted-bug..HEAD" and file a review against the wrong thing.
 if [ $# -ge 1 ]; then
-  BASE="$1"; WHERE="explicit range $BASE..HEAD"
+  MODE="range";  BASE="$1"; WHERE="explicit range $BASE..HEAD"
 elif [ -n "$(git status --porcelain)" ]; then
-  BASE="HEAD";   WHERE="uncommitted work in the tree"
+  MODE="dirty";  BASE="HEAD";   WHERE="uncommitted work in the tree"
 else
-  BASE="HEAD~1"; WHERE="the last commit, $(git log -1 --format=%h)"
+  MODE="commit"; BASE="HEAD~1"; WHERE="the last commit, $(git log -1 --format=%h)"
 fi
 
 # Record what this packet actually covered, so review-log-add.sh files it against the
@@ -41,8 +44,8 @@ fi
 # previous COMMIT -- recording a clean review of a 269-line measurement that had never been
 # looked at. A false record of assurance is worse than no review, because carry then reports
 # nothing outstanding and everyone relaxes.
-printf '%s|%s|%s\n' "$WHERE" "$(git log -1 --format=%h)" "$(date -u +%Y-%m-%dT%H:%MZ)" \
-  > "$(git rev-parse --git-dir)/review-packet-ref"
+printf '%s|%s|%s|%s\n' "$MODE" "$WHERE" "$(git log -1 --format=%h)" \
+  "$(date -u +%Y-%m-%dT%H:%MZ)" > "$(git rev-parse --git-dir)/review-packet-ref"
 
 echo "===== REVIEW PACKET  $(date -u +%Y-%m-%dT%H:%MZ) ====="
 echo "reviewing: $WHERE"

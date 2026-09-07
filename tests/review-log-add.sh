@@ -39,10 +39,10 @@ REF="$(git rev-parse --git-dir)/review-packet-ref"
 if [ -n "${2:-}" ]; then
   SHA="$2"
 elif [ -f "$REF" ]; then
-  W="$(cut -d'|' -f1 "$REF")"; H="$(cut -d'|' -f2 "$REF")"
-  case "$W" in
-    *uncommitted*) SHA="uncommitted-on-$H" ;;
-    *)             SHA="$H" ;;
+  M="$(cut -d'|' -f1 "$REF")"; H="$(cut -d'|' -f3 "$REF")"
+  case "$M" in
+    dirty) SHA="uncommitted-on-$H" ;;
+    *)     SHA="$H" ;;
   esac
 else
   SHA="$(git log -1 --format=%h)"

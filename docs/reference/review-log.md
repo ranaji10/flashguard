@@ -51,6 +51,63 @@ quoted inside the stored answer is not counted a second time.
 
 <!-- NEWEST REVIEW DIRECTLY BELOW -->
 
+## 2026-09-08 — 0e2041d — double checking before verifier build
+
+- [ ] tests/review-log-add.sh:4atches on substring, so a branch
+      name or explicit BASE containing "uncommitted" (e.g. fix-uncommitted-bug) would
+      produce a uncommitted-on- SHAreviewed committed work
+
+<details><summary>the review, as it came back</summary>
+
+```
+Good. Now I have what I need to answer the five questions about commit 0e2041d.
+
+---
+
+1. What changed that was not asked for?
+
+The two trailing-newline additions in data/recipe_format_coverage.py:119 and docs/reasoning/recipe-format-coverage.md:143 are cosmetic whitespace fixes — not substantive, not harmful, and not on any verification path. Whether they were asked for is unknowable from the diff; either way, they change nothing that matters.
+
+The remaining three files — docs/reference/review-log.md, tests/review-log-add.sh, and tests/review-packet.sh — all address one thing: the filing process was stamping reviews against the wrong commit. That is a single fix across three files. Nothing in the diff introduces a feature, a concept, or a capability beyond correcting the logging plumbing.
+
+2. What did it decide that was
+                                                                                          One decision is made: review-paence file(.git/review-packet-ref) and review-log-add.sh reads it to determine the SHA for the      heading. This decision is documsts/review-packet.sh:38–43 andtests/review-log-add.sh:36–38, and the VOID header in docs/reference/review-log.md:56–63  records why.
+                                                                                          The pipe-delimited format (WHERreview-packet.sh:44 is notdocumented anywhere as a contract — it exists only implicitly, coupled between the printf at line 44 and the cut at testss is fine for two scripts in thesame directory, but it is a decision that lives only in code, not in prose.               
+3. Does any test pass for a reason other than the code being correct?                     
+The new logic has a fallback: when no review-packet-ref file exists, review-log-add.sh:48 falls back to $(git log -1 --foing. This means the old behaviour is preserved as a degraded path — existing tests that never build a packet first still work. That is correct rather th tells the user the heading mayname the wrong thing.
+
+The case match at review-log-add.sh:43–46 tests $W for *uncommitted*. The packet writes
+WHERE as the first field (tests WHERE is set to "uncommittedwork in the tree" at line 33. The glob *uncommitted* matches this. However, it would also
+match any explicit BASE argumento contain the substring"uncommitted" — e.g., a branch named fix-uncommitted-bug would produce WHERE="explicit
+range fix-uncommitted-bug..HEADted*, and the SHA would bewritten as uncommitted-on-<hash> when it should not be. This is not a test-correctness
+issue per se, but it is a fragi
+
+4. Does any file, name or commexisting that does not?
+
+The VOID entry at docs/referenc
+
+▎ Fixed: review-packet.sh now wgit/review-packet-ref, andreview-log-add.sh files against that rather than assuming HEAD.
+
+This describes the fix as already done, and the code confirms it does exist (review-packet.sh:44–45, reviewstale descriptions found.
+
+5. Does anything here create a
+
+No. None of these files are on ipe_format_coverage.py is ameasurement script. recipe-format-coverage.md is a reasoning document. The three
+review-tooling files are test iand label reviews. Nothing inthis diff touches flashguard/verify.py, the verdict contract, any recipe, or any schema.
+
+---
+
+FINDINGS
+- [ ] tests/review-log-add.sh:4atches on substring, so a branch
+  name or explicit BASE containing "uncommitted" (e.g. fix-uncommitted-bug) would
+  produce a uncommitted-on- SHAreviewed committed work
+```
+
+</details>
+
+---
+
+
 ## 2026-09-08 — 999ad74 — before the verifier build
 
 **VOID. This did not review 999ad74.** The packet was built while two trailing-newline
