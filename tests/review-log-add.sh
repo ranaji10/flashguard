@@ -105,6 +105,12 @@ if not os.environ.get("SKIP_SANITY"):
             continue
         if not re.search(r'[\w./-]+\.(py|sh|md|js|json|jsonl|html|yaml)(:\d+)?', f):
             complaints.append("this finding names no file you could open:\n      %s" % f)
+        # a line number glued straight onto mid-word text is the signature of a clipboard
+        # copied mid-render: ":6ths of the body", ":4atches on substring". Structure alone
+        # does not catch it, because the path token in front of it is still valid.
+        if re.search(r':\d+[a-z]', f):
+            complaints.append("a line number runs straight into a word here, which is what a\n"
+                              "      part-copied buffer looks like:\n      %s" % f)
     if complaints:
         sys.exit("this does not look like a whole review:\n  - " +
                  "\n  - ".join(complaints) +
