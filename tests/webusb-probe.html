@@ -141,6 +141,8 @@ Support in this browser: <span id="sup"></span></pre>
     log.push("  idProduct         " + hex(d.productId));
     log.push("  deviceClass       " + hex(d.deviceClass,2));
     log.push("  usb version       " + d.usbVersionMajor + "." + d.usbVersionMinor);
+    // d.serialNumber is deliberately NOT read or printed. The matrix never carries serials
+    // and this probe must not be the thing that leaks one into a screenshot.
     log.push("");
 
     var triples=[], classes=[];

@@ -22,7 +22,7 @@ Device Descriptor:
   idProduct          0x4ee2 Nexus/Pixel Device (MTP + debug)
   bcdDevice            5.04
   iManufacturer           1 Nothing
-  iProduct                2 YUPIK-QRD _SN:<the serial>
+  iProduct                2 YUPIK-QRD <stripped>
   bNumConfigurations      1
   Configuration Descriptor:
     bLength                 9

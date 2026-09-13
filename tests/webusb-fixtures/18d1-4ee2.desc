@@ -7,7 +7,7 @@
 === WEBUSB READ  2026-09-13T08:50:13.236Z ===
 
   manufacturer      Nothing
-  product           YUPIK-QRD _SN:<the serial>
+  product           YUPIK-QRD <stripped>
   idVendor          0x18d1
   idProduct         0x4ee2
   deviceClass       0x00

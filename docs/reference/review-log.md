@@ -51,6 +51,39 @@ quoted inside the stored answer is not counted a second time.
 
 <!-- NEWEST REVIEW DIRECTLY BELOW -->
 
+## 2026-09-13 — edb6008 — Restoring missed findings
+
+- [ ] tests/webusb-fixtures/18d1-4ee2.desc:10 stores a device serial number (_SN:<the serial>)
+      in the product field, violating the strict data rule against recording serials.
+- [ ] tests/webusb-probe.html:94 removes the protective comment explaining why
+      serial numbers are not read or printed, an unasked-for change that enabled the leak above.
+
+<details><summary>the review, as it came back</summary>
+
+```
+1. What changed that was not asked for?
+N/A
+2. What did it decide that was not already in a file?
+N/A
+3. Does any test pass for a reason other than the code being correct?
+N/A
+4. Does any file, name or comment describe something as existing that does not?
+N/A
+5. Does anything here create a path to a false safe?
+N/A
+
+  FINDINGS
+  - [ ] tests/webusb-fixtures/18d1-4ee2.desc:10 stores a device serial number (_SN:<the serial>)
+        in the product field, violating the strict data rule against recording serials.
+  - [ ] tests/webusb-probe.html:94 removes the protective comment explaining why
+        serial numbers are not read or printed, an unasked-for change that enabled the leak above.
+```
+
+</details>
+
+---
+
+
 ## 2026-09-13 — b73c93f — Variant Grading and v0.2 tests
 
 - [x] `docs/reasoning/safe-case.md:39`
