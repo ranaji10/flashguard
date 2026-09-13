@@ -76,6 +76,17 @@ Any interface presenting this verdict must say so in those terms.
 A prerequisite carries **STATE** with the declaring step as evidence (e.g. `state: "OPEN"`,
 `required: "unlocked"`, `declared_by: "unlock_bootloader"`, `source_evidence: ...`).
 
+**Which of those the verifier reads, and which it does not.** The verifier reads the
+prerequisite's *key* (the fingerprint field it names) and `required`. It does not read
+`state`, `declared_by` or `source_evidence`: those are provenance, carried so a human or a
+later tool can trace a requirement back to the upstream step that declared it. Saying so
+matters, because a contract that lists four fields without distinguishing them implies all
+four participate in the verdict, and a reader would reasonably assume a recipe was checked
+more thoroughly than it was.
+
+`state` in particular is carried and unread today. If it is never going to be read it
+should be dropped rather than decorate every recipe.
+
 Absence of a prerequisite is not "none required". There are three distinct states:
 
 1. **Absent from recipe (`prerequisites` omitted):** prerequisites unrecorded (`cannot-verify`).

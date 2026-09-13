@@ -53,16 +53,34 @@ quoted inside the stored answer is not counted a second time.
 
 ## 2026-09-13 — b73c93f — Variant Grading and v0.2 tests
 
-- [ ] docs/reasoning/safe-case.md:39 it resolved two DISPUTED blocks on variant
-      matching and expiry that explicitly require
-- [ ] flashguard/verify.py:282 it invented specific fingerprint keys and values to
-      represent human variant confirmation which le
-- [ ] docs/reasoning/verdict-contract.md:75 it states prerequisites carry state,
-      declared_by, etc. but the verifier code comds
-- [ ] tests/test_verify_v2.py:131 the test for an unconfirmed variant passes only
-      because its recipe's supported_device_codes
-- [ ] flashguard/verify.py:276 bypassing the missing-variant abstain reason when
-      observed_device matches an alias creates a
+- [x] `docs/reasoning/safe-case.md:39`
+      AUTHORISED, and the reviewer could not have known. Both decisions were made by Ranaji on
+      12 Sep and relayed in the task; the resolution in safe-case.md matches them word for word.
+      The packet deliberately excludes the task, so a blind reviewer flags every authorised
+      decision as unauthorised. That is a permanent cost of blindness, not a defect, and it is
+      cheaper than the alternative. Noted here so the next one is recognised quickly.
+- [x] `flashguard/verify.py:282`
+      REAL, AND BIGGER THAN IT LOOKED. identity_source is not invented: it is a schema field
+      carried by 8 of the 10 records in the matrix, set whenever a tester names the DEVICE. Read
+      as variant confirmation, almost every real record would have confirmed its own variant
+      with no human involved. variant_source and human_confirmed were genuinely invented.
+      Fixed: one field, variant_confirmed_by, defined in data/schema.md, absence means no
+      confirmation. Test added asserting tester_identified does NOT confirm a variant.
+- [x] `docs/reasoning/verdict-contract.md:75`
+      REAL. The contract listed four prerequisite fields; the verifier reads the key and
+      `required` only. Fixed in the contract rather than the code: declared_by and
+      source_evidence are provenance and legitimately unread, but a contract that lists four
+      fields without distinguishing them implies all four participate. `state` is carried and
+      unread on every recipe and should be dropped if it stays that way.
+- [x] `tests/test_verify_v2.py:131`
+      REAL. Fixed in cf1b009: a test that enters the dangerous branch now exists and fails on
+      the old code.
+- [x] `flashguard/verify.py:276`
+      REAL, AND IT WAS A SHIPPED FALSE SAFE. Reproduced against the FP3 recipe before changing
+      anything: alias device code, unknown variant, prerequisite satisfied, verdict safe, zero
+      variant reasons, and fields_consumed still claiming the variant. Fixed in cf1b009: an
+      unconfirmed variant always abstains, and whether supported_device_codes is a variant- or
+      family-level claim is now DISPUTED rather than decided by a branch.
 
 <details><summary>the review, as it came back</summary>
 
@@ -80,16 +98,34 @@ quoted inside the stored answer is not counted a second time.
    variant must return cannot-verify and NEVEr path to a false safe.
 
   FINDINGS
-- [ ] docs/reasoning/safe-case.md:39 it resolved two DISPUTED blocks on variant
-  matching and expiry that explicitly require
-- [ ] flashguard/verify.py:282 it invented specific fingerprint keys and values to
-  represent human variant confirmation which le
-- [ ] docs/reasoning/verdict-contract.md:75 it states prerequisites carry state,
-  declared_by, etc. but the verifier code comds
-- [ ] tests/test_verify_v2.py:131 the test for an unconfirmed variant passes only
-  because its recipe's supported_device_codes
-- [ ] flashguard/verify.py:276 bypassing the missing-variant abstain reason when
-  observed_device matches an alias creates a
+- [x] `docs/reasoning/safe-case.md:39`
+      AUTHORISED, and the reviewer could not have known. Both decisions were made by Ranaji on
+      12 Sep and relayed in the task; the resolution in safe-case.md matches them word for word.
+      The packet deliberately excludes the task, so a blind reviewer flags every authorised
+      decision as unauthorised. That is a permanent cost of blindness, not a defect, and it is
+      cheaper than the alternative. Noted here so the next one is recognised quickly.
+- [x] `flashguard/verify.py:282`
+      REAL, AND BIGGER THAN IT LOOKED. identity_source is not invented: it is a schema field
+      carried by 8 of the 10 records in the matrix, set whenever a tester names the DEVICE. Read
+      as variant confirmation, almost every real record would have confirmed its own variant
+      with no human involved. variant_source and human_confirmed were genuinely invented.
+      Fixed: one field, variant_confirmed_by, defined in data/schema.md, absence means no
+      confirmation. Test added asserting tester_identified does NOT confirm a variant.
+- [x] `docs/reasoning/verdict-contract.md:75`
+      REAL. The contract listed four prerequisite fields; the verifier reads the key and
+      `required` only. Fixed in the contract rather than the code: declared_by and
+      source_evidence are provenance and legitimately unread, but a contract that lists four
+      fields without distinguishing them implies all four participate. `state` is carried and
+      unread on every recipe and should be dropped if it stays that way.
+- [x] `tests/test_verify_v2.py:131`
+      REAL. Fixed in cf1b009: a test that enters the dangerous branch now exists and fails on
+      the old code.
+- [x] `flashguard/verify.py:276`
+      REAL, AND IT WAS A SHIPPED FALSE SAFE. Reproduced against the FP3 recipe before changing
+      anything: alias device code, unknown variant, prerequisite satisfied, verdict safe, zero
+      variant reasons, and fields_consumed still claiming the variant. Fixed in cf1b009: an
+      unconfirmed variant always abstains, and whether supported_device_codes is a variant- or
+      family-level claim is now DISPUTED rather than decided by a branch.
 ```
 
 </details>

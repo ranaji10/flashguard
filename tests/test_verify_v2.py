@@ -145,7 +145,7 @@ class VerifyV2Test(unittest.TestCase):
 
     def test_human_confirmed_variant_treated_as_exact_and_records_human_provenance(self):
         recipe = dict(BASE_RECIPE, target={"product_device": "spacewar", "variant": "global", "partition_scheme": "virtual_A/B"})
-        fp = dict(fingerprint("unlocked"), variant="global", variant_source="human")
+        fp = dict(fingerprint("unlocked"), variant="global", variant_confirmed_by="human")
         result = verify(fp, recipe)
         self.assertEqual(result["verdict"], "safe")
         self.assertTrue(
@@ -154,6 +154,25 @@ class VerifyV2Test(unittest.TestCase):
                 for reason in result["reasons"]
             )
         )
+
+    def test_tester_identified_device_is_not_variant_confirmation(self):
+        """identity_source says a tester named the DEVICE. It is not variant confirmation.
+
+        The verifier read identity_source in ("tester_identified", ...) as human variant
+        confirmation for one commit. That field is carried by 8 of the 10 records in the
+        real matrix and is set whenever a tester names the device at capture time, so almost
+        every real record would have confirmed its own variant with no human involved --
+        wiring the tester-says-A5-about-an-A3 limitation straight into the path to safe.
+        """
+        recipe = dict(BASE_RECIPE, target={"product_device": "spacewar", "variant": "global",
+                                           "partition_scheme": "virtual_A/B"})
+        fp = dict(fingerprint("unlocked"), variant="global",
+                  identity_source="tester_identified")
+        result = verify(fp, recipe)
+        codes = [r["code"] for r in result["reasons"]]
+        self.assertNotIn("match-variant-human-confirmed", codes,
+                         "a tester naming the device does not confirm the variant")
+        self.assertIn("match-variant", codes)
 
     def test_definite_verdict_carries_record_id_timestamp_and_consumed_fields(self):
         fp = {

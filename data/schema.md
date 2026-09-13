@@ -68,6 +68,7 @@ A missing key is a defect, not a third kind of absence. Write the sentinel.
   "reported_device": "what the tester says it is: make, model, year",
   "device_local_id": "samsung-galaxy-a5",
   "identity_source": "tester_identified | unidentified",
+  "variant_confirmed_by": "human | absent",
   "device_mode": "default",
   "usb_mode": "file transfer (MTP)",
   "descriptor_file": "04e8-6860-20260829-183012.desc",
@@ -112,6 +113,13 @@ A missing key is a defect, not a third kind of absence. Write the sentinel.
 ---
 
 ## Field notes
+
+**`variant_confirmed_by`** New in 0.3, added 13 September. Set to `human` ONLY when a
+person was shown the identified variant and confirmed it. Absent means no confirmation, not
+an unknown one. It is deliberately separate from `identity_source`: that field records that
+a tester named the DEVICE, is set on 8 of 10 records, and says nothing about the variant.
+The verifier read `identity_source` as variant confirmation for one commit, which meant
+almost every real record confirmed its own variant without a human involved.
 
 **`identity_source`** New in 0.2, added 29 Aug after the first bench run. `tester_identified`
 means a human who knows the device named it independently, before seeing any scan output.

@@ -303,21 +303,29 @@ def _verify_v2(fingerprint, recipe):
                         "Target variant is unconfirmed." + alias_note)
             )
         elif observed_variant == expected_variant:
-            is_human = (
-                fingerprint.get("variant_source") in ("human", "human_confirmed")
-                or fingerprint.get("identity_source") in ("tester_identified", "human_confirmed", "human")
-                or fingerprint.get("human_confirmed") is True
-            )
+            # ONE explicit, variant-specific field. Nothing else counts.
+            #
+            # This used to also accept identity_source in ("tester_identified", ...), which
+            # is a REAL schema field carried by 8 of the 10 records in the matrix and set
+            # whenever a tester names the device at capture time. It says the tester named
+            # the DEVICE. It says nothing about the variant. Reading it as variant
+            # confirmation meant almost every real record silently upgraded itself to
+            # "human-confirmed" without any human confirming a variant -- wiring the exact
+            # limitation recorded in the tracker (a tester who says A5 about an A3) directly
+            # into the path to `safe`.
+            #
+            # variant_source and human_confirmed were invented here and appear in no schema.
+            # There is one field now, it is defined in data/schema.md, and its absence means
+            # no confirmation rather than an unknown one.
+            if "variant_confirmed_by" in fingerprint:
+                fields_consumed.append("variant_confirmed_by")
+            is_human = fingerprint.get("variant_confirmed_by") == "human"
             if is_human:
-                if "variant_source" in fingerprint:
-                    fields_consumed.append("variant_source")
-                elif "identity_source" in fingerprint:
-                    fields_consumed.append("identity_source")
                 reasons.append(
                     _reason(
                         "match-variant-human-confirmed",
                         "pass",
-                        ["variant", "target.variant", "variant_source"],
+                        ["variant", "target.variant", "variant_confirmed_by"],
                         f"Fingerprint variant matches recipe target (human-supplied confirmation: {observed_variant}).",
                     )
                 )
