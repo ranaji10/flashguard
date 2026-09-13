@@ -39,12 +39,29 @@ else
 fi
 echo
 echo "  suite"
-if bash tests/all.sh >/tmp/handoff-suite.$$ 2>&1; then
-  grep -hE '[0-9]+ passed|tracked files|all indexed' /tmp/handoff-suite.$$ | sed 's/^ */    /'
-else
-  echo "    SUITE FAILING — fix before handing off:"
-  grep -hE 'FAIL|BANNED|DANGLING|ORPHAN|BROKEN|DIVERGED' /tmp/handoff-suite.$$ | head -5 | sed 's/^ */      /'
-fi
+# The suite has THREE outcomes and this used to have two. Exit 2 is decisions waiting --
+# an open disagreement, an unfilled tester placeholder -- and reporting it as SUITE FAILING
+# sent a reader hunting for a defect that was not there. On 13 September a reviewer spent
+# part of a handoff explaining that a "FALSE SAFE: 1 -- BUILD MUST FAIL" line was "test
+# noise", which it was, because the gate's own test prints it. Explaining away a false-safe
+# message is the most dangerous habit this project could acquire, and the reason it had to
+# be explained was this branch.
+bash tests/all.sh >/tmp/handoff-suite.$$ 2>&1; rc=$?
+case "$rc" in
+  0)
+    grep -hE '[0-9]+ passed|tracked files|all indexed' /tmp/handoff-suite.$$ | sed 's/^ */    /'
+    ;;
+  2)
+    echo "    suite green. Decisions waiting, which do not block a handoff:"
+    grep -hE 'OPEN DISAGREEMENT|PLACEHOLDERS still' /tmp/handoff-suite.$$ | head -4 | sed 's/^ */      /'
+    echo "    The line \"FALSE SAFE: 1 -- BUILD MUST FAIL\" appears in a passing run: the"
+    echo "    gate's own test plants one and asserts the build fails. It is the gate working."
+    ;;
+  *)
+    echo "    SUITE FAILING — fix before handing off:"
+    grep -hE 'FAIL|BANNED|DANGLING|ORPHAN|BROKEN|DIVERGED' /tmp/handoff-suite.$$ | head -5 | sed 's/^ */      /'
+    ;;
+esac
 rm -f /tmp/handoff-suite.$$
 echo
 echo "  Tier A"

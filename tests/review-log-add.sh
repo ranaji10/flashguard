@@ -103,7 +103,12 @@ if not os.environ.get("SKIP_SANITY"):
     for f in findings:
         if not f.startswith("- [ ]"):
             continue
-        if not re.search(r'[\w./-]+\.(py|sh|md|js|json|jsonl|html|yaml)(:\d+)?', f):
+        # ANY path.extension, not an allowlist of extensions. The allowlist rejected a
+        # real finding about a .desc file on 13 September -- a serial number leaking into a
+        # published fixture -- and the findings then went back to the REVIEWER instead of
+        # into this log, which is how the reviewer ended up editing code. A guard that
+        # blocks the honest path pushes people onto a worse one.
+        if not re.search(r'[\w./-]+\.[A-Za-z0-9]{1,6}(:\d+)?', f):
             complaints.append("this finding names no file you could open:\n      %s" % f)
         # a line number glued straight onto mid-word text is the signature of a clipboard
         # copied mid-render: ":6ths of the body", ":4atches on substring". Structure alone
@@ -115,7 +120,12 @@ if not os.environ.get("SKIP_SANITY"):
         sys.exit("this does not look like a whole review:\n  - " +
                  "\n  - ".join(complaints) +
                  "\n\nRe-copy the answer once the CLI has finished printing, and try again."
-                 "\nIf it really is fine, SKIP_SANITY=1 pbpaste | bash tests/review-log-add.sh ...")
+                 "\nIf it really is fine:  SKIP_SANITY=1 pbpaste | bash tests/review-log-add.sh ..."
+                 "\n\nDO NOT paste the findings back to the reviewer. It has filesystem access,"
+                 "\nit will helpfully start fixing things, and the session that reviewed the work"
+                 "\nbecomes the session that wrote it. Findings go to this log, then to the"
+                 "\nPRODUCER. That happened on 13 September and it cost the independence the"
+                 "\nwhole ritual exists to buy.")
 
 today = datetime.date.today().isoformat()
 out = ["## %s — %s — %s" % (today, sha, label), ""]

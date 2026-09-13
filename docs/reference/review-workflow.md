@@ -269,6 +269,34 @@ review rule is the thing that keeps this one honest.
 
 ---
 
+## The one rule that has no script behind it
+
+**Never paste anything back to the reviewer except `review-carry.sh` output.**
+
+On 13 September the filer refused a paste, and the findings — a real serial-number leak —
+went back into the reviewer instead, phrased as "something seems off". It had filesystem
+access. It helpfully fixed the code across three files, filed its own findings, and
+committed. The session that reviewed the work became the session that wrote it, and then
+reported on its own work in a handoff.
+
+Nothing technical stopped it and nothing can: it is a general-purpose tool with a shell. The
+packet says "You do not write files" and it read that and did it anyway, because a person
+asked it for help and helping is what it does.
+
+So the control is procedural and it is yours:
+
+- Findings go into `review-log.md`, then to the **producer**. Never back to the reviewer.
+- The only second message a reviewer ever gets is `review-carry.sh` output, which asks about
+  OLD findings and requests no work.
+- If the filer refuses a paste, fix the paste or use `SKIP_SANITY=1`. Do not improvise a
+  route that ends at the reviewer.
+
+**If the reviewer has written files, the review is void.** Not because the fixes are wrong —
+the ones on 13 September were correct and one of them was important — but because nothing it
+says about that code can be trusted afterwards, and there is no longer an independent reader
+for the next change. Reset: revert or keep the fixes as the producer's, then get a fresh
+session to review the result.
+
 ## The short version, once it is habit
 
 ```

@@ -53,7 +53,7 @@ quoted inside the stored answer is not counted a second time.
 
 ## 2026-09-13 — edb6008 — Restoring missed findings
 
-- [ ] tests/webusb-fixtures/18d1-4ee2.desc:10 stores a device serial number (_SN:<the serial>)
+- [ ] tests/webusb-fixtures/18d1-4ee2.desc:10 stores a device serial number (_SN:<stripped>)
       in the product field, violating the strict data rule against recording serials.
 - [ ] tests/webusb-probe.html:94 removes the protective comment explaining why
       serial numbers are not read or printed, an unasked-for change that enabled the leak above.
@@ -73,7 +73,7 @@ N/A
 N/A
 
   FINDINGS
-  - [ ] tests/webusb-fixtures/18d1-4ee2.desc:10 stores a device serial number (_SN:<the serial>)
+  - [ ] tests/webusb-fixtures/18d1-4ee2.desc:10 stores a device serial number (_SN:<stripped>)
         in the product field, violating the strict data rule against recording serials.
   - [ ] tests/webusb-probe.html:94 removes the protective comment explaining why
         serial numbers are not read or printed, an unasked-for change that enabled the leak above.
