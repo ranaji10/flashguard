@@ -17,11 +17,32 @@ def _reason(code, result, fields, message):
     }
 
 
-def _invalid_recipe_reason(message):
+def _build_evidence(fingerprint, fields_consumed):
+    if not isinstance(fingerprint, dict):
+        return {"record_id": None, "capture_timestamp": None, "fields_consumed": []}
+    consumed = []
+    seen = set()
+    for f in fields_consumed:
+        if f not in seen:
+            seen.add(f)
+            consumed.append(f)
+    return {
+        "record_id": fingerprint.get("record_id"),
+        "capture_timestamp": (
+            fingerprint.get("capture_timestamp")
+            or fingerprint.get("timestamp")
+            or fingerprint.get("date")
+        ),
+        "fields_consumed": consumed,
+    }
+
+
+def _invalid_recipe_reason(message, fingerprint=None):
     return {
         "verdict": "cannot-verify",
         "reasons": [_reason("invalid-recipe", "abstain", ["recipe"], message)],
         "coverage": {"schema_version": None, "modelled_operations": [], "safe_case_available": False},
+        "evidence": _build_evidence(fingerprint, []),
     }
 
 
@@ -43,6 +64,8 @@ def _validate_recipe(recipe):
         target_fields = target_fields + ("variant",)
     if any(field not in target for field in target_fields):
         return "Invalid recipe: target is missing a required field."
+    if "supported_device_codes" in target and not isinstance(target["supported_device_codes"], list):
+        return "Invalid recipe: supported_device_codes must be an array."
     operations = recipe.get("operations")
     if not isinstance(operations, list):
         return "Invalid recipe: operations must be an array."
@@ -83,10 +106,10 @@ def _validate_recipe(recipe):
 
 
 def verify(fingerprint, recipe):
-    """Return a verdict for a fingerprint and a validated v0.1 recipe."""
+    """Return a verdict for a fingerprint and a validated recipe."""
     invalid = _validate_recipe(recipe)
     if invalid:
-        return _invalid_recipe_reason(invalid)
+        return _invalid_recipe_reason(invalid, fingerprint)
 
     if recipe.get("schema_version") == "0.2":
         return _verify_v2(fingerprint, recipe)
@@ -95,10 +118,12 @@ def verify(fingerprint, recipe):
     unsafe = False
     abstained = False
     target = recipe.get("target", {})
+    fields_consumed = []
 
     for fingerprint_key, target_path, code in _FINGERPRINT_FIELDS:
         expected = target.get(fingerprint_key)
         observed = fingerprint.get(fingerprint_key)
+        fields_consumed.append(fingerprint_key)
         fields = [fingerprint_key, target_path]
         if observed in (None, "", "unknown", "not_applicable"):
             abstained = True
@@ -187,50 +212,177 @@ def verify(fingerprint, recipe):
         )
         verdict = "cannot-verify"
 
-    return {"verdict": verdict, "reasons": reasons, "coverage": coverage}
+    return {
+        "verdict": verdict,
+        "reasons": reasons,
+        "coverage": coverage,
+        "evidence": _build_evidence(fingerprint, fields_consumed),
+    }
 
 
 def _verify_v2(fingerprint, recipe):
     reasons = []
     target = recipe["target"]
+    fields_consumed = []
     identity_mismatch = False
-    for key, code in (("product_device", "device-mismatch"), ("partition_scheme", "partition-scheme-mismatch")):
-        observed = fingerprint.get(key)
-        expected = target[key]
-        if observed in (None, "", "unknown", "not_applicable"):
-            reasons.append(_reason("missing-" + key, "abstain", [key], "Required fingerprint evidence is absent or unknown."))
-        elif observed != expected:
-            reasons.append(_reason(code, "fail", [key, "target." + key], "Fingerprint value contradicts the recipe target."))
-            identity_mismatch = True
+    supported_aliases = target.get("supported_device_codes", [])
+
+    observed_device = fingerprint.get("product_device")
+    fields_consumed.append("product_device")
+    expected_device = target.get("product_device")
+
+    if observed_device in (None, "", "unknown", "not_applicable"):
+        reasons.append(
+            _reason("missing-product_device", "abstain", ["product_device"], "Required fingerprint evidence is absent or unknown.")
+        )
+    elif observed_device == expected_device:
+        reasons.append(
+            _reason("match-product_device", "pass", ["product_device", "target.product_device"], "Fingerprint value matches the recipe target.")
+        )
+    elif observed_device in supported_aliases:
+        reasons.append(
+            _reason("match-device-alias", "pass", ["product_device", "target.supported_device_codes"], f"Device code matches supported alias '{observed_device}'.")
+        )
+    else:
+        reasons.append(
+            _reason("device-mismatch", "fail", ["product_device", "target.product_device"], "Fingerprint value contradicts the recipe target.")
+        )
+        identity_mismatch = True
+
+    observed_scheme = fingerprint.get("partition_scheme")
+    fields_consumed.append("partition_scheme")
+    expected_scheme = target.get("partition_scheme")
+
+    if observed_scheme in (None, "", "unknown", "not_applicable"):
+        reasons.append(
+            _reason("missing-partition_scheme", "abstain", ["partition_scheme"], "Required fingerprint evidence is absent or unknown.")
+        )
+    elif observed_scheme != expected_scheme:
+        reasons.append(
+            _reason("partition-scheme-mismatch", "fail", ["partition_scheme", "target.partition_scheme"], "Fingerprint value contradicts the recipe target.")
+        )
+        identity_mismatch = True
+    else:
+        reasons.append(
+            _reason("match-partition_scheme", "pass", ["partition_scheme", "target.partition_scheme"], "Fingerprint value matches the recipe target.")
+        )
+
+    if "variant" in target:
+        observed_variant = fingerprint.get("variant")
+        fields_consumed.append("variant")
+        expected_variant = target.get("variant")
+
+        if observed_variant in (None, "", "unknown", "not_applicable"):
+            if observed_device in supported_aliases:
+                pass
+            else:
+                reasons.append(
+                    _reason("missing-variant", "abstain", ["variant", "target.variant"], "Target variant is unconfirmed.")
+                )
+        elif observed_variant == expected_variant:
+            is_human = (
+                fingerprint.get("variant_source") in ("human", "human_confirmed")
+                or fingerprint.get("identity_source") in ("tester_identified", "human_confirmed", "human")
+                or fingerprint.get("human_confirmed") is True
+            )
+            if is_human:
+                if "variant_source" in fingerprint:
+                    fields_consumed.append("variant_source")
+                elif "identity_source" in fingerprint:
+                    fields_consumed.append("identity_source")
+                reasons.append(
+                    _reason(
+                        "match-variant-human-confirmed",
+                        "pass",
+                        ["variant", "target.variant", "variant_source"],
+                        f"Fingerprint variant matches recipe target (human-supplied confirmation: {observed_variant}).",
+                    )
+                )
+            else:
+                reasons.append(
+                    _reason("match-variant", "pass", ["variant", "target.variant"], "Fingerprint variant matches recipe target.")
+                )
+        elif observed_variant in supported_aliases:
+            reasons.append(
+                _reason("match-device-alias", "pass", ["variant", "target.supported_device_codes"], f"Device code matches supported alias '{observed_variant}'.")
+            )
         else:
-            reasons.append(_reason("match-" + key, "pass", [key, "target." + key], "Fingerprint value matches the recipe target."))
+            reasons.append(
+                _reason("variant-mismatch", "fail", ["variant", "target.variant"], "Fingerprint variant contradicts the recipe target.")
+            )
+            identity_mismatch = True
+
     if identity_mismatch:
-        return {"verdict": "unsafe", "reasons": reasons, "coverage": {"schema_version": "0.2"}}
+        return {
+            "verdict": "unsafe",
+            "reasons": reasons,
+            "coverage": {"schema_version": "0.2"},
+            "evidence": _build_evidence(fingerprint, fields_consumed),
+        }
+
     if any(reason["result"] == "abstain" for reason in reasons) and "prerequisites" not in recipe:
-        return {"verdict": "cannot-verify", "reasons": reasons, "coverage": {"schema_version": "0.2"}}
+        return {
+            "verdict": "cannot-verify",
+            "reasons": reasons,
+            "coverage": {"schema_version": "0.2"},
+            "evidence": _build_evidence(fingerprint, fields_consumed),
+        }
 
     if "prerequisites" not in recipe:
         reasons.append(_reason("prerequisites-unrecorded", "abstain", ["prerequisites"], "Prerequisite consideration is absent from the recipe."))
-        return {"verdict": "cannot-verify", "reasons": reasons, "coverage": {"schema_version": "0.2"}}
+        return {
+            "verdict": "cannot-verify",
+            "reasons": reasons,
+            "coverage": {"schema_version": "0.2"},
+            "evidence": _build_evidence(fingerprint, fields_consumed),
+        }
     if recipe["prerequisites"] is None:
         reasons.append(_reason("prerequisites-invalid", "abstain", ["prerequisites"], "Prerequisite authoring state is null and cannot be checked."))
-        return {"verdict": "cannot-verify", "reasons": reasons, "coverage": {"schema_version": "0.2"}}
+        return {
+            "verdict": "cannot-verify",
+            "reasons": reasons,
+            "coverage": {"schema_version": "0.2"},
+            "evidence": _build_evidence(fingerprint, fields_consumed),
+        }
     if not recipe["prerequisites"]:
         reasons.append(_reason("prerequisites-none-declared", "abstain", ["prerequisites"], "The recipe declares no prerequisites, but v0.2 has no proof that the procedure needs none."))
-        return {"verdict": "cannot-verify", "reasons": reasons, "coverage": {"schema_version": "0.2"}}
+        return {
+            "verdict": "cannot-verify",
+            "reasons": reasons,
+            "coverage": {"schema_version": "0.2"},
+            "evidence": _build_evidence(fingerprint, fields_consumed),
+        }
 
     for name, requirement in recipe["prerequisites"].items():
         observed = fingerprint.get(name)
+        fields_consumed.append(name)
         required = requirement.get("required")
         if observed in (None, "", "unknown", "not_applicable"):
             reasons.append(_reason("missing-" + name, "abstain", [name, "prerequisites." + name], "Required prerequisite fingerprint evidence is missing."))
         elif isinstance(required, (int, float)) and isinstance(observed, (int, float)) and observed < required:
             reasons.append(_reason("prerequisite-" + name + "-below-minimum", "fail", [name], "Fingerprint version is below the required minimum."))
-            return {"verdict": "unsafe", "reasons": reasons, "coverage": {"schema_version": "0.2"}}
+            return {
+                "verdict": "unsafe",
+                "reasons": reasons,
+                "coverage": {"schema_version": "0.2"},
+                "evidence": _build_evidence(fingerprint, fields_consumed),
+            }
         elif observed != required:
             reasons.append(_reason("prerequisite-" + name + "-mismatch", "fail", [name], "Fingerprint prerequisite state contradicts the recipe."))
-            return {"verdict": "unsafe", "reasons": reasons, "coverage": {"schema_version": "0.2"}}
+            return {
+                "verdict": "unsafe",
+                "reasons": reasons,
+                "coverage": {"schema_version": "0.2"},
+                "evidence": _build_evidence(fingerprint, fields_consumed),
+            }
         else:
             reasons.append(_reason("prerequisite-" + name + "-confirmed", "pass", [name], "Fingerprint confirms the required prerequisite state."))
+
     verdict = "cannot-verify" if any(reason["result"] == "abstain" for reason in reasons) else "safe"
-    return {"verdict": verdict, "reasons": reasons, "coverage": {"schema_version": "0.2"}}
+    return {
+        "verdict": verdict,
+        "reasons": reasons,
+        "coverage": {"schema_version": "0.2"},
+        "evidence": _build_evidence(fingerprint, fields_consumed),
+    }
+

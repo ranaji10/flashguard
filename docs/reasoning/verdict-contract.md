@@ -3,19 +3,19 @@
 **Status: specification. Written before implementation, deliberately. The code is
 measured against this document, not the other way round.**
 
-Version 0.1, 26 August 2026.
+Version 0.2, 13 September 2026.
 
 ---
 
 ## What the verifier is asked
 
-    verify(fingerprint, recipe) -> { verdict, reasons[], coverage }
+    verify(fingerprint, recipe) -> { verdict, reasons[], coverage, evidence }
 
 `fingerprint` is what is known about one specific device, field by field, each field
 carrying its provenance and whether it was actually observed.
 
 `recipe` is an ordered sequence of provisioning operations plus references to the
-assets they write.
+assets they write or prerequisites they declare.
 
 `verdict` is one of `safe`, `unsafe`, `cannot-verify`. There is no fourth value and
 no numeric score in the output. A score invites a person to set their own threshold,
@@ -46,22 +46,77 @@ and the reasons array must say which check abstained and why.
 
 Reached when a required fingerprint field is absent or was inferred rather than
 observed; the device is absent from the matrix; an asset cannot be tied to a model
-or variant; the recipe uses an operation the state model does not cover; or model
-coverage for this chipset family or partition scheme is insufficient.
+or variant; the recipe uses an operation the state model does not cover; model
+coverage for this chipset family or partition scheme is insufficient; or required
+variant or prerequisite evidence is unconfirmed.
 
 ### `safe`
 
-Every operation's preconditions are met by the fingerprint, every asset is
+Every operation's preconditions are met by the fingerprint, every asset or target is
 established as matching this device's model and variant, and the modelled end state
 is bootable.
 
-**`safe` requires unanimity.** It is emitted only when no check failed *and* no
-check abstained. One abstention anywhere makes the verdict `cannot-verify`.
+**`safe` requires unanimity and confirming evidence.** It is emitted only when no
+check failed *and* no check abstained. One abstention anywhere makes the verdict
+`cannot-verify`.
+
+**Safe requires a confirming fingerprint.** A recipe that merely declares an unlock
+step or prerequisite is not safe on that basis. `safe` requires the fingerprint to
+actively confirm the required state.
 
 **What `safe` does not mean.** It is not a claim that the resulting system is good,
 secure, supported, or that the person will like it. It is a claim about one thing:
 that executing this recipe on this device is not expected to leave it unbootable.
 Any interface presenting this verdict must say so in those terms.
+
+---
+
+## Prerequisites in v0.2
+
+A prerequisite carries **STATE** with the declaring step as evidence (e.g. `state: "OPEN"`,
+`required: "unlocked"`, `declared_by: "unlock_bootloader"`, `source_evidence: ...`).
+
+Absence of a prerequisite is not "none required". There are three distinct states:
+
+1. **Absent from recipe (`prerequisites` omitted):** prerequisites unrecorded (`cannot-verify`).
+2. **`prerequisites: null`:** prerequisite authoring state is null or invalid (`cannot-verify`).
+3. **`prerequisites: {}`:** the recipe declares no prerequisites, but v0.2 has no proof that
+   the procedure needs none (`cannot-verify`).
+
+Only an explicit prerequisite block whose required states are confirmed by the fingerprint
+can yield a `safe` verdict.
+
+---
+
+## Graded variant matching
+
+Variant matching is graded, and the verdict follows the evidence:
+
+- **Exact variant match** -> `safe` or `unsafe` reachable.
+- **Alias in `supported_device_codes`** -> `safe` or `unsafe` reachable, because upstream
+  explicitly asserted the equivalence.
+- **Partition and bootloader agree, variant unconfirmed** -> `cannot-verify`, naming
+  `variant` as the missing evidence. **NEVER `safe`.**
+
+This is not a fallback to a looser match on failure. That would make less evidence
+produce a more permissive verdict, which is the false-safe pathway. It is a weaker
+verdict for weaker evidence.
+
+A human confirming the variant is **NEW EVIDENCE**, not inference. It moves a recipe to
+the exact-match tier and must be recorded with its own provenance, the way the bench
+kit records `identity_source`.
+
+---
+
+## Every verdict carries its evidence
+
+The verifier output includes an `evidence` record carrying:
+- the fingerprint `record_id`
+- its `capture_timestamp` (or capture date)
+- the list of `fields_consumed` by the verification procedure
+
+The verifier sets **no expiry policy**. It states what it relied on and when;
+staleness is the consumer's decision.
 
 ---
 
@@ -121,7 +176,7 @@ property worth stating in the grant application.
 
 ---
 
-## Open questions
+## Open in v0.2
 
 - [ ] Reason code namespace and versioning policy.
 - [ ] How fingerprint field confidence is represented, given the /e/OS codename case
@@ -130,3 +185,5 @@ property worth stating in the grant application.
       consumers, more work to keep honest.
 - [ ] Whether `unsafe` distinguishes "will brick" from "will fail harmlessly."
       Probably yes, but not in v1.
+- [ ] Multi-slot active/inactive target modelling in v0.2 operations.
+- [ ] Formal schema for open-vocabulary prerequisite state machines.

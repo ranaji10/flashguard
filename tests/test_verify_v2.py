@@ -102,6 +102,77 @@ class VerifyV2Test(unittest.TestCase):
         self.assertNotEqual(verify(fingerprint("unlocked"), absent)["reasons"], verify(fingerprint("unlocked"), declared_none)["reasons"])
         self.assertNotEqual(verify(fingerprint("unlocked"), declared_none)["reasons"], verify(fingerprint("unlocked"), author_unknown)["reasons"])
 
+    def test_exact_variant_match_gives_definite_verdict(self):
+        recipe = dict(BASE_RECIPE, target={"product_device": "spacewar", "variant": "global", "partition_scheme": "virtual_A/B"})
+        fp = dict(fingerprint("unlocked"), variant="global")
+        result = verify(fp, recipe)
+        self.assertEqual(result["verdict"], "safe")
+
+    def test_supported_device_codes_alias_gives_definite_verdict_with_alias_named(self):
+        recipe = dict(
+            BASE_RECIPE,
+            target={
+                "product_device": "spacewar",
+                "variant": "global",
+                "partition_scheme": "virtual_A/B",
+                "supported_device_codes": ["spacewar-eea", "spacewar-in"],
+            },
+        )
+        fp = dict(fingerprint("unlocked", product_device="spacewar-eea"), variant="spacewar-eea")
+        result = verify(fp, recipe)
+        self.assertEqual(result["verdict"], "safe")
+        self.assertTrue(
+            any(
+                reason.get("code") == "match-device-alias" and "spacewar-eea" in reason.get("message", "")
+                for reason in result["reasons"]
+            )
+        )
+
+    def test_unconfirmed_variant_with_agreeing_partition_and_bootloader_abstains_naming_variant(self):
+        recipe = dict(BASE_RECIPE, target={"product_device": "spacewar", "variant": "global", "partition_scheme": "virtual_A/B"})
+        fp = fingerprint("unlocked")
+        result = verify(fp, recipe)
+        self.assertEqual(result["verdict"], "cannot-verify")
+        self.assertNotEqual(result["verdict"], "safe")
+        self.assertTrue(
+            any(
+                reason.get("code") == "missing-variant" or "variant" in reason.get("fields", [])
+                for reason in result["reasons"]
+                if reason.get("result") == "abstain"
+            )
+        )
+
+    def test_human_confirmed_variant_treated_as_exact_and_records_human_provenance(self):
+        recipe = dict(BASE_RECIPE, target={"product_device": "spacewar", "variant": "global", "partition_scheme": "virtual_A/B"})
+        fp = dict(fingerprint("unlocked"), variant="global", variant_source="human")
+        result = verify(fp, recipe)
+        self.assertEqual(result["verdict"], "safe")
+        self.assertTrue(
+            any(
+                "human" in reason.get("message", "").lower() or reason.get("code") == "match-variant-human-confirmed"
+                for reason in result["reasons"]
+            )
+        )
+
+    def test_definite_verdict_carries_record_id_timestamp_and_consumed_fields(self):
+        fp = {
+            "record_id": "rec-001",
+            "capture_timestamp": "2026-09-08",
+            "product_device": "spacewar",
+            "partition_scheme": "virtual_A/B",
+            "bootloader_unlocked": "unlocked",
+        }
+        result = verify(fp, BASE_RECIPE)
+        self.assertEqual(result["verdict"], "safe")
+        self.assertIn("evidence", result)
+        self.assertEqual(result["evidence"]["record_id"], "rec-001")
+        self.assertEqual(result["evidence"]["capture_timestamp"], "2026-09-08")
+        self.assertTrue(
+            {"product_device", "partition_scheme", "bootloader_unlocked"}.issubset(
+                set(result["evidence"]["fields_consumed"])
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

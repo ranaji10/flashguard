@@ -36,12 +36,16 @@ This is the minimum semantic addition, not a proposed final schema. The exact v0
 field names and operation kinds still need a design decision before the format changes.
 No synthetic safe recipe is added: the current real corpus provides no evidence for one.
 
-# DISPUTED: should `variant` mismatch be a verifier concept?
-#   position A: yes -- asset and target variants are safety-relevant identity evidence
-#   position B: no -- the current corpus exposes device-code aliases, not a settled variant concept
-#   settles it: no test can — needs a decision from Ranaji
+## Variant matching decision
 
-# DISPUTED: should a safe verdict expire when fingerprint evidence may be stale after an OTA?
-#   position A: yes -- a fingerprint is a snapshot and safe evidence should have a freshness boundary
-#   position B: no -- expiry belongs to the caller because the verifier receives no time model
-#   settles it: no test can — needs a decision from Ranaji
+Variant matching is graded, and the verdict follows the evidence:
+- **Exact variant match**: reaching `safe` or `unsafe` is possible.
+- **Alias in `supported_device_codes`**: reaching `safe` or `unsafe` is possible because upstream asserted equivalence.
+- **Partition and bootloader agree, variant unconfirmed**: returns `cannot-verify`, naming `variant` as the missing evidence. NEVER `safe`.
+- **Human confirmation**: treated as exact match, and recorded with human-supplied provenance.
+
+This is not a fallback to a looser match on failure (which would be a false-safe pathway), but a weaker verdict for weaker evidence.
+
+## Evidence and expiry boundary decision
+
+The verifier sets no expiry policy. It remains a pure function with no clock, no time model, and no network access. Every verdict carries its evidence: the fingerprint `record_id`, capture timestamp, and consumed fields. The verifier reports what evidence it consumed and when it was captured; freshness and staleness evaluation belongs to the caller.
