@@ -88,6 +88,17 @@ Support in this browser: <span id="sup"></span></pre>
 </div>
 
 <script>
+
+  // Strip an embedded serial from any string descriptor. Case-insensitive, and it keeps
+  // the human-readable part so the device is still recognisable in a tester's export.
+  function maskSerial(v) {
+    if (!v) return "<not exposed>";
+    // no \b before SN: "_" is a word character, so there is no boundary between _ and S.
+    // That exact mistake was made twice on 13 September, in bash and again here, which is
+    // why both maskers are exercised against a real "_SN:" string rather than eyeballed.
+    return String(v).replace(/(_?SN[:=])\s*[A-Za-z0-9-]+/gi, "$1<stripped>");
+  }
+
 (function(){
   "use strict";
   var out=document.getElementById("out"), verdict=document.getElementById("verdict");
@@ -135,8 +146,14 @@ Support in this browser: <span id="sup"></span></pre>
     var log = [];
     log.push("=== WEBUSB READ  " + new Date().toISOString() + " ===");
     log.push("");
-    log.push("  manufacturer      " + (d.manufacturerName || "<not exposed>"));
-    log.push("  product           " + (d.productName || "<not exposed>"));
+    // MASK BEFORE PRINTING. Not reading d.serialNumber is not enough: manufacturers put
+    // the serial inside the PRODUCT string. The Nothing Phone 1 reports its product as
+    // "YUPIK-QRD _SN:<the serial>", and that reached a published fixture and sat in a repo for
+    // two weeks while a purpose-built privacy check reported clean.
+    // Mask here, at the only place the string is created, so nothing downstream has to
+    // remember. Everything after this point is already safe.
+    log.push("  manufacturer      " + maskSerial(d.manufacturerName));
+    log.push("  product           " + maskSerial(d.productName));
     log.push("  idVendor          " + hex(d.vendorId));
     log.push("  idProduct         " + hex(d.productId));
     log.push("  deviceClass       " + hex(d.deviceClass,2));

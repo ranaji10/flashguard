@@ -57,13 +57,16 @@ DESC=$(printf '%s' "$NEW" | sed -E 's/.*ID [0-9a-f]{4}:[0-9a-f]{4} ?//')
 # and a password prompt in the middle of a capture is a real place for a
 # volunteer to give up -- one appeared on the 29 Aug re-run. Only escalate if the
 # unprivileged read came back without any interface descriptors.
-V=$(lsusb -v -d "$ID" 2>/dev/null | grep -v 'iSerial')
+# Dropping the iSerial LINE is not enough. Manufacturers put the serial inside iProduct:
+# the Nothing Phone 1 reports "YUPIK-QRD _SN:<serial>", which survived this filter, reached
+# a published fixture, and sat in the repository for two weeks.
+V=$(lsusb -v -d "$ID" 2>/dev/null | grep -v 'iSerial' | sed -E 's/(_?SN[:=])[[:space:]]*[A-Za-z0-9-]+/\1<stripped>/Ig')
 if ! printf '%s' "$V" | grep -q 'bInterfaceClass'; then
   echo
   echo "  Reading the full descriptor needs administrator rights on this machine."
   echo "  You may be asked for your password. Nothing is written to any device;"
   echo "  this only reads how the device describes itself over USB."
-  V=$(sudo lsusb -v -d "$ID" 2>/dev/null | grep -v 'iSerial')
+  V=$(sudo lsusb -v -d "$ID" 2>/dev/null | grep -v 'iSerial' | sed -E 's/(_?SN[:=])[[:space:]]*[A-Za-z0-9-]+/\1<stripped>/Ig')
   PRIV="sudo"
 else
   PRIV="user"
@@ -91,7 +94,7 @@ FIXNAME="${VID#0x}-${PID#0x}-$STAMP.desc"
   echo "#!adb_state=${ADBSTATE:-none}"
   echo "#!captured=$STAMP"
   echo "#!read_privilege=${PRIV:-user}"
-  echo "#!note=Captured on a real device. iSerial stripped. EDIT #!expect to the"
+  echo "#!note=Captured on a real device. iSerial dropped and embedded SN masked. EDIT #!expect to the"
   echo "#!note=class a human knows this device to be, then it is a real test case."
   printf '%s\n' "$V"
 } > "$FIXDIR/$FIXNAME" 2>/dev/null && SAVED="$FIXNAME" || SAVED=""

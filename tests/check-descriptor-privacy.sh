@@ -8,11 +8,19 @@
 # not a substitute for stripping at source, a second lock on the same door.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
-D="$HERE/real-descriptors"
-[ -d "$D" ] || { echo "  no real-descriptors/ yet"; exit 0; }
+# EVERY directory holding captured descriptors, not just the one this check was written
+# for. webusb-fixtures/ was added on 13 September and was outside this check on the day a
+# serial was found in it -- by a reviewer reading a diff, not by this script. A privacy
+# check with a directory blind spot reports clean about the place it happens to look.
+DIRS=""
+for d in "$HERE/real-descriptors" "$HERE/webusb-fixtures"; do
+  [ -d "$d" ] && DIRS="$DIRS $d"
+done
+[ -n "$DIRS" ] || { echo "  no captured descriptors yet"; exit 0; }
+D="$DIRS"
 fail=0
 
-hits=$(grep -rn '^[[:space:]]*iSerial' "$D" 2>/dev/null || true)
+hits=$(grep -rn '^[[:space:]]*iSerial' $D 2>/dev/null || true)
 if [ -n "$hits" ]; then
   echo "  iSERIAL PRESENT -- do not publish these:"; printf '%s\n' "$hits" | sed 's/^/      /'; fail=1
 fi
@@ -26,7 +34,7 @@ fi
 #
 # A check that only looks where it expects the problem reports clean and means nothing. It
 # was found by a blind reviewer reading a diff, not by this script.
-hits=$(grep -rniE '_?SN[:=]' "$D" 2>/dev/null || true)
+hits=$(grep -rniE '_?SN[:=]' $D 2>/dev/null || true)
 if [ -n "$hits" ]; then
   echo "  SERIAL EMBEDDED IN A STRING DESCRIPTOR -- do not publish these:"
   printf '%s\n' "$hits" | sed 's/^/      /'
@@ -34,15 +42,15 @@ if [ -n "$hits" ]; then
   echo "      is not enough, and the capture note claiming it was stripped is not evidence."
   fail=1
 fi
-hits=$(grep -rnE '(^|[^0-9])[0-9]{15}([^0-9]|$)' "$D" 2>/dev/null || true)
+hits=$(grep -rnE '(^|[^0-9])[0-9]{15}([^0-9]|$)' $D 2>/dev/null || true)
 if [ -n "$hits" ]; then
   echo "  15-digit number (IMEI shape):"; printf '%s\n' "$hits" | sed 's/^/      /'; fail=1
 fi
-hits=$(grep -rniE '\b([0-9a-f]{2}:){5}[0-9a-f]{2}\b' "$D" 2>/dev/null || true)
+hits=$(grep -rniE '\b([0-9a-f]{2}:){5}[0-9a-f]{2}\b' $D 2>/dev/null || true)
 if [ -n "$hits" ]; then
   echo "  MAC address shape:"; printf '%s\n' "$hits" | sed 's/^/      /'; fail=1
 fi
 
-n=$(ls -1 "$D"/*.desc 2>/dev/null | wc -l | tr -d ' ')
+n=$(ls -1 $D/*.desc 2>/dev/null | wc -l | tr -d ' ')
 [ "$fail" = 0 ] && echo "  $n descriptor(s), no serial, IMEI or MAC found"
 exit "$fail"

@@ -50,6 +50,12 @@ PUBLISHED_CONTACT="ranaji.deb@gmail.com"
 look "PERSONAL EMAIL"    "[a-z0-9._%+-]+@(gmail|outlook|hotmail|yahoo|icloud|proton|seznam)\." "$PUBLISHED_CONTACT"
 look "HOME PATH"         "/Users/[a-z]|/home/[a-z]" "home/claude|\\\$HOME"
 look "DEVICE SERIAL"     "^[[:space:]]*iSerial[[:space:]]+[0-9]+[[:space:]]+[A-Za-z0-9]{6,}"
+# A serial embedded in a product string, ANYWHERE in ANY tracked file -- not only in the
+# descriptor directories check-descriptor-privacy.sh knows about. That check had a directory
+# blind spot on 13 September and reported clean about the place it happened to look, while a
+# serial sat in a fixture it did not scan and in an .rtf it had never heard of. This scan
+# reads every tracked file, so it is the right home for the backstop.
+look "EMBEDDED SERIAL"   "_?SN[:=][[:space:]]*[A-Za-z0-9-]{4,}" "<stripped>|<the serial>|stripped>"
 look "IMEI-SHAPED"       "(^|[^0-9])[0-9]{15}([^0-9]|$)"
 look "MAC-SHAPED"        "\b([0-9a-f]{2}:){5}[0-9a-f]{2}\b"
 look "THIRD PARTY NAME"  "\bAnna\b|\bUNDP\b|\bIPSA\b"
