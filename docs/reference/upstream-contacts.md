@@ -1,8 +1,8 @@
 # Upstream projects: who to talk to, and why they would care
 
-*Structure written 6 September 2026. THE NAMES ARE NOT FILLED IN — that needs current
-research rather than recall, and a wrong maintainer name in a cold approach is worse than
-no approach. This file exists so the work has somewhere to land.*
+*Structure written 6 September 2026. Channels and maintainers researched 13 September 2026
+against the projects' own pages. Anything below that could not be confirmed says so; a wrong
+maintainer name in a cold approach is worse than no approach.*
 
 ## Why this is worth doing
 
@@ -10,27 +10,122 @@ Impact, relevance and strategic potential are **40 percent** of the Restack scor
 heaviest weight of the three. Box 11 of the form asks for comparison with existing efforts
 **and** the ecosystem engagement plan, in the same field.
 
-A named contact — better, a letter of support — turns the strongest apparent competitor into
-the strongest endorsement. Silence invites the reviewer's obvious question: *why isn't this
-a patch to their project?*
+A named contact, better a letter of support, turns the strongest apparent competitor into the
+strongest endorsement. Silence invites the reviewer's obvious question: *why isn't this a
+patch to their project?*
 
 Nothing else on the open-items list moves 40 percent of the score for comparable effort.
 
-## The three projects
+## Read this before writing to postmarketOS
 
-| Project | What they do | Why Flashguard matters to them | Contact | Status |
-|---|---|---|---|---|
-| **OpenAndroidInstaller** | GUI installer, 90 device configs (read 7 Sep 2026), GPL | They execute; Flashguard verifies. A pre-flight check that says "this recipe does not match this device" prevents exactly the support burden they carry. Their configs are also the corpus source. | *to research* | not started |
-| **LineageOS** | Custom Android distribution, very large device coverage | Their install instructions are per-device and a mismatch bricks phones. An independent verifier reduces the bad-flash reports that reach their forums. | *to research* | not started |
-| **postmarketOS** | Long-life Linux for phones, strong device-longevity framing | Closest philosophical fit — device longevity and e-waste. Most likely to care about the framing rather than only the tool. | *to research* | not started |
+postmarketOS publishes an [AI policy](https://docs.postmarketos.org/policies-and-processes/development/ai-policy.html)
+that forbids generative-AI-assisted contributions, and amends its
+[code of conduct](https://docs.postmarketos.org/policies-and-processes/community/code-of-conduct.html)
+to list using or promoting generative AI tools as unacceptable behaviour, enforceable up to a
+permanent ban.
 
-## What to fill in per project
+Flashguard's code has been written with AI assistance. That is a fact about this project, and
+it has consequences that have to be faced rather than managed:
 
-- The maintainer or community manager who actually answers.
-- The right channel: mailing list, Matrix/IRC, forum, issue tracker, or email. Cold email to
-  a personal address is usually the worst of these.
-- Whether they have a stated position on third-party tooling.
-- Whether anyone has asked them something similar before, and what happened.
+- **Do not offer them a patch.** A contribution would violate a policy they have stated
+  plainly, and offering one anyway is not a misunderstanding, it is a decision to ignore them.
+- **A question is not a contribution**, and asking one is legitimate. Write it yourself.
+- **If they ask how it was built, say so.** If the honest answer means they would rather not
+  engage, that is their answer and it is theirs to make. Concealing it to obtain an
+  endorsement would poison the endorsement, which is the only thing the endorsement is for.
+- The verifier itself is deterministic rule matching over declared fields, with no model in
+  the decision path. That is worth saying because it is true and load-bearing, not as a way
+  around the policy.
+
+LineageOS takes the opposite position and [permits AI-assisted contributions](https://github.com/LineageOS/charter/blob/main/ai-coding-assistants.md)
+with an `Assisted-by:` trailer, while separately banning AI-generated text in bug reports.
+So there is no single disclosure answer across these three. See the `c-genai` tracker item.
+
+## Where to send it
+
+### LineageOS — send this one first
+
+Actively maintained. LineageOS 23.2 shipped February 2026 and issues are being filed and
+closed this month.
+
+- **The role that exists for this:** Developer Relations Manager. The published roster at
+  <https://wiki.lineageos.org/contributors> names **Kevin Haggerty (`haggertk`)**,
+  **Nolen Johnson (`npjohnson`)** and **Tom Powell (`zifnab`)** in that role. `npjohnson` is
+  confirmed active this quarter as the author of *Developer Verification*, 4 July 2026.
+- **Where to ask:** IRC `#lineageos-dev` on Libera.Chat, web client
+  <https://kiwiirc.com/nextclient/irc.libera.chat#lineageos-dev>. The Discord at
+  <https://discord.com/invite/gD6DMtf> is bridged to the same channels.
+- **Where NOT to ask:** the bug tracker. <https://wiki.lineageos.org/how-to/bugreport/>
+  explicitly bans installation help, device-support requests and feature requests, forbids
+  pinging maintainers, and forbids AI-generated report text.
+- **Address the room, not a person.** Their own rules discourage pinging maintainers.
+- **What they get:** their [device support requirements](https://github.com/LineageOS/charter/blob/main/device-support-requirements.md)
+  mandate firmware version assertions per device. A fingerprint-versus-recipe check maps
+  directly onto the thing that stops someone flashing a build against the wrong firmware
+  base, and it pre-screens invalid bug reports out of a tracker their dev-rel people triage.
+- **Attach to:** *Developer Verification*, <https://lineageos.org/Developer-Verification/>,
+  published 4 July 2026. They have just staked a public position on independent,
+  non-Google verification of what is safe to install.
+
+### OpenAndroidInstaller — reply inside their own thread, do not email cold
+
+**They say they are not actively maintained.** The README states it verbatim, the site repeats
+it, and the last release is v0.5.5-beta from 1 July 2024. There are 383 open issues and PRs
+from February 2026 still unreviewed.
+
+**This changes something in this repository.** The open `DISPUTED` marker on
+`supported_device_codes` in `flashguard/verify.py` was written as a question only they can
+answer. If they cannot answer it, the conservative reading has to be adopted as a decision
+with its cost stated, rather than held open indefinitely waiting for a reply.
+
+- **Who:** **Tobias Sterbak (`tsterbak`)**, sole author and copyright holder, Berlin. Second
+  and only other org member: **`MagicLike`**. Do not assume `MagicLike` speaks for the project.
+- **Where:** GitHub Discussions, Q&A category —
+  <https://github.com/openandroidinstaller-dev/openandroidinstaller/discussions/new?category=q-a>
+- **Better than cold:** reply inside
+  [Discussion #638](https://github.com/openandroidinstaller-dev/openandroidinstaller/discussions/638),
+  where Sterbak returned in November 2024 and laid out four possible futures for the project,
+  one of which is *creating safe, user-friendly installation instructions*. The verifier is a
+  direct answer to that. Nobody volunteered on that thread and it went quiet in August 2025.
+- **Email fallback:** `hello@openandroidinstaller.org`, from their README. Untested.
+- **Expect weeks, or nothing.** Set that expectation before it costs a plan.
+- **What they get:** a safety layer that keeps working without a maintainer, which is the
+  project's actual condition, and a way to tell the ~300 unanswered *add support for X*
+  requesters that no recipe matches their fingerprint instead of leaving them to try a
+  neighbouring device's config.
+
+### postmarketOS — read the section above first
+
+Very actively maintained. Release v26.06 in June 2026, monthly updates, most recent
+6 September 2026. Hosting moved to self-hosted `gitlab.postmarketos.org` in 2024.
+
+- **Who:** the team page <https://postmarketos.org/team/> is current.
+  **Stefan Hansson (`Newbyte`)** is listed for issue triage. **Pablo Correa Gómez
+  (`pabloyoyoista`)** handles project coordination and grant applications and publishes
+  `pabloyoyoista@postmarketos.org`. **Oliver Smith (`ollieparanoid`)**, **Clayton Craft
+  (`craftyguy`)**, **Luca Weiss (`z3ntu`)** and **Casey Connolly (`kcxt`)** were all named in
+  the August 2026 update, so all active within the month.
+- **Where:** Matrix `#devel:postmarketos.org` for development questions,
+  <https://matrix.to/#/#devel:postmarketos.org>. For device-identity questions specifically,
+  `#porting:postmarketos.org`, <https://matrix.to/#/#porting:postmarketos.org>.
+- **Patience is the norm.** The `#main` room topic says so in as many words: ask and wait.
+- **Never** post a technical question in `#modreq:postmarketos.org`, which is for code of
+  conduct reports.
+- **What they get:** they already run a five-tier device categorisation — main, community,
+  testing, downstream, archived — with hard promotion criteria and a demotion process. That
+  is a safe / unsafe / cannot-verify judgement made by hand, by people, on a review cadence.
+  Framing the verifier as tooling for a policy they already have is far stronger than framing
+  it as a new product.
+
+### One thing worth deciding before any of this
+
+All three publish their device metadata under open licences. A working demonstration against
+their real configs is a stronger opening than a question about them, and needs nobody's
+permission. The reason to ask first is the `supported_device_codes` question, where guessing
+would mean inventing a fact about someone else's project.
+
+Decide, per project, whether the message is a question or a pitch. Maintainers read those very
+differently and a message that is both reads as neither.
 
 ## How the approach should be structured
 

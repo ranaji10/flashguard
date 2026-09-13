@@ -62,6 +62,41 @@ if missing:
     print("      An item pointing at a path that moved is an item nobody can act on.")
     fail = 1
 
+# ---- 1b. the Caveman list has to be followable ------------------------------
+# It exists to be acted on without thinking, by someone with ten minutes. Every path it
+# names has to open and every item it points at has to exist, or the first dead link
+# teaches you to stop trusting the other seven. A chip that renders an apology is worse
+# than a chip that is not there.
+cave = d.get("caveman") or []
+ids = {i["id"] for _, i in items}
+if not cave:
+    print("  THE CAVEMAN LIST IS EMPTY.")
+    print("      The page has a Caveman chip, so an empty list is a button that opens")
+    print("      an apology. Either write the next steps or take the chip out.")
+    fail = 1
+else:
+    bad = []
+    for ix, c in enumerate(cave, 1):
+        for w in c.get("where") or []:
+            if not os.path.exists(os.path.join(root, w)):
+                bad.append(("dead path", ix, w))
+        # An item is REQUIRED now, not optional. The step reads its number, its status
+        # and its countdown off that item; with no item there is nothing to read and the
+        # step can never mark itself done, which is the whole point of the rebuild.
+        if not c.get("item"):
+            bad.append(("no item", ix, "(step belongs to nothing)"))
+        elif c["item"] not in ids:
+            bad.append(("unknown item", ix, c["item"]))
+        for k in ("act", "why", "rec"):
+            if not str(c.get(k) or "").strip():
+                bad.append(("blank " + k, ix, "(empty)"))
+    if bad:
+        print("  THE CAVEMAN LIST POINTS AT THINGS THAT ARE NOT THERE:")
+        for kind, num, val in bad:
+            print("      step %-3s %-14s %s" % (num, kind, val))
+        print("      This list is meant to be followed without checking. It has to resolve.")
+        fail = 1
+
 # ---- 2. the currency stamp must not contradict the data --------------------
 stamp = d.get("stamp") or {}
 touched = sorted({i.get("touched") for _, i in items if i.get("touched")})
@@ -104,12 +139,16 @@ if not fail:
     for _, i in items:
         fp += "|%s:%s:%s:%s:%s" % (i["id"], i["status"], i.get("touched") or "",
                                    i.get("d") or "", i.get("note") or "")
+    for ix, c in enumerate(cave):
+        fp += "|cave%d:%s:%s:%s:%s:%s" % (
+            ix, c.get("act") or "", c.get("why") or "",
+            c.get("rec") or "", ",".join(c.get("where") or []), c.get("item") or "")
     h = 5381
     _u = fp.encode("utf-16-le")
     for _k in range(0, len(_u), 2):
         h = ((h * 33) ^ int.from_bytes(_u[_k:_k + 2], "little")) & 0xFFFFFFFF
-    print("  %d tracker items, %d moved in the seven days to %s; version %08x"
-          % (n, recent, newest or "?", h))
+    print("  %d tracker items, %d moved in the seven days to %s; %d caveman steps;"
+          " version %08x" % (n, recent, newest or "?", len(cave), h))
     print("      every path named exists. The page prints this version in its banner --"
           " if it shows another, that copy is behind.")
 sys.exit(fail)

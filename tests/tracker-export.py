@@ -69,6 +69,13 @@ def fingerprint(state):
         for i in sec["items"]:
             s += "|%s:%s:%s:%s:%s" % (i["id"], i["status"], i.get("touched") or "",
                                       i.get("d") or "", i.get("note") or "")
+    # The Caveman list is content too, and it is the part most likely to be rewritten
+    # without a single item moving. Left out, the eight next steps could change
+    # entirely while both copies still swore they were the same version.
+    for ix, c in enumerate(state.get("caveman") or []):
+        s += "|cave%d:%s:%s:%s:%s:%s" % (
+            ix, c.get("act") or "", c.get("why") or "",
+            c.get("rec") or "", ",".join(c.get("where") or []), c.get("item") or "")
     return _djb2(s)
 
 
@@ -121,6 +128,54 @@ def render(state):
                  % (st.get("swept", "?"), st.get("commit", "?"), st.get("covers", "")))
         for e in st.get("log", []):
             L.append(">   - %s — %s" % (e["d"], e["t"]))
+        L.append("")
+
+    cave = state.get("caveman") or []
+    if cave:
+        # Settled-or-not is read off the item, exactly as the page reads it, so this file
+        # and the page cannot disagree about which steps are left.
+        byid = {i["id"]: i for sec in state["sections"] for i in sec["items"]}
+        def settled(c):
+            i = byid.get(c.get("item") or "")
+            return bool(i) and i["status"] in ("done", "dropped")
+        live = [c for c in cave if not settled(c)]
+        done = [c for c in cave if settled(c)]
+
+        def block(c, num, total):
+            i = byid.get(c.get("item") or "")
+            head = ("**%d. %s**" % (num, c.get("act") or "")) if num \
+                   else ("**~~%s~~**" % (c.get("act") or ""))
+            L.append(head)
+            L.append("")
+            if c.get("why"):
+                L.append(c["why"])
+            if c.get("rec"):
+                L.append("> **%s.** %s" % ("What happened" if not num
+                                           else "What I would do", c["rec"]))
+            where = c.get("where") or []
+            L.append("Open: " + (" · ".join("`%s`" % w for w in where) if where
+                                else "nothing, it is a setting in a browser."))
+            if i:
+                L.append("Full item: `%s` (%s%s)" % (
+                    c["item"], i["status"],
+                    ", due %s" % i["due"] if i.get("due") else ""))
+            L.append("")
+
+        L.append("## What to do next")
+        L.append("")
+        L.append("In order, in plain words. Each one says why it matters now, which file "
+                 "to open, and what I would do. Status comes from the item each step "
+                 "belongs to, so a step whose item is done marks itself done. "
+                 "%d left." % len(live))
+        L.append("")
+        for ix, c in enumerate(live, 1):
+            block(c, ix, len(live))
+        if done:
+            L.append("### Finished since this list was written")
+            L.append("")
+            for c in done:
+                block(c, 0, 0)
+        L.append("---")
         L.append("")
 
     L.append("Status marks: `[ ]` open · `[~]` in progress · `[x]` done · `[-]` dropped or "
