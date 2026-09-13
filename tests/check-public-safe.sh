@@ -36,7 +36,18 @@ look(){ # label, pattern, [allowlist regex]
 # Credentials. No allowlist: the GPL text and the tester instructions legitimately say
 # "password", so they are excluded by phrase rather than by pattern.
 look "CREDENTIAL"        "ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|BEGIN [A-Z ]*PRIVATE KEY|api[_-]?key[\"' ]*[:=]"
-look "PERSONAL EMAIL"    "[a-z0-9._%+-]+@(gmail|outlook|hotmail|yahoo|icloud|proton|seznam)\."
+# ONE address is published on purpose: the participation note must give testers a way to
+# ask questions and withdraw their data, and a consent document without a contact is not a
+# consent document. Ranaji chose his personal address over an alias on 13 September, with
+# the consequences stated: it goes public permanently and cannot be changed later without
+# re-contacting everyone holding the note.
+#
+# This is NOT an exemption for the file. The address is named in the output on every run so
+# nobody can forget what is being published, and ANY OTHER personal address ANYWHERE still
+# fails the build. An exemption you cannot see is the thing that does the damage.
+PUBLISHED_CONTACT="ranaji.deb@gmail.com"
+
+look "PERSONAL EMAIL"    "[a-z0-9._%+-]+@(gmail|outlook|hotmail|yahoo|icloud|proton|seznam)\." "$PUBLISHED_CONTACT"
 look "HOME PATH"         "/Users/[a-z]|/home/[a-z]" "home/claude|\\\$HOME"
 look "DEVICE SERIAL"     "^[[:space:]]*iSerial[[:space:]]+[0-9]+[[:space:]]+[A-Za-z0-9]{6,}"
 look "IMEI-SHAPED"       "(^|[^0-9])[0-9]{15}([^0-9]|$)"
@@ -51,6 +62,8 @@ if git ls-files | grep -q '^library/'; then
 fi
 
 if [ "$fail" = 0 ]; then
-  echo "  $(git ls-files | wc -l | tr -d ' ') tracked files: no credential, personal address, serial or borrowed material"
+  echo "  $(git ls-files | wc -l | tr -d ' ') tracked files: no credential, serial or borrowed material"
+  echo "  PUBLISHED ON PURPOSE: $PUBLISHED_CONTACT, the tester contact in the participation"
+  echo "  note. Decided 13 Sep over a rotatable alias. Any other personal address fails."
 fi
 exit "$fail"

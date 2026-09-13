@@ -1,0 +1,356 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2870
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 Notes: \
+\
+The webusb tool, requires attaching each device, clicking on copy and pasting on another text editor. The better and more efficient way would be to automatically copy the read results for each device as it\'92s connected and then give the option to export the entire session as one file. If this is not possible, the description should be updated to guide the users exactly what should be done. \
+\
+Currently this only reads compatible devices. On first try from macbook on Brave browser (that\'92s built on Chrome), it didnt read the old Samsung Non Android device, a USB stick and the Kobo Libra 2 reader. Even though, the Samsung and the Kobo were charging through the USB on the macbook and on the windows, I could browse the folder structure and copy paste files. So some connection existed. The tool just didn\'92t identify it. \
+\
+Ideally, the tool should handle any incompatible device with grace, now im not sure if this is due to limitation of what devices can be read through the web at all, or the limitation of the WebUSB tool that we built. If the macbook and windows are both able to connect the device in any form but the webusb is unable to read it due to technical limitation or whatever, it should be handled gracefully. \
+\
+On the windows machine, there were two ghost devices that it identified, but nothing physical was connected. So it was probably software driven since it was listed on every device i plugged in. Not sure what to make of this or how it affects what we\'92re doing. \
+\
+\
+\
+*** FIRST TEST OUTPUT : Macbook \'91Tahoe 26.6.2 (25G83)\'92  WebUSB ran on  Brave 1.95.101 (Official Build) (arm64) Chromium: 153.0.8010.37 ***\
+\
+\
+Nothing Phone 1\
+\
+=== WEBUSB READ  2026-09-13T08:50:13.236Z ===\
+\
+  manufacturer      Nothing\
+  product           YUPIK-QRD _SN:<the serial>\
+  idVendor          0x18d1\
+  idProduct         0x4ee2\
+  deviceClass       0x00\
+  usb version       2.1\
+\
+  configuration 1\
+    interface 0 alt 0   class 6  subclass 1  protocol 1\
+    interface 1 alt 0   class 255  subclass 66  protocol 1\
+\
+  --- the fields classify.sh uses ---\
+  all interface classes   0x06 0xff\
+  class/sub/proto         6/1/1, 255/66/1\
+  ADB interface (255/66/1)      yes\
+  fastboot interface (255/66/3) no\
+\
+  Compare against tests/real-descriptors/18d1-4ee2-*.desc\
+\
+\'97\'97\'97\'97\'97\'97\'97\
+\
+KOBO Libre 2\
+\
+=== NOT READ ===\
+\
+  NotFoundError: Failed to execute 'requestDevice' on 'USB': No device selected.\
+\
+  NotFoundError with an empty chooser means the browser could not enumerate the\
+  device. On Windows that is usually the WinUSB driver-binding requirement, and\
+  it is exactly the thing this probe exists to discover. Write down the OS and\
+  browser version.\
+\
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+\
+Samsung Galaxy A5 (2016)\
+\
+=== WEBUSB READ  2026-09-13T08:54:34.960Z ===\
+\
+  manufacturer      SAMSUNG\
+  product           SAMSUNG_Android\
+  idVendor          0x04e8\
+  idProduct         0x6860\
+  deviceClass       0x00\
+  usb version       2.0\
+\
+  configuration 1\
+    interface 0 alt 0   class 255  subclass 255  protocol 0\
+    interface 1 alt 0   class 2  subclass 2  protocol 1\
+    interface 2 alt 0   class 10  subclass 0  protocol 0\
+    interface 3 alt 0   class 255  subclass 66  protocol 1\
+\
+  --- the fields classify.sh uses ---\
+  all interface classes   0xff 0x02 0x0a 0xff\
+  class/sub/proto         255/255/0, 2/2/1, 10/0/0, 255/66/1\
+  ADB interface (255/66/1)      yes\
+  fastboot interface (255/66/3) no\
+\
+  Compare against tests/real-descriptors/04e8-6860-*.desc\
+\
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+\
+Samsung Non Android Phone\
+\
+=== NOT READ ===\
+\
+  NotFoundError: Failed to execute 'requestDevice' on 'USB': No device selected.\
+\
+  NotFoundError with an empty chooser means the browser could not enumerate the\
+  device. On Windows that is usually the WinUSB driver-binding requirement, and\
+  it is exactly the thing this probe exists to discover. Write down the OS and\
+  browser version.\
+\
+\'97\'97\'97\'97\'97\'97\'97\
+\
+USB Stick \
+\
+=== NOT READ ===\
+\
+  NotFoundError: Failed to execute 'requestDevice' on 'USB': No device selected.\
+\
+  NotFoundError with an empty chooser means the browser could not enumerate the\
+  device. On Windows that is usually the WinUSB driver-binding requirement, and\
+  it is exactly the thing this probe exists to discover. Write down the OS and\
+  browser version.\
+\
+\
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+\
+iPhone 5\
+\
+=== WEBUSB READ  2026-09-13T09:02:11.567Z ===\
+\
+  manufacturer      Apple Inc.\
+  product           iPhone\
+  idVendor          0x05ac\
+  idProduct         0x12a8\
+  deviceClass       0x00\
+  usb version       2.0\
+\
+  configuration 1\
+    interface 0 alt 0   class 6  subclass 1  protocol 1\
+  configuration 2\
+    interface 0 alt 0   class 1  subclass 1  protocol 0\
+    interface 1 alt 0   class 1  subclass 2  protocol 0\
+    interface 1 alt 1   class 1  subclass 2  protocol 0\
+    interface 2 alt 0   class 3  subclass 0  protocol 0\
+  configuration 3\
+    interface 0 alt 0   class 6  subclass 1  protocol 1\
+    interface 1 alt 0   class 255  subclass 254  protocol 2\
+  configuration 4\
+    interface 0 alt 0   class 6  subclass 1  protocol 1\
+    interface 1 alt 0   class 255  subclass 254  protocol 2\
+    interface 2 alt 0   class 255  subclass 253  protocol 1\
+    interface 2 alt 1   class 255  subclass 253  protocol 1\
+    interface 2 alt 2   class 255  subclass 253  protocol 1\
+  configuration 5\
+    interface 0 alt 0   class 6  subclass 1  protocol 1\
+    interface 1 alt 0   class 255  subclass 254  protocol 2\
+    interface 2 alt 0   class 2  subclass 13  protocol 0\
+    interface 3 alt 0   class 10  subclass 0  protocol 1\
+    interface 3 alt 1   class 10  subclass 0  protocol 1\
+\
+  --- the fields classify.sh uses ---\
+  all interface classes   0x06 0x01 0x01 0x03 0x06 0xff 0x06 0xff 0xff 0x06 0xff 0x02 0x0a\
+  class/sub/proto         6/1/1, 1/1/0, 1/2/0, 3/0/0, 6/1/1, 255/254/2, 6/1/1, 255/254/2, 255/253/1, 6/1/1, 255/254/2, 2/13/0, 10/0/1\
+  ADB interface (255/66/1)      no\
+  fastboot interface (255/66/3) no\
+\
+  Compare against tests/real-descriptors/05ac-12a8-*.desc\
+\
+*** END OF FIRST TEST ***\
+\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 *** SECOND TEST OUTPUT : Windows 10 Home Single Language, Version 22H2,  OS Build	19045.7663.   WebUSB ran on  Edge Version 153.0.4234.32 (Official build) (64-bit) ***\
+\
+\
+Nothing Phone 1\
+\
+\
+=== WEBUSB READ  2026-09-13T09:18:14.229Z ===\
+\
+  manufacturer      Nothing\
+  product           YUPIK-QRD _SN:<the serial>\
+  idVendor          0x18d1\
+  idProduct         0x4ee2\
+  deviceClass       0x00\
+  usb version       2.1\
+\
+  configuration 1\
+    interface 0 alt 0   class 6  subclass 1  protocol 1\
+    interface 1 alt 0   class 255  subclass 66  protocol 1\
+\
+  --- the fields classify.sh uses ---\
+  all interface classes   0x06 0xff\
+  class/sub/proto         6/1/1, 255/66/1\
+  ADB interface (255/66/1)      yes\
+  fastboot interface (255/66/3) no\
+\
+  Compare against tests/real-descriptors/18d1-4ee2-*.desc\
+\
+---------------------\
+\
+Some ghost device that the tool read as WebCam, but nothing physical was connected. \
+\
+=== WEBUSB READ  2026-09-13T09:19:21.481Z ===\
+\
+  manufacturer      <not exposed>\
+  product           <not exposed>\
+  idVendor          0x0408\
+  idProduct         0xa060\
+  deviceClass       0xef\
+  usb version       2.0\
+\
+  configuration 1\
+    interface 0 alt 0   class 14  subclass 1  protocol 0\
+    interface 1 alt 0   class 14  subclass 2  protocol 0\
+    interface 1 alt 1   class 14  subclass 2  protocol 0\
+    interface 1 alt 2   class 14  subclass 2  protocol 0\
+    interface 1 alt 3   class 14  subclass 2  protocol 0\
+    interface 1 alt 4   class 14  subclass 2  protocol 0\
+    interface 1 alt 5   class 14  subclass 2  protocol 0\
+    interface 1 alt 6   class 14  subclass 2  protocol 0\
+    interface 1 alt 7   class 14  subclass 2  protocol 0\
+\
+  --- the fields classify.sh uses ---\
+  all interface classes   0x0e 0x0e\
+  class/sub/proto         14/1/0, 14/2/0\
+  ADB interface (255/66/1)      no\
+  fastboot interface (255/66/3) no\
+\
+  Compare against tests/real-descriptors/0408-a060-*.desc\
+\
+------------------------------------------------\
+\
+Some ghost device that the tool read, but nothing physical was connected. Identified as Unknown device from Lite-On technology corp.\
+\
+=== WEBUSB READ  2026-09-13T09:20:56.322Z ===\
+\
+  manufacturer      <not exposed>\
+  product           <not exposed>\
+  idVendor          0x04ca\
+  idProduct         0x3016\
+  deviceClass       0xe0\
+  usb version       2.0\
+\
+  configuration 1\
+    interface 0 alt 0   class 224  subclass 1  protocol 1\
+    interface 1 alt 0   class 224  subclass 1  protocol 1\
+    interface 1 alt 1   class 224  subclass 1  protocol 1\
+    interface 1 alt 2   class 224  subclass 1  protocol 1\
+    interface 1 alt 3   class 224  subclass 1  protocol 1\
+    interface 1 alt 4   class 224  subclass 1  protocol 1\
+    interface 1 alt 5   class 224  subclass 1  protocol 1\
+\
+  --- the fields classify.sh uses ---\
+  all interface classes   0xe0 0xe0\
+  class/sub/proto         224/1/1, 224/1/1\
+  ADB interface (255/66/1)      no\
+  fastboot interface (255/66/3) no\
+\
+  Compare against tests/real-descriptors/04ca-3016-*.desc \
+\
+---------------------------------------\
+\
+KOBO Libra 2 \
+\
+=== NOT READ ===\
+\
+  NotFoundError: Failed to execute 'requestDevice' on 'USB': No device selected.\
+\
+  NotFoundError with an empty chooser means the browser could not enumerate the\
+  device. On Windows that is usually the WinUSB driver-binding requirement, and\
+  it is exactly the thing this probe exists to discover. Write down the OS and\
+  browser version.\
+\
+--------------------------------------------\
+\
+Samsung Galaxy A5 (2016)\
+\
+=== WEBUSB READ  2026-09-13T09:26:51.133Z ===\
+\
+  manufacturer      SAMSUNG\
+  product           SAMSUNG_Android\
+  idVendor          0x04e8\
+  idProduct         0x6860\
+  deviceClass       0x00\
+  usb version       2.0\
+\
+  configuration 1\
+    interface 0 alt 0   class 255  subclass 255  protocol 0\
+    interface 1 alt 0   class 2  subclass 2  protocol 1\
+    interface 2 alt 0   class 10  subclass 0  protocol 0\
+    interface 3 alt 0   class 255  subclass 66  protocol 1\
+\
+  --- the fields classify.sh uses ---\
+  all interface classes   0xff 0x02 0x0a 0xff\
+  class/sub/proto         255/255/0, 2/2/1, 10/0/0, 255/66/1\
+  ADB interface (255/66/1)      yes\
+  fastboot interface (255/66/3) no\
+\
+  Compare against tests/real-descriptors/04e8-6860-*.desc\
+\
+-----------------------------------------------------\
+\
+Samsung Non Android \
+\
+=== NOT READ ===\
+\
+  NotFoundError: Failed to execute 'requestDevice' on 'USB': No device selected.\
+\
+  NotFoundError with an empty chooser means the browser could not enumerate the\
+  device. On Windows that is usually the WinUSB driver-binding requirement, and\
+  it is exactly the thing this probe exists to discover. Write down the OS and\
+  browser version.\
+\
+--------------------------------------------------------\
+\
+USB Stick \
+\
+=== NOT READ ===\
+\
+  NotFoundError: Failed to execute 'requestDevice' on 'USB': No device selected.\
+\
+  NotFoundError with an empty chooser means the browser could not enumerate the\
+  device. On Windows that is usually the WinUSB driver-binding requirement, and\
+  it is exactly the thing this probe exists to discover. Write down the OS and\
+  browser version.\
+\
+----------------------------------------------------------\
+\
+iPhone 5\
+\
+=== WEBUSB READ  2026-09-13T09:32:31.249Z ===\
+\
+  manufacturer      Apple Inc.\
+  product           iPhone\
+  idVendor          0x05ac\
+  idProduct         0x12a8\
+  deviceClass       0x00\
+  usb version       2.0\
+\
+  configuration 1\
+    interface 0 alt 0   class 6  subclass 1  protocol 1\
+  configuration 2\
+    interface 0 alt 0   class 1  subclass 1  protocol 0\
+    interface 1 alt 0   class 1  subclass 2  protocol 0\
+    interface 1 alt 1   class 1  subclass 2  protocol 0\
+    interface 2 alt 0   class 3  subclass 0  protocol 0\
+  configuration 3\
+    interface 0 alt 0   class 6  subclass 1  protocol 1\
+    interface 1 alt 0   class 255  subclass 254  protocol 2\
+  configuration 4\
+    interface 0 alt 0   class 6  subclass 1  protocol 1\
+    interface 1 alt 0   class 255  subclass 254  protocol 2\
+    interface 2 alt 0   class 255  subclass 253  protocol 1\
+    interface 2 alt 1   class 255  subclass 253  protocol 1\
+    interface 2 alt 2   class 255  subclass 253  protocol 1\
+\
+  --- the fields classify.sh uses ---\
+  all interface classes   0x06 0x01 0x01 0x03 0x06 0xff 0x06 0xff 0xff\
+  class/sub/proto         6/1/1, 1/1/0, 1/2/0, 3/0/0, 6/1/1, 255/254/2, 6/1/1, 255/254/2, 255/253/1\
+  ADB interface (255/66/1)      no\
+  fastboot interface (255/66/3) no\
+\
+  Compare against tests/real-descriptors/05ac-12a8-*.desc\
+\
+\
+----------------------------END of TEST 2---------------------------------\
+}

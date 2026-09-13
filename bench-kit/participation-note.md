@@ -45,8 +45,7 @@ responsibility for a device you own. If a device is precious, leave it in the dr
 device that will not power on or will not appear is a useful record in itself and is worth
 reporting rather than forcing.
 
-**How to send it back.** `[RETURN ROUTE — a shared upload folder link, to be filled in
-before anyone is asked to take part]`. Send the records file and the `descriptors/` folder.
+**How to send it back.** RETURN ROUTE — shared upload folder link: `https://drive.google.com/drive/folders/14t7HQjjCjiDn09EnwvQcaBGwGw8eWvzy?usp=sharing`. Send the records file and the `descriptors/` folder.
 Nothing else, and never a screenshot of a terminal you have not read.
 
 **What we keep about you.** A handle or initials of your choosing, and one contact address so
@@ -57,11 +56,11 @@ deleted sooner. It is never published and never appears in the dataset.
 **Where the data goes.** Records and descriptors are published as an open dataset under
 **CC0** so other reuse and repair projects can build on them with no licence friction.
 
-**Withdrawing.** Write to `[CONTACT]` and your records are removed from the dataset. No
+**Withdrawing.** Write to `ranaji.deb@gmail.com` and your records are removed from the dataset. No
 reason needed. Records already redistributed by others cannot be recalled, which is what
 publishing openly means, so it is worth knowing that before you start rather than after.
 
-**Questions or something odd.** `[CONTACT]`. Awkward, confusing and broken are all useful
+**Questions or something odd.** `ranaji.deb@gmail.com`. Awkward, confusing and broken are all useful
 findings. Reporting that a step did not work is as valuable as a clean record.
 
 ---

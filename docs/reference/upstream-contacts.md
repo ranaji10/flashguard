@@ -81,6 +81,23 @@ whether it is a maintained invariant or an accident, because the verifier would 
 **3. Would a pre-flight verdict be useful to you, and where would it sit?** The actual ask.
 Before the installer runs, not instead of it.
 
+**4. You built a desktop application. Did the browser route fail you, or did you never try it?**
+Grounded in a real result rather than curiosity. On 13 September a WebUSB probe read the
+Nothing Phone 1 and the Samsung A5 identically on macOS/Brave and Windows/Edge, ADB interface
+visible, no driver install. The same probe could not see a Kobo, a USB stick or a feature
+phone on either platform, while both operating systems mounted them happily — Chromium
+refuses whole device classes.
+
+So a browser can classify Android phones and cannot see mass storage. If OpenAndroidInstaller
+evaluated a web installer and rejected it, the reasons are worth more to this project than
+anything else in this list, because they would be a year of learning for the price of a
+message. If they never tried it, saying so is equally useful.
+
+**5. Do your configs record which USB mode a device presents at each step?** The browser route
+can only see some modes, so a procedure that passes through MTP or mass storage has a step the
+browser cannot observe. If that is already tracked somewhere in the config, the verifier should
+read it rather than infer it.
+
 ### postmarketOS
 
 **1. Is the absence of unlock prerequisites in `deviceinfo` deliberate?** 0 of 556 declare one,
@@ -102,6 +119,20 @@ incidental, anything built on it breaks at the next wiki refactor.
 other 634 — no unlock needed, a standard unlock, or nobody filled it in? Absence that means
 three different things is the failure this project keeps finding, and here it is in someone
 else's data.
+
+### Ask all three
+
+**Is there already a name for "this device cannot be enumerated by a browser"?**
+
+Before inventing a schema field for it, ask whether anyone upstream already tracks it and what
+they call it. Adopting an existing term costs nothing and beats a private vocabulary that has
+to be translated at every boundary.
+
+This question exists because of a mistake made here on 13 September: fields were invented for
+human variant confirmation (`variant_source`, `human_confirmed`) and an existing field with a
+different meaning was read as if it carried the new one. The generalisable lesson is to ask
+what a thing is called before naming it, and these three projects have between them catalogued
+more device behaviour than this project ever will.
 
 ## The honest risk
 
