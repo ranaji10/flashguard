@@ -172,6 +172,7 @@ def main():
     chipsets = Counter(android_field(r, "board_platform") for r in androids)
     schemes = Counter(android_field(r, "partition_scheme") for r in androids)
     locks = Counter(android_field(r, "bootloader_state") for r in androids)
+    routes = Counter(r.get("capture_route", "linux_live") for r in records)
     testers = Counter(r.get("tester", "?") for r in records)
 
     runs = [v for r in records for v in r.get("verifier_runs", [])]
@@ -189,6 +190,10 @@ def main():
     print("  negatives              %d" % (total - len(androids)))
     if bad:
         print("  MALFORMED LINES        %d" % bad)
+
+    print("\n  capture routes")
+    for name, count in routes.most_common():
+        print(bar(name, count, total))
 
     print("\n  device classes")
     for name, count in classes.most_common():

@@ -18,13 +18,13 @@
        It must be served over https:// or opened from file:// — both are secure contexts.
     2. Plug in one device.
     3. Press the button and pick the device in the chooser.
-    4. Compare the output against the matching file in tests/real-descriptors/.
-       If the interface classes agree, browser-side classification is proven.
+    4. Accumulate all reads across your session, then copy or download the export.
 
   WHAT A FAILURE MEANS
-    "No device selected" is a cancelled chooser, not a failure.
-    An empty chooser means the browser could not enumerate the device at all — on Windows
-    that is usually the WinUSB driver-binding requirement, which is the finding.
+    NotFoundError means EITHER the chooser was empty OR the tester cancelled.
+    The API cannot tell them apart, so the tool asks the tester directly and records
+    their answer as a structured value (not_listed or tester_cancelled).
+    Browsers refuse whole device classes (mass storage, HID, audio, video) by design.
 -->
 <style>
   :root{color-scheme:light dark;--ink:#14202A;--soft:#52646F;--rule:#D1DBDF;--bg:#F0F3F5;--card:#fff;--ok:#2F6B4F;--bad:#A33B2E}
@@ -36,10 +36,13 @@
   button{font:600 14px system-ui;background:#22646B;color:#fff;border:0;border-radius:4px;padding:11px 18px;cursor:pointer}
   button:hover{background:#2E848D}
   button.ghost{background:none;color:var(--soft);border:1px solid var(--rule)}
+  button.choice{background:#3E505B;color:#fff;margin-right:8px}
+  button.choice:hover{background:#52646F}
   .row{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px}
   pre{background:var(--card);border:1px solid var(--rule);border-left:3px solid #22646B;padding:14px 16px;
       overflow-x:auto;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word}
   .note{background:var(--card);border:1px solid var(--rule);padding:12px 15px;margin:0 0 20px;color:var(--soft);font-size:14.5px}
+  .prompt-card{background:var(--card);border:1px solid #C47A22;border-left:4px solid #C47A22;padding:14px 16px;border-radius:4px;margin:0 0 16px}
   .verdict{font-weight:600;padding:10px 14px;border-radius:4px;margin:0 0 14px;display:none}
   .verdict.on{display:block}
   .verdict.good{background:rgba(47,107,79,.13);color:var(--ok)}
@@ -62,7 +65,20 @@
   <div class="row">
     <button id="go" type="button">Read a device</button>
     <button class="ghost" id="again" type="button">Read another</button>
-    <button class="ghost" id="copy" type="button">Copy output</button>
+    <button class="ghost" id="copy" type="button">Copy session output</button>
+    <button class="ghost" id="download" type="button">Download session</button>
+    <button class="ghost" id="clear" type="button">Clear session</button>
+  </div>
+
+  <div class="prompt-card" id="questionCard" style="display:none">
+    <p style="margin:0 0 10px;font-weight:600">Did your device appear in the list?</p>
+    <p style="margin:0 0 12px;font-size:14px;color:var(--soft)">
+      Browsers refuse whole device classes (mass storage, HID, audio, video) by design. A device the OS mounts happily can still be invisible in the WebUSB chooser.
+    </p>
+    <div>
+      <button class="choice" id="ansNotListed" type="button">No — not listed in chooser</button>
+      <button class="choice" id="ansCancelled" type="button">Yes — I cancelled</button>
+    </div>
   </div>
 
   <div class="verdict" id="verdict"></div>
@@ -74,36 +90,68 @@ Support in this browser: <span id="sup"></span></pre>
 <script>
 (function(){
   "use strict";
-  var out=document.getElementById("out"), verdict=document.getElementById("verdict"), log=[];
+  var out=document.getElementById("out"), verdict=document.getElementById("verdict");
+  var questionCard=document.getElementById("questionCard");
+  var sessionReads = [];
+  var currentPendingUnread = null;
+
+  var userAgent = navigator.userAgent || "unknown";
   document.getElementById("sup").textContent =
     ("usb" in navigator) ? "navigator.usb present" : "NO navigator.usb — this browser cannot do WebUSB";
 
   function hex(n,w){ var s=Number(n).toString(16); while(s.length<(w||4)) s="0"+s; return "0x"+s; }
-  function say(s){ log.push(s); out.textContent=log.join("\n"); }
+
+  function renderSession(){
+    if (sessionReads.length === 0) {
+      out.textContent = "Nothing read yet.\n\nUser Agent: " + userAgent + "\nSupport in this browser: " +
+        (("usb" in navigator) ? "navigator.usb present" : "NO navigator.usb");
+      return;
+    }
+
+    var countRead = sessionReads.filter(function(r){ return r.type === "read"; }).length;
+    var unread = sessionReads.filter(function(r){ return r.type === "not_read"; });
+    var countNotListed = unread.filter(function(r){ return r.enumeration === "not_listed"; }).length;
+    var countCancelled = unread.filter(function(r){ return r.enumeration === "tester_cancelled"; }).length;
+
+    var header = [
+      "=== WEBUSB PROBE SESSION EXPORT ===",
+      "Session Timestamp:  " + new Date().toISOString(),
+      "User Agent:         " + userAgent,
+      "Devices read:       " + countRead,
+      "Devices not read:   " + unread.length + " (not_listed: " + countNotListed + ", tester_cancelled: " + countCancelled + ")",
+      "",
+      "------------------------------------------------------------",
+      ""
+    ].join("\n");
+
+    var body = sessionReads.map(function(item, idx){
+      return "# Device " + (idx + 1) + "\n" + item.text;
+    }).join("\n\n------------------------------------------------------------\n\n");
+
+    out.textContent = header + body;
+  }
 
   function describe(d){
-    log=[];
-    say("=== WEBUSB READ  " + new Date().toISOString() + " ===");
-    say("");
-    say("  manufacturer      " + (d.manufacturerName || "<not exposed>"));
-    say("  product           " + (d.productName || "<not exposed>"));
-    say("  idVendor          " + hex(d.vendorId));
-    say("  idProduct         " + hex(d.productId));
-    say("  deviceClass       " + hex(d.deviceClass,2));
-    say("  usb version       " + d.usbVersionMajor + "." + d.usbVersionMinor);
-    // d.serialNumber is deliberately NOT read or printed. The matrix never carries serials
-    // and this probe must not be the thing that leaks one into a screenshot.
-    say("");
+    var log = [];
+    log.push("=== WEBUSB READ  " + new Date().toISOString() + " ===");
+    log.push("");
+    log.push("  manufacturer      " + (d.manufacturerName || "<not exposed>"));
+    log.push("  product           " + (d.productName || "<not exposed>"));
+    log.push("  idVendor          " + hex(d.vendorId));
+    log.push("  idProduct         " + hex(d.productId));
+    log.push("  deviceClass       " + hex(d.deviceClass,2));
+    log.push("  usb version       " + d.usbVersionMajor + "." + d.usbVersionMinor);
+    log.push("");
 
     var triples=[], classes=[];
     (d.configurations||[]).forEach(function(cfg){
-      say("  configuration " + cfg.configurationValue +
+      log.push("  configuration " + cfg.configurationValue +
           (cfg.configurationName ? " (" + cfg.configurationName + ")" : ""));
       (cfg.interfaces||[]).forEach(function(iface){
         (iface.alternates||[]).forEach(function(alt){
           var t = alt.interfaceClass + "/" + alt.interfaceSubclass + "/" + alt.interfaceProtocol;
           if (alt.alternateSetting === 0) { triples.push(t); classes.push(hex(alt.interfaceClass,2)); }
-          say("    interface " + iface.interfaceNumber + " alt " + alt.alternateSetting +
+          log.push("    interface " + iface.interfaceNumber + " alt " + alt.alternateSetting +
               "   class " + alt.interfaceClass +
               "  subclass " + alt.interfaceSubclass +
               "  protocol " + alt.interfaceProtocol +
@@ -112,23 +160,90 @@ Support in this browser: <span id="sup"></span></pre>
       });
     });
 
-    say("");
-    say("  --- the fields classify.sh uses ---");
-    say("  all interface classes   " + (classes.join(" ") || "<none>"));
-    say("  class/sub/proto         " + (triples.join(", ") || "<none>"));
+    log.push("");
+    log.push("  --- the fields classify.sh uses ---");
+    log.push("  all interface classes   " + (classes.join(" ") || "<none>"));
+    log.push("  class/sub/proto         " + (triples.join(", ") || "<none>"));
     var hasAdb = triples.indexOf("255/66/1") >= 0;
     var hasFb  = triples.indexOf("255/66/3") >= 0;
-    say("  ADB interface (255/66/1)      " + (hasAdb ? "yes" : "no"));
-    say("  fastboot interface (255/66/3) " + (hasFb ? "yes" : "no"));
-    say("");
-    say("  Compare against tests/real-descriptors/" +
+    log.push("  ADB interface (255/66/1)      " + (hasAdb ? "yes" : "no"));
+    log.push("  fastboot interface (255/66/3) " + (hasFb ? "yes" : "no"));
+    log.push("");
+    log.push("  Compare against tests/real-descriptors/" +
         hex(d.vendorId).slice(2) + "-" + hex(d.productId).slice(2) + "-*.desc");
+
+    var record = {
+      type: "read",
+      timestamp: new Date().toISOString(),
+      vendorId: hex(d.vendorId),
+      productId: hex(d.productId),
+      text: log.join("\n")
+    };
+    sessionReads.push(record);
+    renderSession();
 
     var ok = classes.length > 0;
     verdict.className = "verdict on " + (ok ? "good" : "bad");
     verdict.textContent = ok
-      ? "Interface descriptors ARE readable in the browser. Compare the classes above with the .desc file for this device."
-      : "No interface descriptors came back. Note the browser and OS — this is the finding, not a failure of the probe.";
+      ? "Interface descriptors ARE readable in the browser. Added to session export."
+      : "No interface descriptors came back. Added to session export.";
+    questionCard.style.display = "none";
+  }
+
+  function handleUnread(e){
+    var errName = (e && e.name) ? e.name : "Error";
+    var errMsg = (e && e.message) ? e.message : String(e);
+
+    currentPendingUnread = {
+      type: "not_read",
+      timestamp: new Date().toISOString(),
+      error: errName + ": " + errMsg,
+      enumeration: "unanswered",
+      source: "tester",
+      userAgent: userAgent,
+      text: ""
+    };
+
+    updateUnreadText(currentPendingUnread, "unanswered");
+    sessionReads.push(currentPendingUnread);
+    renderSession();
+
+    verdict.className = "verdict on bad";
+    verdict.textContent = "Device not read (" + errName + "). Please answer the question above to record whether it appeared in the chooser.";
+    questionCard.style.display = "block";
+  }
+
+  function updateUnreadText(rec, status){
+    rec.enumeration = status;
+    var log = [
+      "=== NOT READ  " + rec.timestamp + " ===",
+      "",
+      "  " + rec.error,
+      "  browser_enumeration:        " + rec.enumeration,
+      "  browser_enumeration_source: tester",
+      "  context:                    " + rec.userAgent,
+      ""
+    ];
+    if (status === "not_listed") {
+      log.push("  Finding: Device was not listed in the chooser. Browsers refuse whole device classes");
+      log.push("  (mass storage, HID, audio, video), so a device the OS mounts happily can still be");
+      log.push("  invisible in WebUSB. This is a property of the browser route, not a cable fault.");
+    } else if (status === "tester_cancelled") {
+      log.push("  Tester cancelled the chooser dialog.");
+    } else {
+      log.push("  Awaiting tester confirmation on whether the device appeared in the chooser.");
+    }
+    rec.text = log.join("\n");
+  }
+
+  function answerQuestion(status){
+    if (currentPendingUnread) {
+      updateUnreadText(currentPendingUnread, status);
+      renderSession();
+      questionCard.style.display = "none";
+      verdict.className = "verdict on good";
+      verdict.textContent = "Recorded answer: " + status + ". Session export updated.";
+    }
   }
 
   function pick(){
@@ -143,25 +258,40 @@ Support in this browser: <span id="sup"></span></pre>
       describe(d);
       if(d.opened) d.close().catch(function(){});
     }).catch(function(e){
-      log=[]; say("=== NOT READ ===");
-      say("");
-      say("  " + (e && e.name ? e.name : "Error") + ": " + (e && e.message ? e.message : e));
-      say("");
-      say("  NotFoundError with an empty chooser means the browser could not enumerate the");
-      say("  device. On Windows that is usually the WinUSB driver-binding requirement, and");
-      say("  it is exactly the thing this probe exists to discover. Write down the OS and");
-      say("  browser version.");
-      verdict.className="verdict on bad";
-      verdict.textContent="Nothing read. If the chooser was empty rather than cancelled, that is a result worth recording.";
+      handleUnread(e);
     });
   }
 
   document.getElementById("go").addEventListener("click",pick);
   document.getElementById("again").addEventListener("click",pick);
+  document.getElementById("ansNotListed").addEventListener("click",function(){ answerQuestion("not_listed"); });
+  document.getElementById("ansCancelled").addEventListener("click",function(){ answerQuestion("tester_cancelled"); });
+
   document.getElementById("copy").addEventListener("click",function(){
     var b=this, t=out.textContent;
-    function ok(){ var o=b.textContent; b.textContent="Copied"; setTimeout(function(){b.textContent=o;},1400); }
-    if(navigator.clipboard) navigator.clipboard.writeText(t).then(ok,function(){}); 
+    function ok(){ var o=b.textContent; b.textContent="Copied!"; setTimeout(function(){b.textContent=o;},1400); }
+    if(navigator.clipboard) navigator.clipboard.writeText(t).then(ok,function(){});
+  });
+
+  document.getElementById("download").addEventListener("click",function(){
+    var text = out.textContent;
+    var blob = new Blob([text], {type:"text/plain"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "webusb-session-" + new Date().toISOString().replace(/[:.]/g,"-") + ".txt";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById("clear").addEventListener("click",function(){
+    sessionReads = [];
+    currentPendingUnread = null;
+    questionCard.style.display = "none";
+    verdict.className = "verdict";
+    renderSession();
   });
 })();
 </script>

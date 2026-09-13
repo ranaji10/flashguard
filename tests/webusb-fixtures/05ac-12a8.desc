@@ -1,0 +1,45 @@
+#!expect=ios
+#!ground_truth=tester_identified
+#!device=iPhone 5
+#!route=browser
+#!captured=2026-09-13T09:02:11.567Z
+
+=== WEBUSB READ  2026-09-13T09:02:11.567Z ===
+
+  manufacturer      Apple Inc.
+  product           iPhone
+  idVendor          0x05ac
+  idProduct         0x12a8
+  deviceClass       0x00
+  usb version       2.0
+
+  configuration 1
+    interface 0 alt 0   class 6  subclass 1  protocol 1
+  configuration 2
+    interface 0 alt 0   class 1  subclass 1  protocol 0
+    interface 1 alt 0   class 1  subclass 2  protocol 0
+    interface 1 alt 1   class 1  subclass 2  protocol 0
+    interface 2 alt 0   class 3  subclass 0  protocol 0
+  configuration 3
+    interface 0 alt 0   class 6  subclass 1  protocol 1
+    interface 1 alt 0   class 255  subclass 254  protocol 2
+  configuration 4
+    interface 0 alt 0   class 6  subclass 1  protocol 1
+    interface 1 alt 0   class 255  subclass 254  protocol 2
+    interface 2 alt 0   class 255  subclass 253  protocol 1
+    interface 2 alt 1   class 255  subclass 253  protocol 1
+    interface 2 alt 2   class 255  subclass 253  protocol 1
+  configuration 5
+    interface 0 alt 0   class 6  subclass 1  protocol 1
+    interface 1 alt 0   class 255  subclass 254  protocol 2
+    interface 2 alt 0   class 2  subclass 13  protocol 0
+    interface 3 alt 0   class 10  subclass 0  protocol 1
+    interface 3 alt 1   class 10  subclass 0  protocol 1
+
+  --- the fields classify.sh uses ---
+  all interface classes   0x06 0x01 0x01 0x03 0x06 0xff 0x06 0xff 0xff 0x06 0xff 0x02 0x0a
+  class/sub/proto         6/1/1, 1/1/0, 1/2/0, 3/0/0, 6/1/1, 255/254/2, 6/1/1, 255/254/2, 255/253/1, 6/1/1, 255/254/2, 2/13/0, 10/0/1
+  ADB interface (255/66/1)      no
+  fastboot interface (255/66/3) no
+
+  Compare against tests/real-descriptors/05ac-12a8-*.desc

@@ -9,6 +9,7 @@ if command -v node >/dev/null 2>&1; then
   echo "  CONSOLE LOGIC"; node "$HERE/run-console-logic.js" || exit 1
 fi
 echo; echo "  CLASSIFIER"; bash "$HERE/run.sh" || exit 1
+echo "  WEBUSB ROUTE AGREEMENT"; bash "$HERE/test-webusb-agreement.sh" || exit 1
 echo "  ANDROID DERIVATION"; bash "$HERE/run-android.sh" || exit 1
 echo "  VERIFIER"
 bash "$HERE/run-verify.sh"; rc=$?

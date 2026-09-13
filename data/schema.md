@@ -59,8 +59,10 @@ A missing key is a defect, not a third kind of absence. Write the sentinel.
     "method": "linux-live | windows-chrome | other",
     "browser": "not_applicable | Chrome 128 | Edge"
   },
-  "capture_route": "linux-live | browser | package",
-
+  "capture_route": "linux_live | browser",
+  "browser_enumeration": "enumerated | not_listed | tester_cancelled | not_attempted",
+  "browser_enumeration_source": "tester",
+  "browser_enumeration_context": "Mozilla/5.0 ... (userAgent and OS string)",
 
   "connection": "USB-C | USB-A",
   "cable_notes": "",
@@ -136,9 +138,8 @@ disagreed with the scan. The console now asks before running the scan, every tim
 condition, and the tool has to behave sensibly on one.
 
 **`capture_route`** New in 0.4, added 6 September after the delivery platform was decided.
-How this record was obtained: `linux-live` (the bench kit on an Ubuntu session, with root and
-a clean USB baseline), `browser` (WebUSB, no install), or `package` (a downloadable tool on
-the owner's own OS).
+How this record was obtained: `linux_live` (the bench kit on an Ubuntu session, with root and
+a clean USB baseline) or `browser` (WebUSB, no install).
 
 This exists because **the matrix is being collected under conditions the product will not
 have.** `sudo lsusb -v` on a live Linux session sees more than a browser does. A record
@@ -146,8 +147,28 @@ obtained by a route the shipped tool cannot use is still useful evidence about d
 it cannot be used to claim the tool will work — and without this field the two are
 indistinguishable after the fact.
 
-Every record captured before 6 September is `linux-live`. See
+Every record captured before 6 September is `linux_live` (or `linux-live`). See
 `docs/reasoning/delivery-platform.md`.
+
+**`browser_enumeration`**, **`browser_enumeration_source`**, **`browser_enumeration_context`**
+Added 13 September after the first cross-platform WebUSB probe run on macOS and Windows.
+- `browser_enumeration`: `enumerated | not_listed | tester_cancelled | not_attempted`.
+  `not_attempted` is the default. An absent field must never read as incompatible.
+- `browser_enumeration_source`: `tester` (the WebUSB `NotFoundError` cannot distinguish an
+  empty chooser from a cancelled dialog; the attribution belongs to the tester's observation).
+- `browser_enumeration_context`: the `userAgent` and OS string recorded at capture.
+
+**Browser route device class limitations (13 September probe run):**
+Chromium-based browsers enforce protected interface classes and refuse enumeration for whole
+device classes by design: mass storage (0x08), HID (0x03), audio (0x01), and video (0x0e).
+On the 13 September run across macOS/Brave and Windows/Edge, a Kobo e-reader, a generic USB flash drive,
+and a non-Android feature phone were mounted normally by the operating system but never appeared
+in the browser's device chooser.
+
+**Prohibition on boolean compatibility flags:**
+Never add `webusb_compatible` or any boolean device property. `NotFoundError` is ambiguous
+between "not listed" and "cancelled"; deriving a boolean capability claim from an ambiguous
+signal is the false-safe pathway.
 
 **`device_local_id`** New in 0.3, and the field that makes the dataset countable.
 One physical phone reports a **different USB product ID in every mode**. The Samsung A5

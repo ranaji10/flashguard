@@ -39,14 +39,22 @@ PID=$(printf '%s\n' "$BODY" | grep -m1 -oE 'idProduct +0x[0-9a-f]{4}' | grep -oE
 
 # Walk the interface descriptors properly. lsusb -v emits class, subclass and
 # protocol in that order inside each interface block, so completing a triple on
-# the protocol line groups them correctly. The previous version grepped with
-# -A2 across the whole descriptor, which let a class from one interface pair
-# with a protocol from another -- and grepped -m1, which read only interface 0.
-# On a phone with debugging on, interface 0 is MTP and ADB is further down.
+# the protocol line groups them correctly. WebUSB outputs interface lines with
+# class, subclass and protocol inline.
 TRIPLES=$(printf '%s\n' "$BODY" | awk '
   $1=="bInterfaceClass"    { c=$2; next }
   $1=="bInterfaceSubClass" { s=$2; next }
   $1=="bInterfaceProtocol" { if (c!="") print c"/"s"/"$2; c=""; s=""; next }
+  /class [0-9]+ +subclass [0-9]+ +protocol [0-9]+/ {
+    c=""; s=""; p=""
+    for (i=1; i<=NF; i++) {
+      if ($i=="class") c=$(i+1)
+      if ($i=="subclass") s=$(i+1)
+      if ($i=="protocol") p=$(i+1)
+    }
+    if (c!="" && s!="" && p!="") print c"/"s"/"p
+    c=""; s=""; p=""
+  }
 ')
 
 ALLCLASS=$(printf '%s\n' "$TRIPLES" | awk -F/ 'NF{printf "0x%02x ", $1}' | sed 's/ $//')
@@ -59,7 +67,7 @@ has_triple(){ printf '%s\n' "$TRIPLES" | grep -qx "$1"; }
 HAS_ADB=no; has_triple "255/66/1" && HAS_ADB=yes
 HAS_FB=no;  has_triple "255/66/3" && HAS_FB=yes
 
-IPROD=$(printf '%s\n' "$BODY" | grep -m1 -E '^[[:space:]]*iProduct' | sed -E 's/.*iProduct +[0-9]+ +//')
+IPROD=$(printf '%s\n' "$BODY" | grep -m1 -E '^[[:space:]]*(iProduct|product)' | sed -E 's/.*(iProduct +[0-9]+ +|product +)//')
 IFACE=$(printf '%s\n' "$BODY" | grep -E '^[[:space:]]*iInterface' | sed -E 's/.*iInterface +[0-9]+ +//' \
         | grep -v '^[[:space:]]*$' | paste -sd'|' -)
 
