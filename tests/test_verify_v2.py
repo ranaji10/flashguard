@@ -1,3 +1,4 @@
+import copy
 import pathlib
 import sys
 import unittest
@@ -172,6 +173,36 @@ class VerifyV2Test(unittest.TestCase):
                 set(result["evidence"]["fields_consumed"])
             )
         )
+
+
+
+    def test_alias_device_code_does_not_confirm_an_unknown_variant(self):
+        """The branch that shipped a false safe on 13 September.
+
+        An unknown variant recorded NO reason at all when the device code appeared in
+        supported_device_codes -- a bare `pass`. It contributed nothing, everything else
+        passed, and the verdict came out SAFE while fields_consumed still claimed the
+        variant had been consumed, so the evidence said it was checked.
+
+        The sibling test passes because its fingerprint device code is not an alias, so it
+        never enters this branch. A test that passes for the case it happens to construct
+        is not coverage of the case it is named after.
+        """
+        recipe = copy.deepcopy(BASE_RECIPE)
+        recipe["target"]["variant"] = "spacewar"
+        recipe["target"]["supported_device_codes"] = ["spacewar"]
+
+        fp = fingerprint("unlocked")
+        fp["variant"] = "unknown"
+        fp["record_id"] = "alias-unknown-variant"
+        fp["capture_timestamp"] = "2026-09-13T00:00:00Z"
+
+        result = verify(fp, recipe)
+        self.assertNotEqual(result["verdict"], "safe",
+                            "an unconfirmed variant must never reach safe, alias or not")
+        self.assertEqual(result["verdict"], "cannot-verify")
+        self.assertIn("missing-variant", [r["code"] for r in result["reasons"]],
+                      "an unconfirmed variant must record a reason, not be swallowed")
 
 
 if __name__ == "__main__":

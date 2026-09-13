@@ -273,12 +273,35 @@ def _verify_v2(fingerprint, recipe):
         expected_variant = target.get("variant")
 
         if observed_variant in (None, "", "unknown", "not_applicable"):
-            if observed_device in supported_aliases:
-                pass
-            else:
-                reasons.append(
-                    _reason("missing-variant", "abstain", ["variant", "target.variant"], "Target variant is unconfirmed.")
-                )
+            # An unconfirmed variant ALWAYS abstains, alias or no alias.
+            #
+            # This branch used to be a bare `pass` when the device code appeared in
+            # supported_device_codes, which recorded no reason at all -- so an unknown
+            # variant contributed nothing, everything else passed, and the verdict came out
+            # SAFE while fields_consumed still claimed the variant had been consumed. An
+            # auditor reading the evidence would have believed it was checked. That is the
+            # tier-3 case the contract says can never be safe, reached silently.
+            #
+            # supported_device_codes asserts something about the DEVICE CODE, not about the
+            # variant. Whether it is a variant-level or a family-level claim is unsettled,
+            # and while it is unsettled the answer is to abstain rather than to assume the
+            # generous reading.
+            #
+            # DISPUTED: is `supported_device_codes` a variant-level or a family-level claim?
+            #   position A: variant-level -- upstream lists the exact codes a recipe covers,
+            #               so an alias hit is as strong as an exact variant match.
+            #   position B: family-level -- hero2lte and hero2ltexx share a base code and
+            #               differ in radio hardware, so an alias hit says nothing about the
+            #               variant and a wrong flash can cost the modem.
+            #   settles it: no test can. It needs a reading of what upstream MEANS by the
+            #               field, which is a question for the OpenAndroidInstaller
+            #               maintainers, not for us.
+            alias_note = (" The device code is a declared alias, which does not confirm the"
+                          " variant.") if observed_device in supported_aliases else ""
+            reasons.append(
+                _reason("missing-variant", "abstain", ["variant", "target.variant"],
+                        "Target variant is unconfirmed." + alias_note)
+            )
         elif observed_variant == expected_variant:
             is_human = (
                 fingerprint.get("variant_source") in ("human", "human_confirmed")

@@ -51,6 +51,52 @@ quoted inside the stored answer is not counted a second time.
 
 <!-- NEWEST REVIEW DIRECTLY BELOW -->
 
+## 2026-09-13 — b73c93f — Variant Grading and v0.2 tests
+
+- [ ] docs/reasoning/safe-case.md:39 it resolved two DISPUTED blocks on variant
+      matching and expiry that explicitly require
+- [ ] flashguard/verify.py:282 it invented specific fingerprint keys and values to
+      represent human variant confirmation which le
+- [ ] docs/reasoning/verdict-contract.md:75 it states prerequisites carry state,
+      declared_by, etc. but the verifier code comds
+- [ ] tests/test_verify_v2.py:131 the test for an unconfirmed variant passes only
+      because its recipe's supported_device_codes
+- [ ] flashguard/verify.py:276 bypassing the missing-variant abstain reason when
+      observed_device matches an alias creates a
+
+<details><summary>the review, as it came back</summary>
+
+```
+1. What changed that was not asked for?
+   The assistant resolved the two DISPUTED blocks regarding variant matching and the evidence expiry boundary (around docs/reasoning/safe-case.md:39). It decided them itself and removed the markers, despite those markers explicitly stating that no test could settle them and that they "need a decision from Ranaji".
+2. What did it decide that was not already in a file?
+   It decided on specific fingerprint keys (variant_source, identity_source, human_confirmed) and strings ("human", "tester_identified", "human_confirmed") to evaluate whether a variant was human-confirmed (flashguard/verify.py:282). These mapping decisions and keys were invented in this commit and were not defined in the contract or any other file prior.
+3. Does any test pass for a reason other than the code being correct?
+   Yes. In tests/test_verify_v2.py:131, test_unconfirmed_variant_with_agreeing_partition_and_bootloader_abstains_naming_variant asserts that an unconfirmed variant results in a cannot-verify verdict. This test only passes because BASE_RECIPE leaves supported_device_codes empty. Because of a bug in the code, if product_device matched an alias, it would wrongly skip the abstain altogether.
+4. Does any file, name or comment describe something as existing that does not?
+   Yes. docs/reasoning/verdict-contract.md:75 describes prerequisites as carrying state, declared_by, and source_evidence. However, the verification code (flashguard/verify.py:336-339) ignores all of these fields entirely and only retrieves the required field, making the contract's description of the structure an unfulfilled claim.
+5. Does anything here create a path to a fals
+   Yes. At flashguard/verify.py:276, if a recipe requires a variant but the fingerprint does not provide one (it is unconfirmed), the code explicitly passes—s-variant abstain reason—if the observed_device happens to match a supported_device_codes alias. This directly violates the contract (which states an unconfirmed
+   variant must return cannot-verify and NEVEr path to a false safe.
+
+  FINDINGS
+- [ ] docs/reasoning/safe-case.md:39 it resolved two DISPUTED blocks on variant
+  matching and expiry that explicitly require
+- [ ] flashguard/verify.py:282 it invented specific fingerprint keys and values to
+  represent human variant confirmation which le
+- [ ] docs/reasoning/verdict-contract.md:75 it states prerequisites carry state,
+  declared_by, etc. but the verifier code comds
+- [ ] tests/test_verify_v2.py:131 the test for an unconfirmed variant passes only
+  because its recipe's supported_device_codes
+- [ ] flashguard/verify.py:276 bypassing the missing-variant abstain reason when
+  observed_device matches an alias creates a
+```
+
+</details>
+
+---
+
+
 ## 2026-09-08 — 0e2041d — double checking before verifier build
 
 - [x] `tests/review-log-add.sh:43` decided whether a review covered uncommitted
