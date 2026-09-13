@@ -7,9 +7,17 @@
 **What this is.** A volunteer project building an open safety tool for reusing old
 devices. You are helping build the reference dataset it is checked against.
 
-**What you will do.** Plug in old devices, run a few commands that only read, and send back
-a folder. About 90 minutes the first time including setup, then two to five minutes per
-device.
+**What you will do.** Plug in old devices, let the tool read them, and send back a folder.
+There are two routes and you choose.
+
+- **In your browser.** Open one file, click a button for each device, export the session.
+  Nothing to install. Minutes, not hours. This route identifies and classifies a device but
+  cannot read an Android phone's partition scheme or bootloader lock state.
+- **From a bootable Linux stick.** Reads everything, including the Android properties the
+  browser route cannot reach. Budget about 90 minutes the first time, and most of that is
+  making the stick and booting it, not the work. Two to five minutes per device after that.
+
+Either route is a real contribution. If you only have twenty minutes, take the browser.
 
 **Nothing is written to your devices.** Every command in this protocol reads. Nothing is
 flashed, erased, unlocked or modified. If a step ever asks you to flash something, it is not
@@ -52,6 +60,17 @@ Nothing else, and never a screenshot of a terminal you have not read.
 we can ask a follow-up question and so you can withdraw. Nothing else. The contact address is
 kept only while the project runs and is deleted when it ends; ask at any time and it is
 deleted sooner. It is never published and never appears in the dataset.
+
+**Your handle is not anonymity, and you should know that before you pick one.** The return
+route is a Google Form, so submitting records the Google account you are signed in with. We
+will therefore know which handle belongs to which address. That is deliberate and it exists
+for one purpose: if something in a returned file looks wrong, we need to be able to come back
+to the person who sent it and ask. It is not used for anything else.
+
+**No email address of yours is published anywhere.** Not in the repository, not in the CC0
+dataset, not in any log or commit, not in the published device matrix. The repository is
+public and everything in it can be read by anyone, which is exactly why addresses are kept
+out of it. The dataset carries your handle if you gave one, and nothing more.
 
 **Where the data goes.** Records and descriptors are published as an open dataset under
 **CC0** so other reuse and repair projects can build on them with no licence friction.

@@ -90,6 +90,10 @@ else:
         for k in ("act", "why", "rec"):
             if not str(c.get(k) or "").strip():
                 bad.append(("blank " + k, ix, "(empty)"))
+        # The one stored field a step may carry. A date, or nothing -- never a bare true,
+        # because "when" is the part anyone will want six weeks from now.
+        if c.get("done") and not re.match(r"^\d{4}-\d{2}-\d{2}$", str(c["done"])):
+            bad.append(("bad done date", ix, repr(c["done"])))
     if bad:
         print("  THE CAVEMAN LIST POINTS AT THINGS THAT ARE NOT THERE:")
         for kind, num, val in bad:
@@ -142,7 +146,8 @@ if not fail:
     for ix, c in enumerate(cave):
         fp += "|cave%d:%s:%s:%s:%s:%s" % (
             ix, c.get("act") or "", c.get("why") or "",
-            c.get("rec") or "", ",".join(c.get("where") or []), c.get("item") or "")
+            c.get("rec") or "", ",".join(c.get("where") or []),
+            (c.get("item") or "") + ":" + (c.get("done") or ""))
     h = 5381
     _u = fp.encode("utf-16-le")
     for _k in range(0, len(_u), 2):

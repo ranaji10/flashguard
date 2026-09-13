@@ -224,5 +224,65 @@ class VerifyV2Test(unittest.TestCase):
                       "an unconfirmed variant must record a reason, not be swallowed")
 
 
+class StateIsNotRead(unittest.TestCase):
+    """`state` is carried on every prerequisite and must never reach a verdict.
+
+    AUTHORISED BY RANAJI, 13 September, as the cheap half of a decision he deferred.
+    The question was whether to drop `state` or wait for upstream to give it a meaning.
+    The dangerous answer is neither: a field that is PRESENT, unvalidated and unread is
+    worse than one that is absent, because the day something starts trusting it there is
+    no test that notices. This is that test. With it, keeping the field costs nothing and
+    waiting for upstream is free.
+
+    It is deliberately BEHAVIOURAL rather than a grep of the source. A grep proves the
+    string does not appear; this proves the value does not matter. Those are different
+    claims, and only the second one survives a refactor.
+    """
+
+    def _mutate_state(self, recipe, value):
+        out = copy.deepcopy(recipe)
+        for name, pre in (out.get("prerequisites") or {}).items():
+            if isinstance(pre, dict) and "state" in pre:
+                pre["state"] = value
+        return out
+
+    def test_state_value_cannot_change_a_verdict(self):
+        """Same recipe, four different `state` values, one identical answer each time."""
+        for recipe_name, recipe in (("locked-bootloader", BASE_RECIPE),):
+            for fp_state in ("locked", "unlocked"):
+                fp = fingerprint(fp_state)
+                fp["record_id"] = "state-invariance"
+                fp["capture_timestamp"] = "2026-09-13T00:00:00Z"
+                baseline = verify(fp, recipe)
+                for planted in ("CLOSED", "SATISFIED", "", None):
+                    other = verify(fp, self._mutate_state(recipe, planted))
+                    self.assertEqual(
+                        other["verdict"], baseline["verdict"],
+                        "%s/%s: setting state=%r changed the verdict. Something reads "
+                        "`state`, and nothing is allowed to." % (recipe_name, fp_state, planted))
+                    self.assertEqual(
+                        [r["code"] for r in other["reasons"]],
+                        [r["code"] for r in baseline["reasons"]],
+                        "%s/%s: setting state=%r changed the reasons. `state` is "
+                        "provenance, not evidence." % (recipe_name, fp_state, planted))
+
+    def test_state_is_never_named_in_the_evidence(self):
+        """fields_consumed is what an auditor reads. It must not claim `state` was used.
+
+        The false safe of 13 September listed `variant` in fields_consumed on a path that
+        recorded no variant reason, so the evidence stamp asserted a check that had not
+        happened. The same stamp must never assert this one.
+        """
+        fp = fingerprint("unlocked")
+        fp["record_id"] = "state-evidence"
+        fp["capture_timestamp"] = "2026-09-13T00:00:00Z"
+        consumed = verify(fp, BASE_RECIPE).get("fields_consumed") or []
+        named = [f for f in consumed if "state" in str(f).split(".")]
+        self.assertEqual(named, [],
+                         "fields_consumed names `state` (%r). Either the verifier reads it, "
+                         "which is forbidden, or the stamp is claiming a check that did not "
+                         "happen, which is worse." % (named,))
+
+
 if __name__ == "__main__":
     unittest.main()

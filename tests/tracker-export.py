@@ -75,7 +75,8 @@ def fingerprint(state):
     for ix, c in enumerate(state.get("caveman") or []):
         s += "|cave%d:%s:%s:%s:%s:%s" % (
             ix, c.get("act") or "", c.get("why") or "",
-            c.get("rec") or "", ",".join(c.get("where") or []), c.get("item") or "")
+            c.get("rec") or "", ",".join(c.get("where") or []),
+            (c.get("item") or "") + ":" + (c.get("done") or ""))
     return _djb2(s)
 
 
@@ -137,7 +138,7 @@ def render(state):
         byid = {i["id"]: i for sec in state["sections"] for i in sec["items"]}
         def settled(c):
             i = byid.get(c.get("item") or "")
-            return bool(i) and i["status"] in ("done", "dropped")
+            return bool(c.get("done")) or (bool(i) and i["status"] in ("done", "dropped"))
         live = [c for c in cave if not settled(c)]
         done = [c for c in cave if settled(c)]
 
