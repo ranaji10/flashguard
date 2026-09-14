@@ -138,6 +138,13 @@ disagreed with the scan. The console now asks before running the scan, every tim
 `unidentified` records still belong in the matrix: a device nobody can name is a real and common
 condition, and the tool has to behave sensibly on one.
 
+**`android_raw`** and **`android_derivation`** New in 0.4, added 14 September for the raw getprop
+capture path (e.g. Windows PowerShell/cmd without bash).
+When raw property text is captured, the verbatim text is stored in `android_raw` and `android_derivation`
+is set to `"pending"`. In this state, no derived fields (`product_model`, `partition_scheme`, etc.) are
+emitted. `pending` is the only non-final value a record may carry; records carrying `android_derivation: "pending"`
+are refused by `merge.py` until derivation has been executed via `derive.sh` on the maintainer's machine.
+
 **`capture_route`** New in 0.4, added 6 September after the delivery platform was decided.
 How this record/capture was obtained: `browser` (step 1 via WebUSB in the browser, no install),
 `adb_host` (step 2 run from the tester's own operating system via adb), or `linux_live`

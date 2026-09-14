@@ -704,7 +704,7 @@ function scrRoutePlatform(p){
   if (p === "windows") {
     scrAndroidRaw();
   } else if (p === "ubuntu_live") {
-    scrAndroidBash("linux_live");
+    scrPrep();
   } else {
     scrAndroidBash("adb_host");
   }
@@ -727,7 +727,8 @@ function scrAndroidBash(route){
   var p=c.querySelector("#p"), err=c.querySelector("#err");
   p.focus();
   function tryParse(){
-    var t=p.value; if(!t.trim()) return;
+    var rawInput=p.value; if(!rawInput.trim()) return;
+    var t=rawInput.replace(/\r\n?/g, "\n");
     var lk=leakIn(t);
     if(lk){ err.textContent="That text contains "+lk+". It cannot be recorded."; err.className="alert bad on"; return; }
     var cap=parseCapture(t);
@@ -757,17 +758,19 @@ function scrAndroidRaw(){
     '<div class="cmd"><pre>' + esc(rawCmd) + '</pre><button class="copy" type="button">Copy</button></div>'+
     '<textarea class="paste" id="p" placeholder="Paste terminal output here"></textarea>'+
     '<div class="alert bad" id="err"></div>'+
-    '<details class="inline"><summary>If running cmd.exe without PowerShell loop support</summary>'+
-      '<p>You can run each line individually:</p>'+
-      '<pre style="font-size:12px">adb shell getprop ro.product.manufacturer\nadb shell getprop ro.product.model\nadb shell getprop ro.product.device\nadb shell getprop ro.product.board\nadb shell getprop ro.board.platform\nadb shell getprop ro.hardware\nadb shell getprop ro.soc.manufacturer\nadb shell getprop ro.soc.model\nadb shell getprop ro.product.cpu.abi\nadb shell getprop ro.build.version.release\nadb shell getprop ro.build.version.sdk\nadb shell getprop ro.build.version.security_patch\nadb shell getprop ro.build.fingerprint\nadb shell getprop ro.build.ab_update\nadb shell getprop ro.virtual_ab.enabled\nadb shell getprop ro.boot.slot_suffix\nadb shell getprop ro.boot.verifiedbootstate\nadb shell getprop ro.boot.flash.locked\nadb shell getprop ro.boot.vbmeta.device_state</pre>'+
-    '</details>'+
     '<div class="btns"><button class="b ghost" id="skip">Skip, it would not connect</button></div>'+
   '</div>');
 
   var p=c.querySelector("#p"), err=c.querySelector("#err");
   p.focus();
   function tryParse(){
-    var t=p.value; if(!t.trim()) return;
+    var rawInput=p.value; if(!rawInput.trim()) return;
+    var t=rawInput.replace(/\r\n?/g, "\n");
+    if (t.indexOf("=") < 0 || !/ro\.[a-zA-Z0-9._]+=/i.test(t)) {
+      err.textContent = "The pasted text does not contain key=value properties. Please run the full command block shown above.";
+      err.className = "alert bad on";
+      return;
+    }
     var lk=leakIn(t);
     if(lk){ err.textContent="That text contains "+lk+". It cannot be recorded."; err.className="alert bad on"; return; }
     err.className="alert bad";
@@ -781,7 +784,7 @@ function scrAndroidRaw(){
   c.querySelector("#skip").addEventListener("click",scrConfirm);
 }
 
-/* ---------- Legacy Ubuntu Prep & Boot Screens (Accessible if requested) ---------- */
+/* ---------- Ubuntu Live Setup (Route for ubuntu_live platform) ---------- */
 function scrPrep(){
   var c=show(
   '<div class="card">'+
@@ -802,7 +805,7 @@ function scrBootUp(){
     '<div class="btns"><button class="b" id="ok">I am on the desktop</button>'+
     '<button class="b ghost" id="back">Back</button></div>'+
   '</div>');
-  c.querySelector("#ok").addEventListener("click",function(){ S.host_platform="ubuntu_live"; save(); scrLoop(); });
+  c.querySelector("#ok").addEventListener("click",function(){ S.host_platform="ubuntu_live"; save(); scrAndroidBash("linux_live"); });
   c.querySelector("#back").addEventListener("click",scrPrep);
 }
 
@@ -912,14 +915,7 @@ function saveRecord(correct,cls,name,mode,note){
   if(cur.android_raw){
     androidObj = {
       android_raw: cur.android_raw,
-      android_derivation: "pending",
-      product_model: "unknown", product_device: "unknown", manufacturer: "unknown",
-      board_platform: "unknown", chipset_family: "unknown", chipset_source: "none",
-      cpu_abi: "unknown", partition_basis: "unknown", bootloader_basis: "unknown",
-      hardware: "unknown", android_version: "unknown", sdk: "unknown",
-      security_patch: "unknown", build_fingerprint: "unknown", partition_scheme: "unknown",
-      slot_suffix: "unknown", bootloader_state: "unknown", verified_boot_state: "unknown",
-      bootloader_unlockable: "unknown"
+      android_derivation: "pending"
     };
   } else if(a){
     androidObj = {
