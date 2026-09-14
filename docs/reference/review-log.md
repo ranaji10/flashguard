@@ -51,6 +51,71 @@ quoted inside the stored answer is not counted a second time.
 
 <!-- NEWEST REVIEW DIRECTLY BELOW -->
 
+## 2026-09-14 — c388c2c — Repair run for WebUSB+Benchkit Integration
+
+- [ ] `tests/test-android-raw-agreement.sh:47-50` whitespace/blanks test is a tautology:
+      adds leading spaces then strips them before asserting, so it tests
+      derive.sh(x)==derive.sh(x), not whitespace tolerance; derive.sh
+      actually fails on leading-whitespace input (g() requires key at
+      position 1)
+- [ ] `tests/test-android-raw-agreement.sh:8` comment says bare-value fallback "is
+      refused"; lines 16–22 test only that the UI text was removed, not
+      that pasting bare values is rejected
+
+<details><summary>the review, as it came back</summary>
+
+```
+
+Review of c388c2c
+
+1. What changed that was not asked for?
+
+Nothing in the diff goes beyond the four files' stated concerns. The changes are: CRLF normalisation, ubuntu_live routing, pending-only records in saveRecord, merge.py gating, schema documentation, and test expansion. No new feature, no new screen, no scope creep.
+
+2. What did it decide that was not already in a file?
+
+Nothing material. The pending-only record shape, the merge.py gate, and the raw validation guard are implementations of constraints that are now documented in data/schema.md:141–146. The ubuntu_live routing change (scrPrep → scrBootUp → scrAndroidBash) is a flow decision that is not documented anywhere as a design choice — but it restores the prep screens that already existed in the code, so it is a routing repair rather than a new decision.
+
+3. Does any test pass for a reason other than the code being correct?
+
+Yes. The whitespace/blanks test at tests/test-android-raw-agreement.sh:47–56 is a tautology. It:
+
+1. Takes clean key=value fixture text (line 31: bash_raw)
+2. Adds leading whitespace and blank lines (line 48: awk '{print "  " $0 "\n"}')
+3. Strips them back out (line 49: sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -v '^$')
+4. Feeds the stripped text to derive.sh
+5. Asserts the result matches the original
+
+The normalised text is identical to the original input. The test proves that derive.sh(x) == derive.sh(x), which is determinism, not whitespace robustness. derive.sh cannot handle leading whitespace — its g() function uses index($0, k "=") == 1, which requires the key at position 1. A real whitespace-contaminated paste would silently return unknown for every field.
+
+No code path in the HTML page strips leading whitespace either — the page does rawInput.replace(/\r\n?/g, "\n") and .trim(), neither of which strips per-line leading spaces. So the scenario the test claims to cover (lines 5–8 of the file) would fail in production, but the test passes because it undoes its own perturbation before asserting.
+
+4. Does any file, name or comment describe something as existing that does not?
+
+The test comment at tests/test-android-raw-agreement.sh:8 says it verifies that bare-value fallback "is refused". The test at lines 16–22 checks only that the bare-command UI text was removed from the HTML (a grep -q for its absence). It does not test that pasting bare values into scrAndroidRaw is rejected. The HTML validation at START-HERE.html:769 does reject bare values, so the feature exists — but the test's comment overstates what it proves.
+
+5. Does anything here create a path to a false safe?
+
+No. The changes are on the capture/collection side (bench kit and merge pipeline). The verifier at flashguard/verify.py is not touched. The saveRecord change at START-HERE.html:915–919 reduces what a pending record contains (only android_raw and android_derivation: "pending", no derived fields), which is strictly safer than the previous version that emitted seventeen "unknown" fields alongside the raw text — a record with no partition_scheme field cannot be mistaken for one that was examined. The merge.py gate at lines 101–103 prevents pending records from reaching the published matrix. Neither change touches the verify path.
+
+---
+
+FINDINGS
+- [ ] `tests/test-android-raw-agreement.sh:47-50` whitespace/blanks test is a tautology:
+      adds leading spaces then strips them before asserting, so it tests
+      derive.sh(x)==derive.sh(x), not whitespace tolerance; derive.sh
+      actually fails on leading-whitespace input (g() requires key at
+      position 1)
+- [ ] `tests/test-android-raw-agreement.sh:8` comment says bare-value fallback "is
+      refused"; lines 16–22 test only that the UI text was removed, not
+      that pasting bare values is rejected
+```
+
+</details>
+
+---
+
+
 ## 2026-09-14 — verification of the five carried findings — not a review
 
 Filed by the analysing session, not by a blind reviewer. It is here because it changes the
