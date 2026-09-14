@@ -51,6 +51,54 @@ quoted inside the stored answer is not counted a second time.
 
 <!-- NEWEST REVIEW DIRECTLY BELOW -->
 
+## 2026-09-14 — 251df11 — Second Repair run for WebUSB+Benchkit Integration
+
+- [ ] tests/test-android-raw-agreement.sh:5-6 The old test mechanically guarded against
+      re-introduction of bare getprART-HERE.html (grepping
+      for adb shell getprop ro.product.manufacturer). That assertion was removed. The
+      only remaining guard is the p copilot-instructions.md,
+      which is a documentation layer, not a mechanical one.
+
+<details><summary>the review, as it came back</summary>
+
+```
+Review of 251df11
+
+1. What changed that was not asked for?
+
+I cannot determine this from the diff alone (no rationale was read, by instruction). Everything in the diff forms a coherent unit: extract two functions, use them in both paste paths, test them in Node, and restructure the bash test from "normalised input matches canonical" to "un-normalised input diverges from canonical". Nothing appears orphaned or unrelated.
+
+2. What did it decide that was not already in a file?
+
+The test architecture split — normalisation correctness in Node, hazard existence in bash — is a structural choice. The header comment at tests/test-android-raw-agreement.sh:4-9 documents it after the fact, but no file records why this split was chosen over the prior design (same-suite agreement checks). This is a test strategy decision made in code, not documented as a decision.
+
+3. Does any test pass for a reason other than the code being correct?
+
+No false passes found. Each test exercises the code it claims to. The bare-values test (line 91 of run-console-logic.js) is fragile to a future fixture whose property value contains both = and a substring matching ro.<word>=, but that is a hypothetical: no current fixture has such a value, and the test label accurately describes what happens with the current data.
+
+4. Does any file, name or comment describe something as existing that does not?
+
+Nothing found. The comment at tests/test-android-raw-agreement.sh:8-9 correctly states that tests/run-console-logic.js tests both functions against all fixtures.
+
+5. Does anything here create a path to a false safe?
+
+No. The diff touches bench-kit data collection and tests. It does not modify flashguard/verify.py, any recipe, any corpus file, or the false-safe gate. normaliseRawProps trims whitespace from property lines before they reach derive.sh, which makes derivation more correct,
+
+---
+
+FINDINGS
+- [ ] tests/test-android-raw-agreement.sh:5-6 The old test mechanically guarded against
+  re-introduction of bare getprART-HERE.html (grepping
+  for adb shell getprop ro.product.manufacturer). That assertion was removed. The
+  only remaining guard is the p copilot-instructions.md,
+  which is a documentation layer, not a mechanical one.
+```
+
+</details>
+
+---
+
+
 ## 2026-09-14 — c388c2c — Repair run for WebUSB+Benchkit Integration
 
 - [ ] `tests/test-android-raw-agreement.sh:47-50` whitespace/blanks test is a tautology:
