@@ -65,6 +65,7 @@ Read before writing the proposal or changing a design.
 |---|---|
 | `grant/nlnet-restack-proposal.md` | The proposal. **Still shaped for seven questions; the form has two boxes.** |
 | `grant/schedule.md` | Milestones with payable, externally checkable criteria. Costing deliberately blank. |
+| `docs/reference/producer-prompt-2026-09-14-repair.md` | Repair task after the blind review: CRLF corrupting two verifier fields, a test that could not fail, pending records claiming seventeen answers. |
 | `docs/reference/producer-prompt-2026-09-15-package.md` | The build task for the merged WebUSB + bench-kit tester file. Decisions already made, and where a producer will be tempted to go wrong. |
 | `grant/work-log-2026-09-13.md` | What was actually done, 26 Aug to 13 Sep, with commits and numbers. Source material for the proposal, **not** the proposal. |
 | `grant/nlnet-findings-2026-09-03.md` | The open call, verified against the live pages. Programme choice, form, scoring weights, AI rules. |

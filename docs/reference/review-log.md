@@ -51,11 +51,131 @@ quoted inside the stored answer is not counted a second time.
 
 <!-- NEWEST REVIEW DIRECTLY BELOW -->
 
+## 2026-09-14 — verification of the five carried findings — not a review
+
+Filed by the analysing session, not by a blind reviewer. It is here because it changes the
+severity of two findings and adds evidence neither read had.
+
+**Finding 3 is worse than filed, and it is now reproduced.** The tautological test was
+covering a real defect. The two step-2 routes do not differ in derivation, they differ in the
+SHAPE of the text that arrives, and `adb shell` on Windows prints CRLF while the raw-paste
+path only trims the ends of the blob. Run from the repository root:
+
+```
+F=tests/android/real-nothing-phone-2026-08-29.props
+grep -v '^#!' $F | bash bench-kit/scripts/derive.sh | grep -E 'partition_scheme|bootloader_state'
+grep -v '^#!' $F | sed 's/$/\r/' | bash bench-kit/scripts/derive.sh | grep -E 'partition_scheme|bootloader_state'
+```
+
+LF gives `virtual_A/B` and `locked`. CRLF gives `A/B` and `unknown`. The first is a DIFFERENT
+CONFIDENT ANSWER on a recipe-matching field, not an abstention. The second throws away an
+earned `unsafe`. This affects only the Windows path, which is the platform most testers are
+expected to use, and the test written to catch exactly this could not fail.
+
+**The documented cmd.exe fallback produces a meaningless record.** `START-HERE.html:762` tells
+a tester to run nineteen bare `adb shell getprop <key>` lines, each printing a value with no
+key. `cut -d= -f2- | bash bench-kit/scripts/derive.sh` returns `unknown` for every field, so
+the record is shaped exactly like `tests/android/empty-everything.props`, the fixture for a
+phone that answered nothing. Following the instructions produces a record indistinguishable
+from a dead device.
+
+**Finding 4 is a functional hole, not a stale comment.** `scrPlatform:690` offers the Ubuntu
+stick and `scrRoutePlatform:706` routes it straight to `scrAndroidBash("linux_live")`. A
+tester who picks it is told to run a bash script on a machine nobody told them how to make.
+
+**Finding 5's severity is as the reviewer's long note stated**, and that note was right: no
+false safe today because the verifier abstains on `unknown`, but seventeen fields claiming
+"could not be established read-only" when they mean "not computed yet" pollutes the matrix the
+first moment anything treats `unknown` as ground truth. Nothing outside START-HERE.html knows
+these fields exist, which is how it stays latent.
+
+**Finding 1 is a wording defect in the finding, not a defect in the fixture.** The fixture
+contains `<stripped>`, a redaction marker, which is the evidence the masker ran on the device
+that caused the fourteen-day leak. Removing it would remove the proof. Ranaji's ruling.
+
+Repair task: `docs/reference/producer-prompt-2026-09-14-repair.md`.
+
+---
+
+
+## 2026-09-14 — d83c342 — Integration of WebUSB and Bench Kit for a tool that can be run by independent testers
+
+- [ ] tests/test-android-raw-agreement.sh:23 Route 2 sets raw_paste="$bash_raw" — the same variable Route 1 used — then pipes it through the same derive.sh. The test compares identical input through identical processing and always passes regardless of code correctness.
+- [ ] bench-kit/START-HERE.html:784 Comment says "Legacy Ubuntu Prep & Boot Screens (Accessible if requested)" but no calling path in the file reaches scrPrep() or scrBootUp(). The functions are dead code; the comment describes reachability that does not exist.
+- [ ] bench-kit/START-HERE.html:914 android_raw and android_derivation are not in the schema (data/schema.md). The raw-paste path writes an undocumented field to the record and marks 17 Android fields as "unknown" meaning "not yet derived", conflating it with "unknown" meaning "could not be established read-only" — the exact ambiguity schema version 0.2 was redesigned to eliminate.
+
+<details><summary>the review, as it came back</summary>
+
+```
+Review of d83c342
+
+1. What changed that was not asked for?
+
+The commit title says "Integrate WebUSB step 1 and multi-platform step 2 into START-HERE.html". Beyond that integration:
+
+- tests/webusb-probe.html received a four-line SUPERSEDED notice (lines 1–4). This is commentary on a file the diff does not modify substantively and was not part of the stated scope, though it is harmless.
+- The legacy Ubuntu screens (scrPrep, scrBootUp) were gutted to stubs (lines 784–807). The diff removed detailed preparation and boot guides that existed in v3 and replaced them with skeleton cards. No calling path reaches them (covered under Q4), so this is dead code added rather than retained. It could have been removed entirely; leaving it creates the appearance of functionality that does not exist.
+
+2. What did it decide that was not already in a file?
+
+- capture_route defaults to "browser" on every new capture (bench-kit/START-HERE.html:437). The schema doc (data/schema.md:152–153) says capture_route was added to distinguish what the shipped tool can do from what linux_live can do, and warns "absence is not a value; an unrecorded capture must not be assumed to have used any particular route." The HTML picks "browser" as the default before knowing whether WebUSB succeeded, whether the user skipped it, or whether the tester went through the bash path. The bash path later overwrites it to "adb_host" (line 776), and the raw-paste path sets "adb_host" too — so the default only survives for non-phone devices that go through scrWebUSB and reach scrConfirm. That default itself is reasonable (WebUSB is the browser route), but the decision to make "browser" the fallback rather than "not_stated" or a sentinel for "undetermined" was made in this commit, not derived from any prior document.
+- android_derivation: "pending" as a record field (line 915). The raw-paste path stores the tester's pasted text as android_raw and marks derivation as "pending", meaning the record is written with all Android fields set to "unknown" and derivation deferred. No document I was told to read specifies this deferred-derivation pattern. The schema (data/schema.md) has no android_raw or android_derivation field. The record will be written to device-matrix.jsonl with an undocumented field and a batch of "unknown" values that mean "not yet derived" rather than "could not be established read-only" — conflating two of the three-way absence semantics the schema was specifically redesigned to distinguish (schema.md lines 37–43).
+
+3. Does any test pass for a reason other than the code being correct?
+
+Yes. tests/test-android-raw-agreement.sh is a tautology.
+
+The test claims to assert that "the bash path (02-android.sh) and the raw-paste path produce the same derived fields when derive.sh runs over the raw property text."
+
+Lines 18–24:
+
+# Route 1: Simulated bash path (derived directly)
+bash_raw=$(grep -v '^#!' "$f")
+bash_derived=$(printf '%s\n' "$bash_raw" | bash "$DERIVE")
+
+# Route 2: Simulated raw paste path (verbatim raw text, derived via derive.sh)
+raw_paste="$bash_raw"
+raw_derived=$(printf '%s\n' "$raw_paste" | bash "$DERIVE")
+
+Route 2 sets raw_paste="$bash_raw" — the identical variable from Route 1 — and pipes it through the identical command (bash "$DERIVE"). The comparison at line 26 ("$bash_derived" = "$raw_derived") compares two runs of the same function on the same input. It will always pass.
+
+The test the name promises — that the raw-paste path in START-HERE.html and the bash path through 02-android.sh produce the same record — would require either (a) actually exercising the raw-paste parsing code to produce key=value lines, or (b) at minimum, transforming the fixture text differently for each route. As written, Route 2 is Route 1 copy-pasted with a different variable name.
+
+This test is wired into tests/all.sh (the line echo "  ANDROID RAW AGREEMENT"; bash "$HERE/test-android-raw-agreement.sh" || exit 1), so it runs in the build and reports "ok" across all fixtures, giving the appearance of coverage where none exists.
+
+4. Does any file, name or comment describe something as existing that does not?
+
+Yes. bench-kit/START-HERE.html:784:
+
+/* ---------- Legacy Ubuntu Prep & Boot Screens (Accessible if requested) ---------- */
+
+scrPrep() and scrBootUp() are defined at lines 785–807. The comment says they are "Accessible if requested." They are not accessible: no button, no event handler, and no initialization code in the file calls either function. The v3 flow that reached them (the location chooser scrBoot, then the setup script step scrSetup) was removed in this diff. The functions are dead code, and the comment claims they are reachable.
+
+5. Does anything here create a path to a false safe?
+
+Not directly. The else if (cur.dev.expect) devClass = cur.dev.expect; fallback at line 639 echoes the tester's category selection as the detected device class when no interface-level match fires, which means a misidentified device category could propagate to the record as device_class. But device_class on the record flows into the device matrix, not into the verifier's verdict path — the verifier takes a fingerprint and a recipe as input, not a bench-console device class. This fallback affects data quality, but it does not create a code path where verify.py returns safe when it should not.
+
+The android_raw / android_derivation: "pending" pattern (lines 912–923) writes every Android field as "unknown", which the verifier should treat as an abstention signal. As long as the verifier continues to abstain on unknown fields — which it does; the build fails on a false safe, and the suite output confirms the false-safe gate is armed — this does not produce a false safe. But it is worth noting that a record carrying 17 "unknown" Android fields is not the same as a record with "unknown" because the device did not expose the properties: the former will be derived later, the latter is final. If a future merge.py or coverage.py change treats every "unknown" as ground truth, these deferred-derivation records would silently pollute the matrix.
+
+---
+
+FINDINGS
+
+- [ ] tests/test-android-raw-agreement.sh:23 Route 2 sets raw_paste="$bash_raw" — the same variable Route 1 used — then pipes it through the same derive.sh. The test compares identical input through identical processing and always passes regardless of code correctness.
+- [ ] bench-kit/START-HERE.html:784 Comment says "Legacy Ubuntu Prep & Boot Screens (Accessible if requested)" but no calling path in the file reaches scrPrep() or scrBootUp(). The functions are dead code; the comment describes reachability that does not exist.
+- [ ] bench-kit/START-HERE.html:914 android_raw and android_derivation are not in the schema (data/schema.md). The raw-paste path writes an undocumented field to the record and marks 17 Android fields as "unknown" meaning "not yet derived", conflating it with "unknown" meaning "could not be established read-only" — the exact ambiguity schema version 0.2 was redesigned to eliminate.
+```
+
+</details>
+
+---
+
+
 ## 2026-09-13 — edb6008 — Restoring missed findings
 
 - [ ] tests/webusb-fixtures/18d1-4ee2.desc:10 stores a device serial number (_SN:<stripped>)
       in the product field, violating the strict data rule against recording serials.
-- [ ] tests/webusb-probe.html:94 removes the protective comment explaining why
+- [x] tests/webusb-probe.html:94 removes the protective comment explaining why **Fixed and confirmed by the second read, 14 Sep: the comment is restored at lines 96-103 with the masker beside it.**
       serial numbers are not read or printed, an unasked-for change that enabled the leak above.
 
 <details><summary>the review, as it came back</summary>
