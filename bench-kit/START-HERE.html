@@ -164,13 +164,13 @@
 <header class="top">
   <p class="eyebrow">Offline bench console · detect and fingerprint only</p>
   <h1>Bench Console</h1>
-  <p class="stand">From two blank USB sticks to a finished device record, in order.
+  <p class="stand">From plugging in a device to a finished record, in order.
   Nothing on this page writes to any device you are testing.</p>
   <div class="facts">
     <span><b>Tier</b> A + B only</span>
     <span><b>Writes to test devices</b> none</span>
-    <span><b>Internet</b> needed once, in Phase B</span>
-    <span><b>Time</b> ~90 min the first time</span>
+    <span><b>Internet</b> none needed</span>
+    <span><b>Time</b> ~5 min per device (~90 min for Ubuntu live stick setup)</span>
   </div>
 </header>
 
@@ -180,11 +180,13 @@
   <h2>Captured this session</h2>
   <div id="reclist"></div>
   <div class="btns">
+    <button class="b" id="dlsession" type="button">Download session export (.json)</button>
+    <button class="b ghost" id="dldesc" type="button">Download .desc files</button>
     <button class="b ghost" id="dl" type="button">Download device-matrix.jsonl</button>
-    <button class="b ghost" id="cp" type="button">Copy all</button>
+    <button class="b ghost" id="cp" type="button">Copy session JSON</button>
   </div>
   <p class="sub" style="margin-top:12px;font-size:14.5px">Download before you close this page or shut
-  the machine down. A live Ubuntu session forgets everything at reboot.</p>
+  the machine down. A live session forgets everything at reboot.</p>
 </div>
 
 <div id="stopbox">
@@ -296,7 +298,7 @@
 (function(){
 "use strict";
 
-var KEY="bench.v3", S={ where:null, tester:"", consent:false, setup:0, records:[], seen:{}, devices:{} };
+var KEY="bench.v4", S={ host_platform:"not_stated", tester:"", consent:false, setup:0, records:[], descriptors:[], seen:{}, devices:{}, wrapup:"" };
 try{ var raw=localStorage.getItem(KEY); if(raw){ S=Object.assign(S,JSON.parse(raw)||{}); } }catch(e){}
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 
@@ -306,6 +308,7 @@ var cur=null, t0=0;
 function el(h){ var d=document.createElement("div"); d.innerHTML=h.trim(); return d.firstChild; }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){
   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+function hex(n,w){ var s=Number(n||0).toString(16); while(s.length<(w||4)) s="0"+s; return "0x"+s; }
 
 function copyText(text,btn){
   function done(){ var o=btn.textContent; btn.textContent="Copied"; btn.className+=" ok";
@@ -363,9 +366,6 @@ var DEVICES=[
   {k:"other",   label:"Something else",  hint:"anything from a drawer", name:"",                 expect:""}
 ];
 var CLASSES=["mass_storage","ptp_camera","mtp","ptp_or_mtp","adb","fastboot","ios","unknown","not_detected"];
-/* One physical device can present four different USB product IDs depending on the
-   mode its owner picked. Without a stable per-device key, four captures of one
-   phone look like four phones. slug(name) gives that key without any serial. */
 function slug(x){ return String(x||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"unnamed"; }
 var USB_MODES=["charging only","file transfer (MTP)","photo transfer (PTP)","MIDI","USB tethering","mass storage","not applicable","do not know"];
 
@@ -385,126 +385,12 @@ function refreshBar(){
 function show(html){ stage.innerHTML=""; var c=el(html); stage.appendChild(c); wireCopy(c); refreshBar();
   window.scrollTo({top:0,behavior:"smooth"}); return c; }
 
-/* ---------- where are you ---------- */
-function scrBoot(){
-  var c=show(
-  '<div class="card">'+
-    '<p class="kicker">Tier A · nothing is written to any device under test</p>'+
-    '<h1>Where are you right now?</h1>'+
-    '<p class="sub">This page is used in two places. It only shows the steps for where you are.</p>'+
-    '<div class="picks">'+
-      '<button class="pick" data-w="mac"><b>At my own computer</b><small>preparing the two sticks</small></button>'+
-      '<button class="pick" data-w="acer"><b>At the bench machine, in Linux</b><small>booted and ready</small></button>'+
-    '</div>'+
-  '</div>');
-  [].slice.call(c.querySelectorAll(".pick")).forEach(function(b){
-    b.addEventListener("click",function(){
-      S.where=b.getAttribute("data-w"); save();
-      if(S.where==="mac"){ scrPrep(); } else { scrWho(); }
-    });
-  });
-}
-
-/* ---------- Phase 0: prepare ---------- */
-function scrPrep(){
-  var c=show(
-  '<div class="card">'+
-    '<p class="kicker">Phase 0 · once only <span class="where">Your own computer</span></p>'+
-    '<h1>Two USB sticks, named differently</h1>'+
-    '<p>Not one. A bootable Ubuntu stick is written as a whole disk image, so you cannot reliably add'+
-    ' files to it afterwards. The second stick carries this kit and holds your records.</p>'+
-
-    '<div class="why hot"><b>Name them differently</b>If both sticks are called BENCH, the second one'+
-    ' mounts as "BENCH 1" and every path in this guide points at whichever claimed the plain name'+
-    ' first. Call the Ubuntu one <code>UBUNTU</code> and the kit one <code>BENCH</code>. Only ever one'+
-    ' stick called BENCH.</div>'+
-
-    '<h2>Stick 1 · UBUNTU · 8 GB or larger</h2>'+
-    '<p>Anything on it will be erased. Check it first.</p>'+
-    '<ol class="mini">'+
-      '<li>Download the current LTS desktop image from'+
-        ' <a href="https://ubuntu.com/download/desktop" target="_blank" rel="noopener">ubuntu.com/download/desktop</a>.'+
-        ' Take whichever LTS the page offers. It is 5 to 6 GB, so start the download first and read on.</li>'+
-      '<li>Get <a href="https://etcher.balena.io" target="_blank" rel="noopener">balenaEtcher</a> and install it.</li>'+
-      '<li>Open Etcher: <b>Flash from file</b> and pick the ISO, <b>Select target</b> and pick the stick,'+
-        ' <b>Flash</b>. It handles partitioning itself, so there is nothing to configure.</li>'+
-    '</ol>'+
-    '<details class="inline"><summary>What if Etcher stalls or the stick ends up unreadable?</summary>'+
-      '<p>Both happen. The Help section at the bottom of this page has the full recovery for each.'+
-      ' Short version: check Activity Monitor to see whether it is actually writing, try a different'+
-      ' port directly on the machine, and if a cancelled write leaves the stick "write protected",'+
-      ' repair it in Disk Utility with <b>View → Show All Devices</b> rather than in Windows.</p>'+
-    '</details>'+
-
-    '<h2>Stick 2 · BENCH · any size</h2>'+
-    '<ol class="mini">'+
-      '<li>Format it <b>ExFAT</b> so both macOS and Linux can write to it, and name it <code>BENCH</code>.'+
-        ' Partition scheme does not matter for this one.</li>'+
-      '<li>Copy the whole <code>bench-kit</code> folder onto it.</li>'+
-    '</ol>'+
-    '<div class="cmd"><pre><span class="c"># macOS, from the project folder</span>\ncp -R project/bench-kit /Volumes/BENCH/</pre><button class="copy" type="button">Copy</button></div>'+
-    '<p class="sub">Then check it landed, before you unplug anything:</p>'+
-    '<div class="cmd"><pre>ls /Volumes/BENCH/bench-kit/scripts/</pre><button class="copy" type="button">Copy</button></div>'+
-    '<p class="sub">You should see five <code>.sh</code> files.</p>'+
-
-    '<h2>Before you walk away from this computer</h2>'+
-    '<ul class="mini">'+
-      '<li><b>Print <code>STOP-LIST.txt</code></b> and tape it to the bench machine.</li>'+
-      '<li><b>Charge any phone above 50 percent.</b></li>'+
-      '<li><b>Find a cable you know carries data.</b> Charge-only cables are the single most common reason a device looks invisible.</li>'+
-      '<li><b>Gather the devices</b> but leave them unplugged for now.</li>'+
-    '</ul>'+
-
-    '<div class="btns"><button class="b" id="ok">Sticks are ready</button>'+
-    '<button class="b ghost" id="back">Back</button></div>'+
-  '</div>');
-  c.querySelector("#ok").addEventListener("click",scrBootUp);
-  c.querySelector("#back").addEventListener("click",function(){ S.where=null; save(); scrBoot(); });
-}
-
-/* ---------- Phase A: boot ---------- */
-function scrBootUp(){
-  var c=show(
-  '<div class="card">'+
-    '<p class="kicker">Phase A · once only <span class="where">The bench machine</span></p>'+
-    '<h1>Boot it from the UBUNTU stick</h1>'+
-
-    '<div class="why hot"><b>Plug in only the two sticks</b>Nothing else. No phone, no camera, no'+
-    ' external drive. Extra devices at boot can change which disk the machine tries to start from,'+
-    ' and they pollute the baseline you are about to take. The devices under test come later, one at'+
-    ' a time.</div>'+
-
-    '<ol class="mini">'+
-      '<li>Insert both sticks. Restart, and hold <code>F12</code> for the boot menu. If nothing'+
-        ' appears, restart and press <code>F2</code> for setup, enable the F12 boot menu there, and'+
-        ' disable Secure Boot while you are in it. Other makes use <code>Esc</code>, <code>F9</code>'+
-        ' or <code>F10</code>; the key is usually named on the first screen.</li>'+
-      '<li>Choose the USB stick from the list.</li>'+
-      '<li>At the Ubuntu welcome screen choose <b>Try Ubuntu</b>, not Install.'+
-        ' <b>Nothing on the machine’s own disk is touched.</b> Whatever was on it before is still'+
-        ' there when you reboot.</li>'+
-      '<li>You land on a normal desktop. It may take a minute or two, and it is slower than an'+
-        ' installed system. That is expected.</li>'+
-    '</ol>'+
-
-    '<div class="why net"><b>Yes, connect wifi</b>The next phase installs two small tools and needs'+
-    ' internet exactly once. Roughly 1.5 MB, a few seconds. Everything after that works offline:'+
-    ' reading devices, this page, building and downloading your records. If you cannot get wifi on'+
-    ' this machine, say so before going further, because the setup step will fail without it.</div>'+
-
-    '<div class="btns"><button class="b" id="ok">I am on the Ubuntu desktop</button>'+
-    '<button class="b ghost" id="back">Back</button></div>'+
-  '</div>');
-  c.querySelector("#ok").addEventListener("click",function(){ S.where="acer"; save(); scrWho(); });
-  c.querySelector("#back").addEventListener("click",scrPrep);
-}
-
-/* ---------- who + consent ---------- */
+/* ---------- Step 0: who + consent ---------- */
 function scrWho(){
-  if(S.tester && S.consent){ return S.setup?scrLoop():scrSetup(); }
+  if(S.tester && S.consent){ return scrLoop(); }
   var c=show(
   '<div class="card">'+
-    '<p class="kicker">Once only <span class="where">The bench machine</span></p>'+
+    '<p class="kicker">Setup · once only</p>'+
     '<h1>Two things, then you are set up</h1>'+
     '<p class="sub">Asked once. Remembered for every device after.</p>'+
     '<p style="margin-top:20px"><b>What should the records credit you as?</b><br>'+
@@ -521,53 +407,8 @@ function scrWho(){
   c.querySelector("#go").addEventListener("click",function(){
     var v=c.querySelector("#who").value.trim();
     if(!v){ var e=c.querySelector("#err"); e.textContent="A handle or set of initials, so records can be attributed."; e.className="alert bad on"; return; }
-    S.tester=v; S.consent=true; save(); scrSetup();
+    S.tester=v; S.consent=true; save(); scrLoop();
   });
-}
-
-/* ---------- Phase B: setup ---------- */
-function scrSetup(){
-  var c=show(
-  '<div class="card">'+
-    '<p class="kicker">Phase B · once only <span class="where">Terminal</span></p>'+
-    '<h1>Run the setup script</h1>'+
-    '<p>It installs two read-only tools and takes a picture of the USB devices that belong to the'+
-    ' machine itself. Everything after this is measured against that picture.</p>'+
-
-    '<div class="why net"><b>This is the one step that needs internet</b>It downloads <code>adb</code>'+
-    ' and <code>fastboot</code> from the Ubuntu archive, about 1.5 MB. Nothing else in this protocol'+
-    ' touches the network.</div>'+
-
-    '<h2>Finding the scripts folder</h2>'+
-    '<p>Do not type the path. Ubuntu mounts removable media in different places depending on the'+
-    ' release, so a path that works on one machine fails on another.</p>'+
-    '<p><b>In the Files app</b>, open the BENCH stick → <code>bench-kit</code> → <code>scripts</code>,'+
-    ' then right-click in the empty space and choose <b>Open in Terminal</b>. The terminal opens'+
-    ' already in the right folder.</p>'+
-    '<details class="inline"><summary>If there is no "Open in Terminal" option</summary>'+
-      '<p>Open a terminal with <code>Ctrl</code>+<code>Alt</code>+<code>T</code> and ask the system'+
-      ' where the stick is:</p>'+
-      '<div class="cmd"><pre>df -h | grep media</pre><button class="copy" type="button">Copy</button></div>'+
-      '<p>Then <code>cd</code> to that path plus <code>/bench-kit/scripts</code>. It will be'+
-      ' <code>/media/&lt;user&gt;/BENCH</code> or <code>/run/media/&lt;user&gt;/BENCH</code>.</p></details>'+
-
-    '<h2>Then run it</h2>'+
-    '<div class="cmd"><pre>bash 00-setup.sh</pre><button class="copy" type="button">Copy</button></div>'+
-    '<p class="sub">Run scripts with <code>bash</code>, not <code>./</code>. A FAT-formatted stick'+
-    ' does not carry the executable bit. It will ask for your password for the install; a live session'+
-    ' usually has no password, so just press Enter if prompted.</p>'+
-
-    '<div class="why hot"><b>When it says "UNPLUG every device"</b>It means the devices you are going'+
-    ' to <b>test</b>. <b>Leave both USB sticks plugged in.</b> They are part of the machine’s'+
-    ' normal furniture for this session, and the baseline is supposed to include them so they never'+
-    ' show up as a new device later. Keyboard and mouse stay too.</div>'+
-
-    '<p class="sub">It finishes by saying how many devices are part of the machine itself. On the'+
-    ' reference Acer that was six, including both sticks.</p>'+
-
-    '<div class="btns"><button class="b" id="ok">It finished</button></div>'+
-  '</div>');
-  c.querySelector("#ok").addEventListener("click",function(){ S.setup=1; save(); scrLoop(); });
 }
 
 /* ---------- device loop ---------- */
@@ -579,7 +420,7 @@ function scrLoop(){
   }).join("");
   var c=show(
   '<div class="card">'+
-    '<p class="kicker">Device '+(S.records.length+1)+' <span class="where">The bench machine</span></p>'+
+    '<p class="kicker">Device '+(S.records.length+1)+'</p>'+
     '<h1>Plug in one device. What is it?</h1>'+
     '<p class="sub">One at a time, and unplug the previous one first. The timer starts when you'+
     ' choose and stops when the record is saved, so you never note the duration yourself.</p>'+
@@ -593,7 +434,7 @@ function scrLoop(){
   [].slice.call(c.querySelectorAll(".pick")).forEach(function(b){
     b.addEventListener("click",function(){
       var d=DEVICES.filter(function(x){return x.k===b.getAttribute("data-k");})[0];
-      cur={ dev:d, name:"", mode:"default", cap:null, android:null, idsrc:null };
+      cur={ dev:d, name:"", mode:"default", cap:null, android:null, android_raw:null, idsrc:null, descText:null, capture_route:"browser", browser_enumeration:"not_attempted" };
       t0=Date.now();
       scrIdentify();
     });
@@ -622,7 +463,7 @@ function scrIdentify(){
     '<button class="b ghost" id="back">Different device</button></div>'+
     '<div class="alert bad" id="err"></div>'+
   '</div>');
-  function proceed(){ if(cur.dev.phone) scrPhonePrep(); else scrRun(); }
+  function proceed(){ if(cur.dev.phone) scrPhonePrep(); else scrWebUSB(); }
   Array.prototype.forEach.call(c.querySelectorAll(".again"),function(b){
     b.addEventListener("click",function(){
       cur.localId=b.getAttribute("data-k"); cur.name=S.devices[cur.localId];
@@ -655,85 +496,230 @@ function scrPhonePrep(){
     '<div class="why hot"><b>Why this matters more than anything else here</b>Without USB debugging,'+
     ' a phone appears over USB as class 0x06, which is the same class a camera uses. You get a record'+
     ' of how it presents, but <b>no model, no chipset, no partition scheme, no bootloader state</b> —'+
-    ' none of what the verifier actually needs. On the first bench run, two real Android phones were'+
-    ' captured nine times between them and produced zero fingerprints for exactly this reason.</div>'+
+    ' none of what the verifier actually needs.</div>'+
     '<ol class="mini">'+
       '<li><b>Settings → About phone</b>, tap <b>Build number</b> seven times. It will say you are now a developer.</li>'+
       '<li><b>Settings → System → Developer options → USB debugging</b>, on.</li>'+
       '<li>Plug the phone in. A prompt appears <b>on the phone screen</b> asking whether to allow'+
         ' debugging from this computer. Tick "always allow" and accept it.</li>'+
       '<li>Pull down the notification shade and set the USB mode to <b>File transfer</b> if it is on charging only.</li>'+
-      '<li><b>Unlock the screen and leave it unlocked</b> while you capture. A locked phone will not show'+
-        ' the authorisation prompt, and an unauthorised phone gives you no fingerprint.</li>'+
-      '<li>If no prompt ever appears: <b>Developer options → Revoke USB debugging authorisations</b>,'+
-        ' then unplug and replug.</li>'+
+      '<li><b>Unlock the screen and leave it unlocked</b> while you capture.</li>'+
     '</ol>'+
-    '<div class="why"><b>If the scan still says camera</b>Some phones present a card reader or a media'+
-    ' interface first and the debugging interface further down the list. The scan reads every interface'+
-    ' and also asks adb directly, so it should catch this. If it still reports a camera on a phone you'+
-    ' know has debugging on, that is a bug worth reporting \u2014 write it in the note box on the last screen.</div>'+
-    '<p class="sub">If the phone is too old or locked down to offer developer options, capture it'+
-    ' anyway and note that. A phone that cannot be fingerprinted read-only is itself a finding.</p>'+
     '<p style="margin-top:18px"><b>Which USB mode is the phone in right now?</b><br>'+
-    '<span class="sub">Notification shade → the USB notification. Most phones start on charging only.'+
-    ' This goes on the record: the same phone reports a different USB product ID in each mode, and'+
-    ' without this field those look like different phones.</span></p>'+
+    '<span class="sub">Notification shade → the USB notification. Most phones start on charging only.</span></p>'+
     '<select class="txt" id="mode">'+USB_MODES.map(function(m){
       return '<option'+(m==="file transfer (MTP)"?" selected":"")+'>'+m+'</option>'; }).join("")+'</select>'+
     '<div class="btns"><button class="b" id="ok">Debugging is on, phone plugged in</button>'+
     '<button class="b ghost" id="skip">Cannot enable it, capture anyway</button></div>'+
   '</div>');
-  function go(){ cur.mode=c.querySelector("#mode").value; scrRun(); }
+  function go(){ cur.mode=c.querySelector("#mode").value; scrWebUSB(); }
   c.querySelector("#ok").addEventListener("click",go);
   c.querySelector("#skip").addEventListener("click",go);
 }
 
-/* ---------- detect ---------- */
-function scrRun(){
-  var c=show(
-  '<div class="card">'+
-    '<p class="kicker">'+esc(cur.dev.label)+' · step 1 <span class="where">Terminal</span></p>'+
-    '<h1>Run this, then paste what it printed</h1>'+
-    '<div class="cmd"><pre>bash 01-detect.sh</pre><button class="copy" type="button">Copy</button></div>'+
-    '<p class="sub">If the script says it copied to your clipboard, click in the box and paste.'+
-    ' Otherwise select the line it printed and copy it. Pasting the whole terminal output is fine,'+
-    ' the right part gets picked out.</p>'+
-    '<textarea class="paste" id="p" placeholder="Paste here"></textarea>'+
-    '<div class="alert bad" id="err"></div>'+
-    '<details class="inline"><summary>It says nothing new was detected</summary>'+
-      '<p>Cable first, then port, then unlock the screen and replug, then check the USB mode on the'+
-      ' device itself. The Help section has the full list. "Not detected, and here is what I tried"'+
-      ' is a valid record: paste the capture line anyway and describe it in the notes.</p></details>'+
-    '<div class="btns"><button class="b ghost" id="back">Different device</button></div>'+
-  '</div>');
-  var p=c.querySelector("#p"), err=c.querySelector("#err");
-  p.focus();
-  function tryParse(){
-    var t=p.value; if(!t.trim()) return;
-    var cap=parseCapture(t);
-    if(!cap){ err.textContent="No capture line found yet. Look for the line starting BENCH_CAPTURE."; err.className="alert bad on"; return; }
-    var lk=leakIn(t);
-    if(lk){ err.textContent="That text contains "+lk+". This dataset is published, so it cannot be recorded. If it came from the script rather than from you, that is a defect worth reporting."; err.className="alert bad on"; return; }
-    err.className="alert bad"; cur.cap=cap;
-    if(cap.device_class==="adb"||cap.device_class==="fastboot") scrAndroid();
-    else scrConfirm();
-  }
-  p.addEventListener("input",tryParse);
-  p.addEventListener("paste",function(){ setTimeout(tryParse,60); });
-  c.querySelector("#back").addEventListener("click",scrLoop);
+/* ---------- Step 1: WebUSB descriptor read (identical on every platform) ---------- */
+function buildWebUsbDescriptor(d, cur, expect, groundTruth){
+  var now = new Date().toISOString();
+  var hexVid = hex(d.vendorId);
+  var hexPid = hex(d.productId);
+  var triples = [], classes = [];
+  var lines = [];
+
+  lines.push("#!expect=" + (expect || ""));
+  lines.push("#!ground_truth=" + (groundTruth || "unidentified"));
+  lines.push("#!device=" + (cur.name || cur.dev.name || "unnamed"));
+  lines.push("#!route=browser");
+  lines.push("#!captured=" + now);
+  lines.push("");
+  lines.push("=== WEBUSB READ  " + now + " ===");
+  lines.push("");
+  lines.push("  manufacturer      " + (d.manufacturerName || "<not exposed>"));
+  lines.push("  product           " + (d.productName || "<not exposed>"));
+  lines.push("  idVendor          " + hexVid);
+  lines.push("  idProduct         " + hexPid);
+  lines.push("  deviceClass       " + hex(d.deviceClass, 2));
+  lines.push("  usb version       " + d.usbVersionMajor + "." + d.usbVersionMinor);
+  lines.push("");
+
+  (d.configurations || []).forEach(function(cfg){
+    lines.push("  configuration " + cfg.configurationValue + (cfg.configurationName ? " (" + cfg.configurationName + ")" : ""));
+    (cfg.interfaces || []).forEach(function(iface){
+      (iface.alternates || []).forEach(function(alt){
+        var t = alt.interfaceClass + "/" + alt.interfaceSubclass + "/" + alt.interfaceProtocol;
+        if (alt.alternateSetting === 0) {
+          triples.push(t);
+          classes.push(hex(alt.interfaceClass, 2));
+        }
+        lines.push("    interface " + iface.interfaceNumber + " alt " + alt.alternateSetting +
+          "   class " + alt.interfaceClass +
+          "  subclass " + alt.interfaceSubclass +
+          "  protocol " + alt.interfaceProtocol +
+          (alt.interfaceName ? "   " + alt.interfaceName : ""));
+      });
+    });
+  });
+
+  lines.push("");
+  lines.push("  --- the fields classify.sh uses ---");
+  lines.push("  all interface classes   " + (classes.join(" ") || "<none>"));
+  lines.push("  class/sub/proto         " + (triples.join(", ") || "<none>"));
+  var hasAdb = triples.indexOf("255/66/1") >= 0;
+  var hasFb = triples.indexOf("255/66/3") >= 0;
+  lines.push("  ADB interface (255/66/1)      " + (hasAdb ? "yes" : "no"));
+  lines.push("  fastboot interface (255/66/3) " + (hasFb ? "yes" : "no"));
+  lines.push("");
+  lines.push("  Compare against tests/real-descriptors/" + hexVid.slice(2) + "-" + hexPid.slice(2) + "-*.desc");
+
+  return {
+    text: lines.join("\n"),
+    hasAdb: hasAdb,
+    hasFb: hasFb,
+    triples: triples,
+    classes: classes,
+    vendorId: hexVid,
+    productId: hexPid,
+    deviceClass: hex(d.deviceClass, 2)
+  };
 }
 
-/* ---------- android fingerprint ---------- */
-function scrAndroid(){
+function scrWebUSB(){
   var c=show(
   '<div class="card">'+
-    '<p class="kicker">Android detected · step 2 <span class="where">Terminal</span></p>'+
-    '<h1>Now read the fingerprint</h1>'+
-    '<p>Read-only. It queries a fixed list of properties one at a time, deliberately, so a serial'+
-    ' number cannot come along for the ride.</p>'+
+    '<p class="kicker">'+esc(cur.dev.label)+' · step 1 (Browser)</p>'+
+    '<h1>Read the device descriptor</h1>'+
+    '<p class="sub">Click <b>Read device</b> and select your device in the browser chooser.'+
+    ' Nothing is claimed, transferred, or written.</p>'+
+    '<div class="btns">'+
+      '<button class="b" id="read">Read device</button>'+
+      '<button class="b ghost" id="skip">Skip WebUSB / cannot connect</button>'+
+    '</div>'+
+    '<div class="prompt-card" id="qcard" style="display:none;margin-top:20px">'+
+      '<p style="margin:0 0 8px;font-weight:600">Did your device appear in the chooser list?</p>'+
+      '<p style="margin:0 0 12px;font-size:14px;color:var(--ink-soft)">'+
+      'Browsers refuse whole device classes (mass storage, HID, audio, video) by design. A device the OS mounts happily can still be invisible in WebUSB.</p>'+
+      '<div class="btns">'+
+        '<button class="b choice" id="ansNotListed" type="button">No — not listed in chooser</button>'+
+        '<button class="b choice" id="ansCancelled" type="button">Yes — I cancelled</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="alert bad" id="err" style="margin-top:16px"></div>'+
+  '</div>');
+
+  var qcard=c.querySelector("#qcard"), err=c.querySelector("#err");
+
+  function onNextStep(){
+    var isPhone = cur.dev.phone || (cur.cap && (cur.cap.device_class === "adb" || cur.cap.device_class === "fastboot"));
+    if(isPhone){
+      if(S.host_platform && S.host_platform !== "not_stated") scrRoutePlatform(S.host_platform);
+      else scrPlatform();
+    } else {
+      scrConfirm();
+    }
+  }
+
+  c.querySelector("#read").addEventListener("click",function(){
+    err.className="alert bad";
+    qcard.style.display="none";
+    if(!("usb" in navigator)){
+      err.textContent="This browser does not support WebUSB (navigator.usb absent). Use Chrome, Edge, or Brave.";
+      err.className="alert bad on";
+      return;
+    }
+    navigator.usb.requestDevice({filters:[]}).then(function(d){
+      return d.open().then(function(){ return d; }).catch(function(){ return d; });
+    }).then(function(d){
+      var desc = buildWebUsbDescriptor(d, cur, cur.dev.expect, cur.idsrc);
+      cur.descText = desc.text;
+      var devClass = "unknown";
+      if (d.vendorId === 0x05ac) devClass = "ios";
+      else if (desc.hasAdb) devClass = "adb";
+      else if (desc.hasFb) devClass = "fastboot";
+      else if (desc.classes.length && desc.classes[0] === "0x08") devClass = "mass_storage";
+      else if (desc.classes.length && desc.classes[0] === "0x06") devClass = (cur.dev.phone ? "mtp" : "ptp_camera");
+      else if (cur.dev.expect) devClass = cur.dev.expect;
+
+      var descFilename = desc.vendorId.slice(2) + "-" + desc.productId.slice(2) + "-" + Date.now().toString(36) + ".desc";
+      cur.cap = {
+        usb_vendor_id: desc.vendorId,
+        usb_product_id: desc.productId,
+        device_class: devClass,
+        usb_interface_class: desc.classes.length ? desc.classes[0] : "unknown",
+        _triples: desc.triples.join(", "),
+        _classes: desc.classes.join(" "),
+        _descriptor_file: descFilename
+      };
+      cur.browser_enumeration = "enumerated";
+      if(d.opened) d.close().catch(function(){});
+      onNextStep();
+    }).catch(function(e){
+      qcard.style.display="block";
+      err.textContent="Device was not read (" + (e && e.name ? e.name : "Error") + "). Please indicate whether it was listed in the chooser.";
+      err.className="alert bad on";
+    });
+  });
+
+  c.querySelector("#ansNotListed").addEventListener("click",function(){
+    cur.browser_enumeration = "not_listed";
+    cur.cap = cur.cap || { usb_vendor_id: "unknown", usb_product_id: "unknown", device_class: (cur.dev.expect || "unknown"), usb_interface_class: "unknown" };
+    onNextStep();
+  });
+  c.querySelector("#ansCancelled").addEventListener("click",function(){
+    cur.browser_enumeration = "tester_cancelled";
+    cur.cap = cur.cap || { usb_vendor_id: "unknown", usb_product_id: "unknown", device_class: (cur.dev.expect || "unknown"), usb_interface_class: "unknown" };
+    onNextStep();
+  });
+  c.querySelector("#skip").addEventListener("click",function(){
+    cur.browser_enumeration = "not_attempted";
+    cur.cap = cur.cap || { usb_vendor_id: "unknown", usb_product_id: "unknown", device_class: (cur.dev.expect || "unknown"), usb_interface_class: "unknown" };
+    onNextStep();
+  });
+}
+
+/* ---------- Step 2: Choose Platform (asked, never guessed) ---------- */
+function scrPlatform(){
+  var c=show(
+  '<div class="card">'+
+    '<p class="kicker">'+esc(cur.dev.label)+' · step 2 (Platform)</p>'+
+    '<h1>Which operating system are you on?</h1>'+
+    '<p class="sub">This selects the right terminal command for reading the Android fingerprint.</p>'+
+    '<div class="picks">'+
+      '<button class="pick" data-p="macos"><b>macOS</b><small>Terminal with bash or zsh</small></button>'+
+      '<button class="pick" data-p="windows"><b>Windows</b><small>PowerShell or cmd</small></button>'+
+      '<button class="pick" data-p="ubuntu_installed"><b>Installed Linux</b><small>Ubuntu, Debian, Fedora, Arch</small></button>'+
+      '<button class="pick" data-p="linux_other"><b>Other Linux / WSL / BSD</b><small>any system with bash</small></button>'+
+      '<button class="pick" data-p="ubuntu_live"><b>Live Ubuntu USB stick</b><small>~90 min (mostly stick setup)</small></button>'+
+    '</div>'+
+  '</div>');
+  [].slice.call(c.querySelectorAll(".pick")).forEach(function(b){
+    b.addEventListener("click",function(){
+      var p = b.getAttribute("data-p");
+      S.host_platform = p;
+      save();
+      scrRoutePlatform(p);
+    });
+  });
+}
+
+function scrRoutePlatform(p){
+  if (p === "windows") {
+    scrAndroidRaw();
+  } else if (p === "ubuntu_live") {
+    scrAndroidBash("linux_live");
+  } else {
+    scrAndroidBash("adb_host");
+  }
+}
+
+/* ---------- Step 2 (Bash path): 02-android.sh ---------- */
+function scrAndroidBash(route){
+  var c=show(
+  '<div class="card">'+
+    '<p class="kicker">Android fingerprint · step 2 <span class="where">Terminal</span></p>'+
+    '<h1>Run the fingerprint script</h1>'+
+    '<p>Queries the allowlisted properties read-only and outputs a <code>BENCH_CAPTURE</code> line.</p>'+
     '<div class="cmd"><pre>bash 02-android.sh</pre><button class="copy" type="button">Copy</button></div>'+
-    '<p class="sub">If it says the phone is not authorised, look at the phone screen and accept the'+
-    ' prompt, then run it again.</p>'+
+    '<p class="sub">If it says the phone is not authorised, accept the prompt on the phone screen and run again.'+
+    ' Paste the entire terminal output below.</p>'+
     '<textarea class="paste" id="p" placeholder="Paste here"></textarea>'+
     '<div class="alert bad" id="err"></div>'+
     '<div class="btns"><button class="b ghost" id="skip">Skip, it would not connect</button></div>'+
@@ -742,11 +728,13 @@ function scrAndroid(){
   p.focus();
   function tryParse(){
     var t=p.value; if(!t.trim()) return;
-    var cap=parseCapture(t);
-    if(!cap||!cap.android){ err.textContent="No fingerprint line yet. Look for the line starting BENCH_CAPTURE."; err.className="alert bad on"; return; }
     var lk=leakIn(t);
     if(lk){ err.textContent="That text contains "+lk+". It cannot be recorded."; err.className="alert bad on"; return; }
-    err.className="alert bad"; cur.android=cap.android;
+    var cap=parseCapture(t);
+    if(!cap||!cap.android){ err.textContent="No fingerprint line yet. Look for the line starting BENCH_CAPTURE."; err.className="alert bad on"; return; }
+    err.className="alert bad";
+    cur.android=cap.android;
+    cur.capture_route = route;
     if(cap.android.product_model && cap.android.product_model!=="unknown"){
       cur.name=((cap.android.manufacturer||"")+" "+cap.android.product_model).trim();
     }
@@ -755,6 +743,67 @@ function scrAndroid(){
   p.addEventListener("input",tryParse);
   p.addEventListener("paste",function(){ setTimeout(tryParse,60); });
   c.querySelector("#skip").addEventListener("click",scrConfirm);
+}
+
+/* ---------- Step 2 (Windows raw path): getprop command block ---------- */
+function scrAndroidRaw(){
+  var rawCmd = 'adb shell "for p in ro.product.manufacturer ro.product.model ro.product.device ro.product.board ro.board.platform ro.hardware ro.soc.manufacturer ro.soc.model ro.product.cpu.abi ro.build.version.release ro.build.version.sdk ro.build.version.security_patch ro.build.fingerprint ro.build.ab_update ro.virtual_ab.enabled ro.boot.slot_suffix ro.boot.verifiedbootstate ro.boot.flash.locked ro.boot.vbmeta.device_state; do echo $p=$(getprop $p); done"';
+
+  var c=show(
+  '<div class="card">'+
+    '<p class="kicker">Android fingerprint · step 2 <span class="where">PowerShell / cmd</span></p>'+
+    '<h1>Run this command block, then paste output</h1>'+
+    '<p>Queries the allowlisted properties read-only. Paste the verbatim terminal output below.</p>'+
+    '<div class="cmd"><pre>' + esc(rawCmd) + '</pre><button class="copy" type="button">Copy</button></div>'+
+    '<textarea class="paste" id="p" placeholder="Paste terminal output here"></textarea>'+
+    '<div class="alert bad" id="err"></div>'+
+    '<details class="inline"><summary>If running cmd.exe without PowerShell loop support</summary>'+
+      '<p>You can run each line individually:</p>'+
+      '<pre style="font-size:12px">adb shell getprop ro.product.manufacturer\nadb shell getprop ro.product.model\nadb shell getprop ro.product.device\nadb shell getprop ro.product.board\nadb shell getprop ro.board.platform\nadb shell getprop ro.hardware\nadb shell getprop ro.soc.manufacturer\nadb shell getprop ro.soc.model\nadb shell getprop ro.product.cpu.abi\nadb shell getprop ro.build.version.release\nadb shell getprop ro.build.version.sdk\nadb shell getprop ro.build.version.security_patch\nadb shell getprop ro.build.fingerprint\nadb shell getprop ro.build.ab_update\nadb shell getprop ro.virtual_ab.enabled\nadb shell getprop ro.boot.slot_suffix\nadb shell getprop ro.boot.verifiedbootstate\nadb shell getprop ro.boot.flash.locked\nadb shell getprop ro.boot.vbmeta.device_state</pre>'+
+    '</details>'+
+    '<div class="btns"><button class="b ghost" id="skip">Skip, it would not connect</button></div>'+
+  '</div>');
+
+  var p=c.querySelector("#p"), err=c.querySelector("#err");
+  p.focus();
+  function tryParse(){
+    var t=p.value; if(!t.trim()) return;
+    var lk=leakIn(t);
+    if(lk){ err.textContent="That text contains "+lk+". It cannot be recorded."; err.className="alert bad on"; return; }
+    err.className="alert bad";
+    cur.android_raw = t.trim();
+    cur.android_derivation = "pending";
+    cur.capture_route = "adb_host";
+    scrConfirm();
+  }
+  p.addEventListener("input",tryParse);
+  p.addEventListener("paste",function(){ setTimeout(tryParse,60); });
+  c.querySelector("#skip").addEventListener("click",scrConfirm);
+}
+
+/* ---------- Legacy Ubuntu Prep & Boot Screens (Accessible if requested) ---------- */
+function scrPrep(){
+  var c=show(
+  '<div class="card">'+
+    '<p class="kicker">Ubuntu Live Setup <span class="where">Stick preparation</span></p>'+
+    '<h1>Two USB sticks, named differently</h1>'+
+    '<p>Estimated time: ~90 min the first time (mostly stick download and creation).</p>'+
+    '<div class="btns"><button class="b" id="ok">Continue to boot</button>'+
+    '<button class="b ghost" id="back">Back to devices</button></div>'+
+  '</div>');
+  c.querySelector("#ok").addEventListener("click",scrBootUp);
+  c.querySelector("#back").addEventListener("click",scrLoop);
+}
+function scrBootUp(){
+  var c=show(
+  '<div class="card">'+
+    '<p class="kicker">Ubuntu Live Setup <span class="where">Booting</span></p>'+
+    '<h1>Boot the bench machine from the Ubuntu stick</h1>'+
+    '<div class="btns"><button class="b" id="ok">I am on the desktop</button>'+
+    '<button class="b ghost" id="back">Back</button></div>'+
+  '</div>');
+  c.querySelector("#ok").addEventListener("click",function(){ S.host_platform="ubuntu_live"; save(); scrLoop(); });
+  c.querySelector("#back").addEventListener("click",scrPrep);
 }
 
 /* TESTABLE:sameDeviceAgain */
@@ -774,7 +823,11 @@ function sameDeviceAgain(cur, rec){
     repeat: true,
     mode: "",
     cap: null,
-    android: null
+    android: null,
+    android_raw: null,
+    descText: null,
+    capture_route: null,
+    browser_enumeration: null
   };
 }
 /* END TESTABLE:sameDeviceAgain */
@@ -785,8 +838,7 @@ function scrConfirm(){
   var agree=(!exp||got===exp), a=cur.android;
   var rows='<dt>class</dt><dd>'+esc(got)+(cap.classifier_confidence!=null?' <span style="color:var(--ink-faint)">conf '+esc(cap.classifier_confidence)+'</span>':'')+'</dd>'+
            '<dt>usb id</dt><dd>'+esc(cap.usb_vendor_id||"?")+":"+esc(cap.usb_product_id||"?")+'</dd>'+
-           (cap._lsusb?'<dt>reported</dt><dd>'+esc(cap._lsusb)+'</dd>':'')+
-           (cap._iface_string?'<dt>interfaces</dt><dd>'+esc(cap._iface_string)+'</dd>':'');
+           (cap._classes?'<dt>interfaces</dt><dd>'+esc(cap._classes)+'</dd>':'');
   if(a){ rows+='<dt>model</dt><dd>'+esc(a.manufacturer)+" "+esc(a.product_model)+'</dd>'+
                '<dt>chipset</dt><dd>'+esc(a.chipset_family||a.board_platform)+
                  (a.chipset_source?' <span style="color:var(--ink-faint)">from '+esc(a.chipset_source)+'</span>':'')+'</dd>'+
@@ -795,6 +847,9 @@ function scrConfirm(){
                  (a.partition_basis?' <span style="color:var(--ink-faint)">'+esc(a.partition_basis)+'</span>':'')+'</dd>'+
                '<dt>bootloader</dt><dd>'+esc(a.bootloader_state)+
                  (a.bootloader_basis?' <span style="color:var(--ink-faint)">'+esc(a.bootloader_basis)+'</span>':'')+'</dd>'; }
+  else if(cur.android_raw){
+    rows+='<dt>android</dt><dd>raw getprop recorded (derivation pending on maintainer machine)</dd>';
+  }
   var opts=CLASSES.map(function(x){return '<option'+(x===got?" selected":"")+'>'+x+'</option>';}).join("");
   var c=show(
   '<div class="card">'+
@@ -804,7 +859,6 @@ function scrConfirm(){
       '<p class="verdict '+(agree?"agree":"differ")+'">'+(agree?"Matches what you expected":"Different from the expected "+esc(exp))+'</p>'+
       '<dl>'+rows+'</dl>'+
     '</div>'+
-    (cap._hint?'<div class="why"><b>What the classifier is unsure about</b>'+esc(cap._hint)+'</div>':"")+
     '<div class="btns"><button class="b" id="yes">Yes, that is right</button>'+
     '<button class="b ghost" id="no">No, correct it</button></div>'+
     '<div id="fix" style="display:none;margin-top:20px">'+
@@ -831,8 +885,7 @@ function scrNote(correct,cls,name,mode){
     '<p class="kicker">'+esc(cur.dev.label)+' · last thing</p>'+
     '<h1>Anything awkward?</h1>'+
     '<p class="sub">A cable that turned out to be charge-only, a menu you had to hunt for, a step'+
-    ' whose wording made no sense. These are worth as much as the clean data, because making this'+
-    ' work for people who are not you is the actual research question. Skip freely if it just worked.</p>'+
+    ' whose wording made no sense. Skip freely if it just worked.</p>'+
     '<textarea class="note" id="n" placeholder="Third cable worked. First two were charge-only."></textarea>'+
     '<div class="alert bad" id="err"></div>'+
     '<div class="btns"><button class="b" id="save">Save record</button>'+
@@ -853,33 +906,76 @@ function NA(v){ return (v===undefined||v===null||v==="")?"not_applicable":v; }
 function saveRecord(correct,cls,name,mode,note){
   var cap=cur.cap||{}, a=cur.android;
   var mins=t0?Math.max(1,Math.round((Date.now()-t0)/60000)):null;
+  var descFile = cap._descriptor_file || (cur.descText ? (slug(name) + "-" + Date.now().toString(36) + ".desc") : "not_saved");
+
+  var androidObj;
+  if(cur.android_raw){
+    androidObj = {
+      android_raw: cur.android_raw,
+      android_derivation: "pending",
+      product_model: "unknown", product_device: "unknown", manufacturer: "unknown",
+      board_platform: "unknown", chipset_family: "unknown", chipset_source: "none",
+      cpu_abi: "unknown", partition_basis: "unknown", bootloader_basis: "unknown",
+      hardware: "unknown", android_version: "unknown", sdk: "unknown",
+      security_patch: "unknown", build_fingerprint: "unknown", partition_scheme: "unknown",
+      slot_suffix: "unknown", bootloader_state: "unknown", verified_boot_state: "unknown",
+      bootloader_unlockable: "unknown"
+    };
+  } else if(a){
+    androidObj = {
+      product_model:NA(a.product_model), product_device:NA(a.product_device),
+      manufacturer:NA(a.manufacturer), board_platform:NA(a.board_platform),
+      chipset_family:NA(a.chipset_family), chipset_source:NA(a.chipset_source),
+      chipset_candidates:NA(a.chipset_candidates),
+      cpu_abi:NA(a.cpu_abi),
+      partition_basis:NA(a.partition_basis), bootloader_basis:NA(a.bootloader_basis),
+      hardware:NA(a.hardware), android_version:NA(a.android_version),
+      sdk:NA(a.sdk), security_patch:NA(a.security_patch),
+      build_fingerprint:NA(a.build_fingerprint), partition_scheme:NA(a.partition_scheme),
+      slot_suffix:NA(a.slot_suffix), bootloader_state:NA(a.bootloader_state),
+      verified_boot_state:NA(a.verified_boot_state),
+      bootloader_unlockable:"unknown"
+    };
+  } else {
+    androidObj = {
+      product_model:"not_applicable", product_device:"not_applicable",
+      manufacturer:"not_applicable", board_platform:"not_applicable",
+      chipset_family:"not_applicable", chipset_source:"not_applicable",
+      cpu_abi:"not_applicable", partition_basis:"not_applicable", bootloader_basis:"not_applicable",
+      hardware:"not_applicable", android_version:"not_applicable",
+      sdk:"not_applicable", security_patch:"not_applicable",
+      build_fingerprint:"not_applicable",
+      partition_scheme: cur.dev.phone ? "unknown" : "not_applicable",
+      slot_suffix:"not_applicable",
+      bootloader_state: cur.dev.phone ? "unknown" : "not_applicable",
+      verified_boot_state:"not_applicable",
+      bootloader_unlockable:"not_applicable"
+    };
+  }
+
   var rec={
-    schema_version:"0.3", record_id:uuid(), tester:S.tester, consent_ack:true,
+    schema_version:"0.4", record_id:uuid(), tester:S.tester, consent_ack:true,
     date:new Date().toISOString().slice(0,10),
-    host:{ os:"Ubuntu live", method:"linux-live", browser:"not_applicable" },
+    host_platform: S.host_platform || "not_stated",
+    capture_route: cur.capture_route || (cur.dev.phone ? "adb_host" : "browser"),
+    browser_enumeration: cur.browser_enumeration || "not_attempted",
+    browser_enumeration_source: (cur.browser_enumeration && cur.browser_enumeration !== "not_attempted") ? "tester" : "not_applicable",
+    browser_enumeration_context: navigator.userAgent || "not_recorded",
+    host:{
+      os: S.host_platform || "not_stated",
+      method: cur.capture_route || "browser",
+      browser: navigator.userAgent || "not_applicable"
+    },
     connection:"not_recorded", cable_notes:"",
     reported_device:name||cur.dev.name||"unnamed",
     device_local_id:cur.localId||slug(name||cur.dev.name),
     device_mode:mode||cur.mode||"default",
     usb_mode:cur.mode||"not_recorded",
-    descriptor_file:(cap._descriptor_file||"not_saved"),
+    descriptor_file:descFile,
     detected:{
       usb_vendor_id:NA(cap.usb_vendor_id), usb_product_id:NA(cap.usb_product_id),
       device_class:cls, usb_interface_class:NA(cap.usb_interface_class),
-      android:{
-        product_model:NA(a&&a.product_model), product_device:NA(a&&a.product_device),
-        manufacturer:NA(a&&a.manufacturer), board_platform:NA(a&&a.board_platform),
-        chipset_family:NA(a&&a.chipset_family), chipset_source:NA(a&&a.chipset_source),
-        chipset_candidates:NA(a&&a.chipset_candidates),
-        cpu_abi:NA(a&&a.cpu_abi),
-        partition_basis:NA(a&&a.partition_basis), bootloader_basis:NA(a&&a.bootloader_basis),
-        hardware:NA(a&&a.hardware), android_version:NA(a&&a.android_version),
-        sdk:NA(a&&a.sdk), security_patch:NA(a&&a.security_patch),
-        build_fingerprint:NA(a&&a.build_fingerprint), partition_scheme:NA(a&&a.partition_scheme),
-        slot_suffix:NA(a&&a.slot_suffix), bootloader_state:NA(a&&a.bootloader_state),
-        verified_boot_state:NA(a&&a.verified_boot_state),
-        bootloader_unlockable:a?"unknown":"not_applicable"
-      }
+      android: androidObj
     },
     identity_source:(cur.idsrc||"unidentified"),
     classification_correct:!!correct,
@@ -887,12 +983,27 @@ function saveRecord(correct,cls,name,mode,note){
     verifier_runs:[], related_records:[],
     duration_minutes:mins, notes:note||""
   };
+
   S.records.push(rec);
   S.devices=S.devices||{};
   S.devices[rec.device_local_id]=rec.reported_device;
   S.seen[cur.dev.k]=(S.seen[cur.dev.k]||0)+1;
+
+  if (cur.descText) {
+    S.descriptors = S.descriptors || [];
+    S.descriptors.push({
+      filename: descFile,
+      content: cur.descText,
+      device: rec.reported_device,
+      route: "browser",
+      expect: cur.dev.expect || "",
+      ground_truth: cur.idsrc || "unidentified",
+      captured: new Date().toISOString()
+    });
+  }
   save();
-  var isPhone=cur.dev.phone, noFinger=isPhone && !a;
+
+  var isPhone=cur.dev.phone, noFinger=isPhone && !a && !cur.android_raw;
   var c=show(
   '<div class="card">'+
     '<p class="kicker">Saved</p>'+
@@ -902,53 +1013,39 @@ function saveRecord(correct,cls,name,mode,note){
     (noFinger?'<div class="why hot"><b>No fingerprint on this one</b>This is a record of how the'+
       ' phone presents over USB, not an Android fingerprint. If you can get USB debugging on, capture'+
       ' it again: that is the record the project actually needs.</div>':"")+
-    (cur.dev.k==="camera"&&S.seen.camera===1?'<div class="why"><b>Do this one again</b>Change the'+
-      ' camera USB mode in its menu and capture a second time. The same physical device presenting as'+
-      ' two different classes is one of the most useful things you will find.</div>':"")+
     '<div class="btns"><button class="b" id="again">Same device, different mode</button>'+
     '<button class="b" id="next">Unplug, next device</button>'+
     '<button class="b ghost" id="fin">Done for now</button></div>'+
   '</div>');
   c.querySelector("#again").addEventListener("click",function(){
     cur=sameDeviceAgain(cur,rec);
-    t0=Date.now(); scrRun();
+    t0=Date.now(); scrIdentify();
   });
   c.querySelector("#next").addEventListener("click",function(){ cur=null; scrLoop(); });
   c.querySelector("#fin").addEventListener("click",scrFinish);
 }
 
-/* ---------- finish ---------- */
+/* ---------- finish & export ---------- */
 function scrFinish(){
   var andr=S.records.filter(function(r){var c=r.detected.device_class;return c==="adb"||c==="fastboot";}).length;
   var mism=S.records.filter(function(r){return !r.classification_correct;}).length;
-  show(
+  var c=show(
   '<div class="card">'+
     '<p class="kicker">Session complete</p>'+
     '<h1>'+S.records.length+' record'+(S.records.length===1?"":"s")+', '+andr+' with a fingerprint</h1>'+
-    (andr===0?'<div class="why hot"><b>No Android fingerprints yet</b>Records of how phones present'+
-      ' over USB are useful, but the validation claim needs fingerprints: model, chipset, partition'+
-      ' scheme, bootloader state. That means USB debugging on, then capture again. Worth another'+
-      ' twenty minutes before you pack up.</div>':"")+
     (mism?'<p><b>'+mism+' classification'+(mism===1?"":"s")+' had to be corrected.</b> Those are the'+
-      ' most valuable rows in the set. Each one is a case for the corpus.</p>':"")+
-    '<div class="why hot"><b>Download now</b>This is a live Ubuntu session. It forgets everything at'+
-    ' reboot, including this page’s memory. Use the Download button below and save the file to the'+
-    ' BENCH stick before you shut down.</div>'+
+      ' most valuable rows in the set.</p>':"")+
+    '<div class="why net"><b>Export your session</b>Download the session file below. It contains all records,'+
+    ' descriptors, and your notes packaged together.</div>'+
+    '<div class="btns" style="margin-bottom:20px">'+
+      '<button class="b" id="dlsession_fin">Download session export (.json)</button>'+
+    '</div>'+
     '<h2>Three questions, while it is fresh</h2>'+
     '<p class="sub">Type the answers into the box below. They go into the file with your records.</p>'+
     '<ol class="mini">'+
-      '<li><b>Was there anything true about a device that this tool gave you no way to say?</b>'+
-        ' For example: it is two devices in one, or it only works with one particular cable, or the'+
-        ' right answer was "sort of". If you had to squeeze something into a box that did not fit,'+
-        ' that is a hole in the form and it is much cheaper to hear about now than from twenty people.</li>'+
-      '<li><b>Was there a moment you could not tell whether to say "not applicable" or "unknown"?</b>'+
-        ' They mean different things here. <b>Not applicable</b> = the question makes no sense for this'+
-        ' device, like asking a USB stick about its bootloader. <b>Unknown</b> = the question makes'+
-        ' perfect sense and we could not find out. If you hesitated even once, the wording is at fault,'+
-        ' not you. Say where.</li>'+
-      '<li><b>How long did it really take, including the fiddling?</b> The timer only counts from when'+
-        ' you press start. It misses hunting for a cable, finding the menu, and reading this. That real'+
-        ' number is what we have to be honest with volunteers about.</li>'+
+      '<li><b>Was there anything true about a device that this tool gave you no way to say?</b></li>'+
+      '<li><b>Was there a moment you could not tell whether to say "not applicable" or "unknown"?</b></li>'+
+      '<li><b>How long did it really take, including the fiddling?</b></li>'+
     '</ol>'+
     '<textarea class="note" id="wrap" placeholder="Anything at all. One line is fine."></textarea>'+
     '<div class="btns"><button class="b" id="savewrap">Save these answers</button></div>'+
@@ -965,19 +1062,65 @@ function scrFinish(){
     ok.textContent="Saved. It will be in the downloaded file.";
     ok.className="alert good on";
   });
+  c.querySelector("#dlsession_fin").addEventListener("click",downloadSessionFile);
   document.getElementById("more").addEventListener("click",scrLoop);
 }
 
-/* ---------- collected actions ---------- */
+function getSessionExportObject(){
+  var ts = new Date().toISOString();
+  var handle = S.tester || "unnamed";
+  return {
+    handle: handle,
+    host_platform: S.host_platform || "not_stated",
+    session_timestamp: ts,
+    session_notes: S.wrapup || "",
+    manifest: {
+      devices_read: S.records.length,
+      descriptors_count: (S.descriptors || []).length,
+      android_fingerprints: S.records.filter(function(r){
+        return r.detected && (r.detected.device_class === "adb" || r.detected.device_class === "fastboot");
+      }).length
+    },
+    records: S.records,
+    descriptors: S.descriptors || []
+  };
+}
+
+function downloadSessionFile(){
+  if(!S.records.length){ alert("No records captured yet."); return; }
+  var obj = getSessionExportObject();
+  var jsonStr = JSON.stringify(obj, null, 2);
+  var tsStr = new Date().toISOString().replace(/[:.]/g, "-");
+  var handleSlug = slug(S.tester || "unnamed");
+  var filename = "flashguard-" + handleSlug + "-" + tsStr + ".json";
+
+  var b=new Blob([jsonStr], {type:"application/json"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 400);
+}
+
+function downloadDescriptors(){
+  if(!S.descriptors || !S.descriptors.length){ alert("No descriptor captures in this session."); return; }
+  S.descriptors.forEach(function(d, idx){
+    setTimeout(function(){
+      var b=new Blob([d.content], {type:"text/plain"});
+      var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=d.filename || ("descriptor-" + idx + ".desc");
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 400);
+    }, idx * 250);
+  });
+}
+
 function allLines(){
   var lines=S.records.map(function(r){return JSON.stringify(r);});
-  /* The session wrap-up rides out with the records as its own line, so a tester
-     never has to remember to send a second file. merge.py skips session_note
-     lines when building the matrix and collects them separately. */
-  if(S.wrapup) lines.push(JSON.stringify({record_type:"session_note",schema_version:"0.3",
+  if(S.wrapup) lines.push(JSON.stringify({record_type:"session_note",schema_version:"0.4",
     tester:S.tester,date:new Date().toISOString().slice(0,10),notes:S.wrapup}));
   return lines.join("\n");
 }
+
+document.getElementById("dlsession").addEventListener("click", downloadSessionFile);
+document.getElementById("dldesc").addEventListener("click", downloadDescriptors);
 document.getElementById("dl").addEventListener("click",function(){
   if(!S.records.length) return;
   var b=new Blob([allLines()+"\n"],{type:"application/x-ndjson"});
@@ -985,16 +1128,16 @@ document.getElementById("dl").addEventListener("click",function(){
   document.body.appendChild(a); a.click();
   setTimeout(function(){ URL.revokeObjectURL(a.href); document.body.removeChild(a); },400);
 });
-document.getElementById("cp").addEventListener("click",function(){ if(S.records.length) copyText(allLines(),this); });
+document.getElementById("cp").addEventListener("click",function(){
+  if(S.records.length) copyText(JSON.stringify(getSessionExportObject(), null, 2), this);
+});
 document.getElementById("restart").addEventListener("click",function(){
   if(S.records.length && !confirm("Start over? "+S.records.length+" record"+(S.records.length===1?"":"s")+
      " will be cleared from this page. Download them first if you have not.")) return;
-  S={where:null,tester:S.tester,consent:S.consent,setup:0,records:[],seen:{},devices:{}}; save(); scrBoot();
+  S={host_platform:"not_stated",tester:S.tester,consent:S.consent,setup:0,records:[],descriptors:[],seen:{},devices:{},wrapup:""}; save(); scrWho();
 });
 
-if(!S.where) scrBoot();
-else if(!S.tester||!S.consent) scrWho();
-else if(!S.setup) scrSetup();
+if(!S.tester||!S.consent) scrWho();
 else scrLoop();
 })();
 </script>

@@ -59,7 +59,8 @@ A missing key is a defect, not a third kind of absence. Write the sentinel.
     "method": "linux-live | windows-chrome | other",
     "browser": "not_applicable | Chrome 128 | Edge"
   },
-  "capture_route": "linux_live | browser",
+  "host_platform": "macos | windows | ubuntu_live | ubuntu_installed | linux_other | not_stated",
+  "capture_route": "browser | adb_host | linux_live",
   "browser_enumeration": "enumerated | not_listed | tester_cancelled | not_attempted",
   "browser_enumeration_source": "tester",
   "browser_enumeration_context": "Mozilla/5.0 ... (userAgent and OS string)",
@@ -138,8 +139,9 @@ disagreed with the scan. The console now asks before running the scan, every tim
 condition, and the tool has to behave sensibly on one.
 
 **`capture_route`** New in 0.4, added 6 September after the delivery platform was decided.
-How this record was obtained: `linux_live` (the bench kit on an Ubuntu session, with root and
-a clean USB baseline) or `browser` (WebUSB, no install).
+How this record/capture was obtained: `browser` (step 1 via WebUSB in the browser, no install),
+`adb_host` (step 2 run from the tester's own operating system via adb), or `linux_live`
+(the bench kit on an Ubuntu session with root and a clean USB baseline).
 
 This exists because **the matrix is being collected under conditions the product will not
 have.** `sudo lsusb -v` on a live Linux session sees more than a browser does. A record
@@ -147,8 +149,14 @@ obtained by a route the shipped tool cannot use is still useful evidence about d
 it cannot be used to claim the tool will work — and without this field the two are
 indistinguishable after the fact.
 
-Every record captured before 6 September is `linux_live` (or `linux-live`). See
+Every record captured before 6 September is `linux_live` (or `linux-live`). Absence is not a value;
+an unrecorded capture must not be assumed to have used any particular route. See
 `docs/reasoning/delivery-platform.md`.
+
+**`host_platform`** Added 14 September. The operating system platform explicitly selected
+by the tester: `macos | windows | ubuntu_live | ubuntu_installed | linux_other | not_stated`.
+Absence means `not_stated`, never an assumption. The platform is always asked, never inferred
+from userAgent strings.
 
 **`browser_enumeration`**, **`browser_enumeration_source`**, **`browser_enumeration_context`**
 Added 13 September after the first cross-platform WebUSB probe run on macOS and Windows.
