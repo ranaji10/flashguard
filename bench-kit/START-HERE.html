@@ -710,6 +710,23 @@ function scrRoutePlatform(p){
   }
 }
 
+/* TESTABLE:normaliseRawProps */
+function normaliseRawProps(text){
+  if(!text) return "";
+  return text.replace(/\r\n?/g, "\n")
+             .split("\n")
+             .map(function(line){ return line.trim(); })
+             .join("\n");
+}
+/* END TESTABLE:normaliseRawProps */
+
+/* TESTABLE:isValidRawProps */
+function isValidRawProps(text){
+  if(!text) return false;
+  return text.indexOf("=") >= 0 && /ro\.[a-zA-Z0-9._]+=/i.test(text);
+}
+/* END TESTABLE:isValidRawProps */
+
 /* ---------- Step 2 (Bash path): 02-android.sh ---------- */
 function scrAndroidBash(route){
   var c=show(
@@ -728,7 +745,7 @@ function scrAndroidBash(route){
   p.focus();
   function tryParse(){
     var rawInput=p.value; if(!rawInput.trim()) return;
-    var t=rawInput.replace(/\r\n?/g, "\n");
+    var t=normaliseRawProps(rawInput);
     var lk=leakIn(t);
     if(lk){ err.textContent="That text contains "+lk+". It cannot be recorded."; err.className="alert bad on"; return; }
     var cap=parseCapture(t);
@@ -765,8 +782,8 @@ function scrAndroidRaw(){
   p.focus();
   function tryParse(){
     var rawInput=p.value; if(!rawInput.trim()) return;
-    var t=rawInput.replace(/\r\n?/g, "\n");
-    if (t.indexOf("=") < 0 || !/ro\.[a-zA-Z0-9._]+=/i.test(t)) {
+    var t=normaliseRawProps(rawInput);
+    if (!isValidRawProps(t)) {
       err.textContent = "The pasted text does not contain key=value properties. Please run the full command block shown above.";
       err.className = "alert bad on";
       return;
