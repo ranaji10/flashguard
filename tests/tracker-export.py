@@ -28,7 +28,7 @@ import subprocess
 import sys
 
 MARK = {"open": "[ ]", "doing": "[~]", "done": "[x]", "dropped": "[-]"}
-ARTIFACT = "https://claude.ai/code/artifact/bbac4a10-81b5-49bb-b206-46e4cbe6d303"
+ARTIFACT = "https://claude.ai/artifact/QB8ZoWCpEBJ3Zjfdz9bfFG"
 
 
 def repo_root():
