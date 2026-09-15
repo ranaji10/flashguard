@@ -65,6 +65,10 @@ Read before writing the proposal or changing a design.
 |---|---|
 | `grant/nlnet-restack-proposal.md` | The proposal. **Still shaped for seven questions; the form has two boxes.** |
 | `grant/schedule.md` | Milestones with payable, externally checkable criteria. Costing deliberately blank. |
+| `docs/Research/install-method-classification.md` | All 28 LineageOS install methods classified by what the unlock requires. 303 devices are vendor-gated. Carries an analysis appendix separating verified from assumed. |
+| `docs/Research/TASK-2-install-method-classification.md` | The follow-up research task: classify all 28 install methods by what the unlock requires and whether a device can ever report it. |
+| `docs/Research/reply-to-lineageos-2026-09-15.md` | What to send back to LineageOS after their answer, and the reasoning behind each line of it. |
+| `docs/Research/custom_unlock_cmd-findings.md` | What absence of `custom_unlock_cmd` means in LineageOS, read from the templates. Settles it: the field is a template override, not documentation. |
 | `docs/reference/producer-prompt-2026-09-14-testfix.md` | Second repair: leading whitespace zeroes every field, and two of three shape tests undo their own perturbation. Test the shipped normaliser in node. |
 | `docs/reference/producer-prompt-2026-09-14-repair.md` | Repair task after the blind review: CRLF corrupting two verifier fields, a test that could not fail, pending records claiming seventeen answers. |
 | `docs/reference/producer-prompt-2026-09-15-package.md` | The build task for the merged WebUSB + bench-kit tester file. Decisions already made, and where a producer will be tempted to go wrong. |

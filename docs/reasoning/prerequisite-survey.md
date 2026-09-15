@@ -132,3 +132,49 @@ The survey command was:
 ```text
 python3 data/survey_upstream.py
 ```
+
+## CORRECTION, 15 September 2026: the 103 of 737 was measuring the wrong thing
+
+Asked LineageOS directly. The answer was "open instructions for devices you see that for and
+see for yourself", which was terse and was the right instruction. Doing it, against the pinned
+clone, settles it.
+
+`custom_unlock_cmd` is a **template override**, not a documentation field. The install
+templates render `fastboot oem unlock` as their `else` branch, so the field is set only when
+the correct command DEVIATES from that default. Absence means the standard command applies,
+not that data is missing.
+
+So 103 of 737 counts deviations. It never counted documentation.
+
+**What is actually declared: 737 of 737 devices declare `install_method`.** Verified by count
+against the pinned clone. The unlock procedure is fully determined by `install_method` plus the
+optional override, which means LineageOS declares its unlock procedure structurally for every
+device it ships, the same as OpenAndroidInstaller. The ecosystem picture is two complete and
+one absent, not one complete, one partial and one absent.
+
+**And the more useful number, which nobody had:**
+
+| | devices | share |
+|---|---|---|
+| Unlock is OUT-OF-BAND: a vendor portal, account or proprietary mode | 348 | 47% |
+| Unlock is the standard fastboot command, 85 of them overridden | 170 | 23% |
+| Ships pre-unlocked | 12 | 2% |
+| Not yet classified | 207 | 28% |
+
+Out-of-band means `fastboot_xiaomi`, `fastboot_xiaomi_hyperos`, `fastboot_motorola`,
+`samloader_rs` and `fastboot_fairphone`, each verified by reading the template. Mi Unlock is a
+Windows application tied to an account with a waiting period; Motorola and Fairphone use web
+portals; Samsung uses Download Mode with no fastboot unlock at all.
+
+**On roughly half this catalogue, no device-state verifier can ever establish that the unlock
+prerequisite is satisfiable**, because the evidence does not live on the device. That is a hard
+boundary on what any tool of this kind can decide, it is quantified, and it is a finding rather
+than a gap.
+
+**One small thing worth sending back to LineageOS.** Eight devices set `custom_unlock_cmd` on
+`install_method: amlogic_update`, and `recovery_install_amlogic_update.md` does not read the
+field. Those eight values are set and never rendered. `fastboot_nubia` and `fastboot_lenovo`
+do read it, so 95 of the 103 are live and 8 are dead data. Checked by reading the templates.
+
+*Method: `library/upstream/lineage_wiki` at the pinned checkout, `_data/devices/*.yml` and
+`_includes/templates/recovery_install_*.md`. Full working in `docs/Research/custom_unlock_cmd-findings.md`.*
