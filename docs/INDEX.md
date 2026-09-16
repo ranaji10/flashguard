@@ -68,11 +68,16 @@ Read before writing the proposal or changing a design.
 | `docs/Research/OAI-config-analysis.md` | OpenAndroidInstaller config structure: exact-string device codes, schema-enforced `is_ab_device`, a machine-readable `untested` flag, and no checksums anywhere. |
 | `docs/Research/install-method-classification.md` | All 28 LineageOS install methods classified by what the unlock requires. 303 devices are vendor-gated. Carries an analysis appendix separating verified from assumed. |
 | `docs/Research/TASK-2-install-method-classification.md` | The follow-up research task: classify all 28 install methods by what the unlock requires and whether a device can ever report it. |
+| `docs/Research/TASK-3-variant-danger.md` | Research task 3: where two models share a codename, does anything upstream treat them differently, and has flashing the wrong one ever cost anybody a modem? Settles the `variant` ruling. |
 | `docs/Research/reply-to-lineageos-2026-09-15.md` | What to send back to LineageOS after their answer, and the reasoning behind each line of it. |
 | `docs/Research/custom_unlock_cmd-findings.md` | What absence of `custom_unlock_cmd` means in LineageOS, read from the templates. Settles it: the field is a template override, not documentation. |
 | `docs/reference/producer-prompt-2026-09-14-testfix.md` | Second repair: leading whitespace zeroes every field, and two of three shape tests undo their own perturbation. Test the shipped normaliser in node. |
 | `docs/reference/producer-prompt-2026-09-14-repair.md` | Repair task after the blind review: CRLF corrupting two verifier fields, a test that could not fail, pending records claiming seventeen answers. |
 | `docs/reference/producer-prompt-2026-09-15-package.md` | The build task for the merged WebUSB + bench-kit tester file. Decisions already made, and where a producer will be tempted to go wrong. |
+| `docs/reference/producer-prompt-2026-09-16-batch1.md` | Batch 1 of 4: the platform trap that mislabels every later record, and the pending record that claims seventeen unknowns. |
+| `docs/reference/producer-prompt-2026-09-16-batch2.md` | Batch 2 of 4: the Windows command block PowerShell expands before adb sees it, and the restored bare-getprop offer guard. |
+| `docs/reference/producer-prompt-2026-09-16-batch3.md` | Batch 3 of 4: `unlock-out-of-band` as a reason code of its own, with data-held guidance naming what a person must do by hand. |
+| `docs/reference/producer-prompt-2026-09-16-batch4.md` | Batch 4 of 4: carry upstream's `untested` flag into the recipe source block and gate `safe` on it. The absent case stays undecided. |
 | `grant/work-log-2026-09-13.md` | What was actually done, 26 Aug to 13 Sep, with commits and numbers. Source material for the proposal, **not** the proposal. |
 | `grant/nlnet-findings-2026-09-03.md` | The open call, verified against the live pages. Programme choice, form, scoring weights, AI rules. |
 | `grant/_drafts/README.md` | Where superseded long-form answers go. Not `library/`. |

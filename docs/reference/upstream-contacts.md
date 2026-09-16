@@ -329,6 +329,18 @@ My questions:
 Thanks for your patience in reading through this long message. Your responses would be highly appreciated and would help me decide on a direction based on the learnings from this community. Cheers and have a great week ahead! 
 
 
+Q:(follow up)
+Hello again, another thing came up while I was going through the configs.
+
+I noticed a bunch of configs carry an untested: true flag. My interpretation of that is that this config was written but nobody's actually confirmed it works on real hardware yet. Is that a correct assumption?
+
+A couple of things I'd love to know:
+
+When that flag is set, does it mean nobody has confirmed the device works, or does it mean something like "this specific step hasn't been tested"?
+When someone does confirm a device works, is the flag cleared, or is it possible that a config could have been tested but it's still showing untested: true ?
+Since the direction I'm taking my tool is that it would treat any build from an untested: true config as something that should never come back as safe, but unverified. So the question is, if the flag is actually kept up to date?
+Thanks in advance for your time. Cheers!
+
 
 
 PostmarketOS
