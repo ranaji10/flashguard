@@ -1,10 +1,12 @@
-# Batch 1 of 4, 16 September. Two defects in `bench-kit/START-HERE.html`.
+# Batch 1 of 5, 16 September. Three defects in `bench-kit/START-HERE.html`.
+
+*Amended 16 September after research task 3. Defect 3 is new, and it is the same rule as defect 2 in the branch nobody looked at. It matters more than it did yesterday: `product_model` is about to become the field that decides whether a recipe may be applied to a device at all.*
 
 Both block Ranaji's own test run on a new machine, so do these before anything else.
 Both are in one file. Do not touch the verifier, the schema or the recipes in this batch.
 
 Read each reproduction before writing code. They are click sequences and file lines, not
-opinions. Change nothing outside the two fixes named here.
+opinions. Change nothing outside the three fixes named here.
 
 ---
 
@@ -120,12 +122,76 @@ refusal and confirm the test fails. A gate with no test proving it fires is a co
 
 ---
 
+## 3. BLOCKING. A browser-only record says an Android phone has no model number.
+
+Same rule as defect 2, in the sibling branch of the same function. `saveRecord` builds
+`androidObj` three ways, and the third one is wrong.
+
+```
+START-HERE.html:924   function NA(v){ return (v===undefined||v===null||v==="")?"not_applicable":v; }
+START-HERE.html:953   } else {
+START-HERE.html:955     product_model:"not_applicable", product_device:"not_applicable",
+START-HERE.html:956     manufacturer:"not_applicable", board_platform:"not_applicable",
+...
+START-HERE.html:961     partition_scheme: cur.dev.phone ? "unknown" : "not_applicable",
+START-HERE.html:963     bootloader_state: cur.dev.phone ? "unknown" : "not_applicable",
+```
+
+Two fields ask whether the device is a phone. **Seventeen do not.** So a phone captured in the
+browser and never taken through step 2 produces a record asserting that it has no model number,
+no device codename, no manufacturer and no Android version, because `not_applicable` means in
+`data/schema.md` that **the field cannot apply**. On an Android phone every one of them applies
+and simply was not read. The right value is `unknown`.
+
+The rule is already written down in this project, in the tracker item for this very file: a
+browser-only Android record must write `partition_scheme` as `unknown`, never `not_applicable`.
+It was applied to two fields out of nineteen.
+
+**And `NA()` has the same fault, live on one field today.** `derive.sh` returns the string
+`unknown` for what it cannot establish, so most fields pass through correctly. It returns
+**empty** for `slot_suffix` on a device that exposes none. Reproduce:
+
+```
+grep -v '^#!' tests/android/empty-everything.props | bash bench-kit/scripts/derive.sh | grep slot_suffix
+```
+
+That empty value reaches `NA("")`, which returns `not_applicable` — the record then claims an
+Android phone cannot have a slot suffix, when the honest answer is that it did not report one.
+
+**Why this is worse than it looks.** `product_model` is the string that upstream publishes as
+`models:` and it is on its way to deciding whether a recipe may be applied to a device. A record
+claiming `product_model: not_applicable` on a phone is claiming the phone has no model. Anything
+downstream that reads `not_applicable` as "this axis does not apply, skip the check" has a path
+straight through a safety check.
+
+**Fix:**
+
+1. In the `else` branch, every Android field takes the phone test that `partition_scheme` and
+   `bootloader_state` already take: `unknown` for a phone, `not_applicable` otherwise. Write it
+   once as a helper rather than nineteen times as a ternary, so the next field added cannot be
+   forgotten.
+2. `NA()` must not decide between `unknown` and `not_applicable` from an empty string, because an
+   empty string does not say which one is meant. Give it the phone context, or return `unknown`
+   for a phone and let non-phone records take `not_applicable` explicitly.
+3. Do not touch the `else if(a)` branch's behaviour for values `derive.sh` already returns as
+   `unknown`. Those are correct.
+
+**Prove it:** capture one phone through the browser only, skip step 2, export, and confirm every
+Android field reads `unknown` rather than `not_applicable`. Then run the `slot_suffix`
+reproduction above through the derived path and confirm the record says `unknown`. Then write a
+test that fails if any Android field in a phone record is `not_applicable`, and prove it fails by
+reverting one field.
+
+---
+
 ## What "done" means for this batch
 
 - `bash tests/all.sh` runs and nothing that passed before fails now.
 - The two proofs above were actually carried out, not reasoned about.
 - No file outside `bench-kit/START-HERE.html`, `data/schema.md` and the contributions
-  validator plus its test has changed.
+  validator plus its tests has changed.
+- The three proofs were carried out. `not_applicable` no longer appears on any Android field of a
+  phone record, by any of the three branches.
 - No absolute path, no home directory and no personal address appears in any file you
   touched. `bash tests/check-public-safe.sh` still passes.
 

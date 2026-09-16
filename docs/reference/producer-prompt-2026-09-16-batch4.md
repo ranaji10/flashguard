@@ -1,4 +1,7 @@
-# Batch 4 of 4, 16 September. Upstream marks its untested configs. Carry the flag.
+# Batch 4 of 5, 16 September. Upstream marks its untested configs. Carry the flag.
+
+*Amended 16 September after research task 3: one rule added about not merging this gate
+with the one batch 5 will add.*
 
 Smallest of the four, and the only one whose rule comes from upstream's own data rather than
 from our judgement. Touches the recipes, the verifier and the contract. Does not touch
@@ -58,6 +61,16 @@ YAML do not.
 The reason code must say the limit is **upstream's own statement about the config**, not
 something about the device. A tester whose phone is fine deserves to know the recipe is the
 uncertain part.
+
+**Do not build a general provenance gate.** Batch 5 will add a second, independent limit on
+`safe` — whether the device's model is one the recipe covers — and it is tempting to write one
+mechanism that both feed into. Resist it. They fail for different reasons, they need different
+reason codes, and a person told "this cannot be called safe" deserves to know which of the two
+it was. Either one alone blocks `safe`; neither cancels the other.
+
+**Stay inside the `source` block.** Batch 3 is editing the prerequisite block and batch 5 will
+edit `target`. Three producers in three parts of one schema is fine; three in one part is a
+merge conflict nobody notices until a recipe quietly loses a field.
 
 ## 3. The contract records both halves
 

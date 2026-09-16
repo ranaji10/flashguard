@@ -1,4 +1,7 @@
-# Batch 3 of 4, 16 September. A verdict for a prerequisite that is not on the device.
+# Batch 3 of 5, 16 September. A verdict for a prerequisite that is not on the device.
+
+*Amended 16 September after research task 3: one requirement added to section 4, and a
+sequencing rule at the end. Both exist so this batch does not have to be rebuilt.*
 
 This batch touches the verifier, the schema and the verdict contract. It does not touch
 `bench-kit/`. Run it after batches 1 and 2, or in parallel with them if you are a different
@@ -92,6 +95,41 @@ Requirements:
 - It never tells anyone to run a flashing command. Flashguard verifies; it does not execute.
 - Where we do not have the steps for a method, the field is absent and the reason text says
   the unlock is out of band without inventing a procedure. Do not write a plausible one.
+- **The guidance must be able to say that a procedure does not apply to this device at all**,
+  not only that the person has an unlock to go and obtain. Upstream publishes exactly that, in
+  prose, on real devices: the Motorola Moto Z2 Force page warns that firmware for the wrong
+  carrier model is likely to damage the device; the HTC 10 page excludes the Sprint and Verizon
+  variants outright; the OnePlus firmware pages exclude carrier-branded models. If the guidance
+  is keyed only by unlock method it cannot carry a model-scoped exclusion, and it will have to
+  be rebuilt when the model check lands. Key it so that a second dimension can be added without
+  moving what is already there. **Do not build the model check in this batch.** It is batch 5
+  and it is waiting on a ruling.
+
+## 6. The guidance may carry a link out, and a way back in
+
+Ranaji asked whether the tool could send a person to the upstream page, let them do the steps
+there, and take them back. Yes, and it is one more field rather than a new mechanism.
+
+- Each guidance entry may carry a **link** to the upstream page that documents the procedure,
+  alongside the steps. Sending someone to the authoritative page is better than paraphrasing it,
+  and it sidesteps reproducing prose we did not write.
+- **What comes back must be read from the device, never ticked by the person.** After the
+  out-of-band steps, the phone is plugged in again and the bootloader state is read again. That
+  is evidence. A checkbox saying "I unlocked it" is a tester asserting a fact about hardware,
+  which is the shape this project already closed once, when a tester naming a device was read as
+  confirming its variant.
+- A checklist is therefore **navigation**, not evidence: it shows the person where they are in a
+  procedure the tool cannot watch. Build it as progress, and let the re-read decide the verdict.
+- Where a step genuinely cannot be re-read from the device — a vendor account, an approved
+  application — it is recorded as a **claim with its source**, the way `browser_enumeration`
+  records `tester`, and it can never lift the verdict above `cannot-verify`.
+
+## 7. Stay inside the prerequisite block
+
+Batch 5 will add a field to the recipe's `target` block, and batch 4 adds one to `source`.
+Confine every recipe change in this batch to the **prerequisite block**. Three producers editing
+three parts of one schema is fine; three producers editing one part of it is a merge conflict
+nobody will notice until a recipe silently loses a field.
 
 ## 5. Tests
 

@@ -1,4 +1,6 @@
-# Batch 2 of 4, 16 September. The Windows command block, and the guard that was removed.
+# Batch 2 of 5, 16 September. The Windows command block, and the guard that was removed.
+
+*Amended 16 September after research task 3, with one addition to point 1.*
 
 Run this batch **after batch 1 is committed**, because both touch `bench-kit/START-HERE.html`.
 
@@ -44,6 +46,11 @@ picker already exists to do.
 3. Leave the existing double-quoted block on the cmd branch, where it already works.
 4. Keep both blocks reading the **same nineteen properties in the same order**. If the two
    diverge, the two shells produce different records and nothing will notice.
+5. **Do not drop a property to shorten the block, and `ro.product.model` in particular.** It
+   reads today as one identifier among nineteen. It is the string upstream publishes as its
+   per-device `models:` list, and it is on its way to deciding whether a recipe may be applied
+   to a device at all. A shorter block that omits it would cost a safety check later, in a
+   commit nobody would connect to this one.
 
 **Prove it, and this is the part that matters:** a claim about PowerShell cannot be settled
 by reading the file. Ranaji has a Windows machine in the test plan. Add a short note at the

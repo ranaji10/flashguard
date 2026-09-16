@@ -69,6 +69,8 @@ Read before writing the proposal or changing a design.
 | `docs/Research/install-method-classification.md` | All 28 LineageOS install methods classified by what the unlock requires. 303 devices are vendor-gated. Carries an analysis appendix separating verified from assumed. |
 | `docs/Research/TASK-2-install-method-classification.md` | The follow-up research task: classify all 28 install methods by what the unlock requires and whether a device can ever report it. |
 | `docs/Research/TASK-3-variant-danger.md` | Research task 3: where two models share a codename, does anything upstream treat them differently, and has flashing the wrong one ever cost anybody a modem? Settles the `variant` ruling. |
+| `docs/Research/variant-danger-findings.md` | Task 3 result: cross-flashing across models sharing one codename blows ARB fuses, zeroes IMEIs and corrupts modem NVRAM. 89 codenames have 2-6 upstream pages each. |
+| `docs/Research/variant-danger-findings.md` | Findings for research task 3: upstream model differentiation, verified damage mechanisms across vendors, evaluation of the three variant architectural options. |
 | `docs/Research/reply-to-lineageos-2026-09-15.md` | What to send back to LineageOS after their answer, and the reasoning behind each line of it. |
 | `docs/Research/custom_unlock_cmd-findings.md` | What absence of `custom_unlock_cmd` means in LineageOS, read from the templates. Settles it: the field is a template override, not documentation. |
 | `docs/reference/producer-prompt-2026-09-14-testfix.md` | Second repair: leading whitespace zeroes every field, and two of three shape tests undo their own perturbation. Test the shipped normaliser in node. |
@@ -78,6 +80,7 @@ Read before writing the proposal or changing a design.
 | `docs/reference/producer-prompt-2026-09-16-batch2.md` | Batch 2 of 4: the Windows command block PowerShell expands before adb sees it, and the restored bare-getprop offer guard. |
 | `docs/reference/producer-prompt-2026-09-16-batch3.md` | Batch 3 of 4: `unlock-out-of-band` as a reason code of its own, with data-held guidance naming what a person must do by hand. |
 | `docs/reference/producer-prompt-2026-09-16-batch4.md` | Batch 4 of 4: carry upstream's `untested` flag into the recipe source block and gate `safe` on it. The absent case stays undecided. |
+| `docs/reference/producer-prompt-2026-09-16-batch5-HELD.md` | Batch 5, HELD: replace `variant` with a `product_model` allowlist. Written for Option B, not authorised until Ranaji rules. |
 | `grant/work-log-2026-09-13.md` | What was actually done, 26 Aug to 13 Sep, with commits and numbers. Source material for the proposal, **not** the proposal. |
 | `grant/nlnet-findings-2026-09-03.md` | The open call, verified against the live pages. Programme choice, form, scoring weights, AI rules. |
 | `grant/_drafts/README.md` | Where superseded long-form answers go. Not `library/`. |
