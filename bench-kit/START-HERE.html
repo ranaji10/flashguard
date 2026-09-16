@@ -701,9 +701,32 @@ function scrPlatform(){
   });
 }
 
+function scrWindowsShell(){
+  var c=show(
+  '<div class="card">'+
+    '<p class="kicker">'+esc(cur.dev.label)+' · step 2 (Windows shell)</p>'+
+    '<h1>Which shell are you using on Windows?</h1>'+
+    '<p class="sub">PowerShell and Command Prompt handle command quoting differently.</p>'+
+    '<div class="picks">'+
+      '<button class="pick" data-p="windows_powershell"><b>PowerShell</b><small>Default terminal in Windows 10 & 11</small></button>'+
+      '<button class="pick" data-p="windows_cmd"><b>Command Prompt (cmd)</b><small>Classic cmd.exe</small></button>'+
+    '</div>'+
+    '<div class="btns" style="margin-top:16px"><button class="b ghost" id="changePlat">Back to OS list</button></div>'+
+  '</div>');
+  [].slice.call(c.querySelectorAll(".pick")).forEach(function(b){
+    b.addEventListener("click",function(){
+      var p = b.getAttribute("data-p");
+      scrAndroidRaw(p);
+    });
+  });
+  c.querySelector("#changePlat").addEventListener("click",scrPlatform);
+}
+
 function scrRoutePlatform(p){
-  if (p === "windows") {
-    scrAndroidRaw("windows");
+  if (p === "windows_powershell" || p === "windows_cmd") {
+    scrAndroidRaw(p);
+  } else if (p === "windows") {
+    scrWindowsShell();
   } else if (p === "ubuntu_live") {
     scrPrep();
   } else {
@@ -772,14 +795,19 @@ function scrAndroidBash(route, platform){
 
 /* ---------- Step 2 (Windows raw path): getprop command block ---------- */
 function scrAndroidRaw(platform){
-  var plat = platform || S.host_platform || "windows";
-  var rawCmd = 'adb shell "for p in ro.product.manufacturer ro.product.model ro.product.device ro.product.board ro.board.platform ro.hardware ro.soc.manufacturer ro.soc.model ro.product.cpu.abi ro.build.version.release ro.build.version.sdk ro.build.version.security_patch ro.build.fingerprint ro.build.ab_update ro.virtual_ab.enabled ro.boot.slot_suffix ro.boot.verifiedbootstate ro.boot.flash.locked ro.boot.vbmeta.device_state; do echo $p=$(getprop $p); done"';
+  var plat = platform || S.host_platform || "windows_powershell";
+  var isCmd = (plat === "windows_cmd");
+  var shellName = isCmd ? "Command Prompt (cmd)" : "PowerShell";
+  var propList = "ro.product.manufacturer ro.product.model ro.product.device ro.product.board ro.board.platform ro.hardware ro.soc.manufacturer ro.soc.model ro.product.cpu.abi ro.build.version.release ro.build.version.sdk ro.build.version.security_patch ro.build.fingerprint ro.build.ab_update ro.virtual_ab.enabled ro.boot.slot_suffix ro.boot.verifiedbootstate ro.boot.flash.locked ro.boot.vbmeta.device_state";
+  var rawCmd = isCmd
+    ? 'adb shell "for p in ' + propList + '; do echo $p=$(getprop $p); done"'
+    : "adb shell 'for p in " + propList + "; do echo $p=$(getprop $p); done'";
 
   var c=show(
   '<div class="card">'+
-    '<p class="kicker">Android fingerprint · step 2 <span class="where">PowerShell / cmd</span></p>'+
+    '<p class="kicker">Android fingerprint · step 2 <span class="where">' + esc(shellName) + '</span></p>'+
     '<h1>Run this command block, then paste output</h1>'+
-    '<p>Queries the allowlisted properties read-only. Paste the verbatim terminal output below.</p>'+
+    '<p>Queries the allowlisted properties read-only in ' + esc(shellName) + '. Paste the verbatim terminal output below.</p>'+
     '<div class="cmd"><pre>' + esc(rawCmd) + '</pre><button class="copy" type="button">Copy</button></div>'+
     '<textarea class="paste" id="p" placeholder="Paste terminal output here"></textarea>'+
     '<div class="alert bad" id="err"></div>'+

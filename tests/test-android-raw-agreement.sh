@@ -10,7 +10,16 @@
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 DERIVE="$HERE/../bench-kit/scripts/derive.sh"
+HTML="$HERE/../bench-kit/START-HERE.html"
 fail=0
+
+# Assert that no line of START-HERE.html offers a bare getprop invocation (values without keys)
+if grep -q "adb shell getprop" "$HTML"; then
+  echo "  FAIL: START-HERE.html offers bare getprop commands (would produce bare values with no keys)"
+  fail=1
+else
+  echo "  ok: START-HERE.html does not offer bare getprop commands"
+fi
 
 printf '\n  %-34s %-24s %s\n' "FIXTURE" "CONDITION TESTED" "RESULT"
 printf '  %s\n' "$(printf '%.0s-' $(seq 1 72))"

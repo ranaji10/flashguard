@@ -1,8 +1,8 @@
-# Batch 5 of 5 — HELD. Do not run this until Ranaji has ruled on `variant`.
+# Batch 5 of 5, 16 September. Replace `variant` with a model allowlist.
 
-**This batch is written for Option B and is void if the ruling is anything else.** It exists so
-that the moment the ruling lands the work is ready, not so that the ruling is made by default.
-If it is still marked HELD, it has not been authorised. Rename the file when it is.
+**AUTHORISED 16 September. Ranaji ruled Option B on the evidence in research task 3.** This file
+was written and held; the hold is lifted. Run it after batch 4, not alongside it: both edit
+`flashguard/verify.py` and both edit the recipe JSON files.
 
 Research task 3 produced the evidence: `docs/Research/variant-danger-findings.md`.
 
@@ -82,13 +82,34 @@ rather than deleted: an asset must still be pinned to the identity it was built 
 explicitly whether an asset is pinned per codename or per model, and write the answer down. Do
 not leave one site changed and the other carrying a field nothing sets.
 
-## 4. The reason codes stay separate
+## 4. Remove the DISPUTED marker, because the ruling dissolves it
+
+`flashguard/verify.py:290` carries the repository's only open `DISPUTED:` marker, asking whether
+`supported_device_codes` is a variant-level or a family-level claim. **The ruling settles it by
+making the question unnecessary rather than by answering it.**
+
+Identity is now confirmed by matching the fingerprint's `product_model` against the recipe's model
+list. So `supported_device_codes` no longer has to carry any claim about the variant at all: it
+goes back to being what it always was, a list of device codenames a recipe covers, useful for
+finding the right recipe and not for confirming the hardware in someone's hand.
+
+Remove the marker **and write down why**, in the same place, in three lines: the question was
+whether an alias hit could confirm a variant; it no longer needs to, because the model is checked
+directly; ruled by Ranaji on 16 September on the evidence in `docs/Research/variant-danger-findings.md`.
+
+Do not delete it silently. The convention in `.github/copilot-instructions.md` is that a
+disagreement is never resolved by rewriting the question, and a marker that vanishes without a
+record looks exactly like one that was rewritten away.
+
+After this batch `bash tests/check-disputed.sh` should report zero open disagreements.
+
+## 5. The reason codes stay separate
 
 Batch 4 adds a gate on upstream's `untested` flag. This one adds a gate on model coverage. They
 fail for different reasons and must not share a reason code or a mechanism. Either alone blocks
 `safe`; neither cancels the other.
 
-## 5. Tests
+## 6. Tests
 
 - A fingerprint whose model is in the recipe's list, with every prerequisite confirmed, returns
   `safe`. Without this the batch has only made the verifier stricter.
@@ -101,7 +122,7 @@ fail for different reasons and must not share a reason code or a mechanism. Eith
 - The asset identity check behaves as section 3 decides, with a test for the mismatch case.
 - Plant a defect that lets an uncovered model reach `safe`, watch a test fail, restore it.
 
-## 6. Two recipes to write while you are here
+## 7. Two recipes to write while you are here
 
 - **`Spacewar`** is a single-model codename (`A063`), command-class unlock, A/B, and there is a
   real capture with all seven fields. It is the clean first case.

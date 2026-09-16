@@ -51,6 +51,82 @@ quoted inside the stored answer is not counted a second time.
 
 <!-- NEWEST REVIEW DIRECTLY BELOW -->
 
+## 2026-09-16 — uncommitted-on-dba8e8f — Batch 2 changes on the BenchKit based on research
+
+Nothing found. Recorded because a log of only non-empty reviews is a biased log, and because "has this been reviewed at all" is a question worth being able to answer.
+
+<details><summary>the review, as it came back</summary>
+
+```
+Based on my review of the diff against the batch 2 requirements, here are the answers to the 5 review questions:
+
+---
+
+1. What changed in the Windows command block?
+
+The Windows quoting bug is fixed by splitting the shell selection and using correct quoting per shell:
+
+- Added scrWindowsShell() (lines 704–723): A new screen asking "Which shell are you using on Windows?" with two buttons — PowerShell and Command Prompt (cmd). The choice is recorded as windows_powershell or windows_cmd.
+- Modified scrRoutePlatform() (lines 725–735): The generic "windows" platform now routes to the shell selection screen instead of directly to scrAndroidRaw().
+- Modified scrAndroidRaw() (lines 797–843): Now accepts the specific shell platform and generates different quoting:
+  - PowerShell → single-quoted: adb shell 'for p in ...; do echo $p=$(getprop $p); done' — PowerShell treats single quotes as literal, so $p and $(getprop $p) pass through to adb unexpanded
+  - cmd → double-quoted: adb shell "for p in ...; do echo $p=$(getprop $p); done" — cmd doesn't expand $, so this already worked
+- Fixed the heading (line 808): The kicker now shows the actual shell name (PowerShell or Command Prompt (cmd)) instead of the misleading "PowerShell / cmd" label.
+
+---
+
+2. What was decided about the shell split?
+
+Exactly what batch 2 required:
+- The Windows branch  paths(windows_powershell and windows_cmd)
+- A second question o the tester's actualshell
+- Both command blocksies in the same order(line 801) — ro.product.model is preserved
+- The answer is recorwnstream knows whichshell produced the capture
+
+---
+
+3. Are the tests correct?
+
+Yes. The test guard in tests/test-android-raw-agreement.sh (lines
+16–22) was restored:
+if grep -q "adb shell getprop" "$HTML"; then
+  echo "  FAIL: STARTprop commands..."
+  fail=1
+fi
+This asserts that no line of START-HERE.html offers a bare adb shell
+getprop <key> (which without keys). Theloop forms (for p in ...; do echo $p=$(getprop $p); done) print
+key=value and pass. T to catch bare formsbut loose enough not to fire on the loop forms.
+
+---
+
+4. Any phantom features?
+
+No. Only the two files mentioned in batch 2 changed:
+- bench-kit/START-HERection + quoting fix
+- tests/test-android-raw-agreement.sh — restored the bare-getprop
+  guard
+
+No new screens, no neges, no scope creep.The diff is exactly what batch 2 specified.
+
+---
+
+5. Any false-safe paths?
+
+No false-safe introduced. This is Tier A (data collection UI only).
+The verifier (flashgud. The fix actuallyremoves a data-corruption path: previously, PowerShell would expand
+$p and $(getprop $p)  producing garbageoutput that isValidRawProps would reject — wasting the tester's time
+but not entering the aches the device shell correctly on both shells.
+
+---
+
+Summary: The batch 2 work is complete and correct. bash tests/all.sh passes (the false-safverifier corpus,unrelated to this change). The two PowerShell/cmd strings are stated verbatim in the diff
+```
+
+</details>
+
+---
+
+
 
 
 

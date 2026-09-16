@@ -78,9 +78,10 @@ Read before writing the proposal or changing a design.
 | `docs/reference/producer-prompt-2026-09-15-package.md` | The build task for the merged WebUSB + bench-kit tester file. Decisions already made, and where a producer will be tempted to go wrong. |
 | `docs/reference/producer-prompt-2026-09-16-batch1.md` | Batch 1 of 4: the platform trap that mislabels every later record, and the pending record that claims seventeen unknowns. |
 | `docs/reference/producer-prompt-2026-09-16-batch2.md` | Batch 2 of 4: the Windows command block PowerShell expands before adb sees it, and the restored bare-getprop offer guard. |
+| `docs/reference/producer-prompt-2026-09-16-batch2b.md` | Batch 2b: the Windows shell split writes two `host_platform` values the schema does not define. Adds `host_shell` and a schema-agreement test. |
 | `docs/reference/producer-prompt-2026-09-16-batch3.md` | Batch 3 of 4: `unlock-out-of-band` as a reason code of its own, with data-held guidance naming what a person must do by hand. |
 | `docs/reference/producer-prompt-2026-09-16-batch4.md` | Batch 4 of 4: carry upstream's `untested` flag into the recipe source block and gate `safe` on it. The absent case stays undecided. |
-| `docs/reference/producer-prompt-2026-09-16-batch5-HELD.md` | Batch 5, HELD: replace `variant` with a `product_model` allowlist. Written for Option B, not authorised until Ranaji rules. |
+| `docs/reference/producer-prompt-2026-09-16-batch5.md` | Batch 5: replace `variant` with a `product_model` allowlist, remove the DISPUTED marker, write the Spacewar recipe. Authorised 16 September. |
 | `grant/work-log-2026-09-13.md` | What was actually done, 26 Aug to 13 Sep, with commits and numbers. Source material for the proposal, **not** the proposal. |
 | `grant/nlnet-findings-2026-09-03.md` | The open call, verified against the live pages. Programme choice, form, scoring weights, AI rules. |
 | `grant/_drafts/README.md` | Where superseded long-form answers go. Not `library/`. |
