@@ -677,11 +677,14 @@ function scrWebUSB(){
 
 /* ---------- Step 2: Choose Platform (asked, never guessed) ---------- */
 function scrPlatform(){
+  var currentNotice = (S.host_platform && S.host_platform !== "not_stated")
+    ? '<p class="sub">Currently set to <b>' + esc(S.host_platform) + '</b>. Press another to change it.</p>'
+    : '<p class="sub">This selects the right terminal command for reading the Android fingerprint.</p>';
   var c=show(
   '<div class="card">'+
     '<p class="kicker">'+esc(cur.dev.label)+' · step 2 (Platform)</p>'+
     '<h1>Which operating system are you on?</h1>'+
-    '<p class="sub">This selects the right terminal command for reading the Android fingerprint.</p>'+
+    currentNotice+
     '<div class="picks">'+
       '<button class="pick" data-p="macos"><b>macOS</b><small>Terminal with bash or zsh</small></button>'+
       '<button class="pick" data-p="windows"><b>Windows</b><small>PowerShell or cmd</small></button>'+
@@ -693,8 +696,6 @@ function scrPlatform(){
   [].slice.call(c.querySelectorAll(".pick")).forEach(function(b){
     b.addEventListener("click",function(){
       var p = b.getAttribute("data-p");
-      S.host_platform = p;
-      save();
       scrRoutePlatform(p);
     });
   });
@@ -702,11 +703,11 @@ function scrPlatform(){
 
 function scrRoutePlatform(p){
   if (p === "windows") {
-    scrAndroidRaw();
+    scrAndroidRaw("windows");
   } else if (p === "ubuntu_live") {
     scrPrep();
   } else {
-    scrAndroidBash("adb_host");
+    scrAndroidBash("adb_host", p || "linux_other");
   }
 }
 
@@ -728,7 +729,8 @@ function isValidRawProps(text){
 /* END TESTABLE:isValidRawProps */
 
 /* ---------- Step 2 (Bash path): 02-android.sh ---------- */
-function scrAndroidBash(route){
+function scrAndroidBash(route, platform){
+  var plat = platform || S.host_platform || "linux_other";
   var c=show(
   '<div class="card">'+
     '<p class="kicker">Android fingerprint · step 2 <span class="where">Terminal</span></p>'+
@@ -739,7 +741,7 @@ function scrAndroidBash(route){
     ' Paste the entire terminal output below.</p>'+
     '<textarea class="paste" id="p" placeholder="Paste here"></textarea>'+
     '<div class="alert bad" id="err"></div>'+
-    '<div class="btns"><button class="b ghost" id="skip">Skip, it would not connect</button></div>'+
+    '<div class="btns"><button class="b ghost" id="changePlat">Change platform</button><button class="b ghost" id="skip">Skip, it would not connect</button></div>'+
   '</div>');
   var p=c.querySelector("#p"), err=c.querySelector("#err");
   p.focus();
@@ -753,6 +755,7 @@ function scrAndroidBash(route){
     err.className="alert bad";
     cur.android=cap.android;
     cur.capture_route = route;
+    if(plat && plat !== "ubuntu_live"){ S.host_platform = plat; save(); }
     if(cap.android.product_model && cap.android.product_model!=="unknown"){
       cur.name=((cap.android.manufacturer||"")+" "+cap.android.product_model).trim();
     }
@@ -760,11 +763,16 @@ function scrAndroidBash(route){
   }
   p.addEventListener("input",tryParse);
   p.addEventListener("paste",function(){ setTimeout(tryParse,60); });
-  c.querySelector("#skip").addEventListener("click",scrConfirm);
+  c.querySelector("#changePlat").addEventListener("click",scrPlatform);
+  c.querySelector("#skip").addEventListener("click",function(){
+    if(plat && plat !== "ubuntu_live"){ S.host_platform = plat; save(); }
+    scrConfirm();
+  });
 }
 
 /* ---------- Step 2 (Windows raw path): getprop command block ---------- */
-function scrAndroidRaw(){
+function scrAndroidRaw(platform){
+  var plat = platform || S.host_platform || "windows";
   var rawCmd = 'adb shell "for p in ro.product.manufacturer ro.product.model ro.product.device ro.product.board ro.board.platform ro.hardware ro.soc.manufacturer ro.soc.model ro.product.cpu.abi ro.build.version.release ro.build.version.sdk ro.build.version.security_patch ro.build.fingerprint ro.build.ab_update ro.virtual_ab.enabled ro.boot.slot_suffix ro.boot.verifiedbootstate ro.boot.flash.locked ro.boot.vbmeta.device_state; do echo $p=$(getprop $p); done"';
 
   var c=show(
@@ -775,7 +783,7 @@ function scrAndroidRaw(){
     '<div class="cmd"><pre>' + esc(rawCmd) + '</pre><button class="copy" type="button">Copy</button></div>'+
     '<textarea class="paste" id="p" placeholder="Paste terminal output here"></textarea>'+
     '<div class="alert bad" id="err"></div>'+
-    '<div class="btns"><button class="b ghost" id="skip">Skip, it would not connect</button></div>'+
+    '<div class="btns"><button class="b ghost" id="changePlat">Change platform</button><button class="b ghost" id="skip">Skip, it would not connect</button></div>'+
   '</div>');
 
   var p=c.querySelector("#p"), err=c.querySelector("#err");
@@ -794,11 +802,16 @@ function scrAndroidRaw(){
     cur.android_raw = t.trim();
     cur.android_derivation = "pending";
     cur.capture_route = "adb_host";
+    if(plat){ S.host_platform = plat; save(); }
     scrConfirm();
   }
   p.addEventListener("input",tryParse);
   p.addEventListener("paste",function(){ setTimeout(tryParse,60); });
-  c.querySelector("#skip").addEventListener("click",scrConfirm);
+  c.querySelector("#changePlat").addEventListener("click",scrPlatform);
+  c.querySelector("#skip").addEventListener("click",function(){
+    if(plat){ S.host_platform = plat; save(); }
+    scrConfirm();
+  });
 }
 
 /* ---------- Ubuntu Live Setup (Route for ubuntu_live platform) ---------- */
@@ -809,9 +822,11 @@ function scrPrep(){
     '<h1>Two USB sticks, named differently</h1>'+
     '<p>Estimated time: ~90 min the first time (mostly stick download and creation).</p>'+
     '<div class="btns"><button class="b" id="ok">Continue to boot</button>'+
+    '<button class="b ghost" id="changePlat">Change platform</button>'+
     '<button class="b ghost" id="back">Back to devices</button></div>'+
   '</div>');
   c.querySelector("#ok").addEventListener("click",scrBootUp);
+  c.querySelector("#changePlat").addEventListener("click",scrPlatform);
   c.querySelector("#back").addEventListener("click",scrLoop);
 }
 function scrBootUp(){
@@ -820,9 +835,11 @@ function scrBootUp(){
     '<p class="kicker">Ubuntu Live Setup <span class="where">Booting</span></p>'+
     '<h1>Boot the bench machine from the Ubuntu stick</h1>'+
     '<div class="btns"><button class="b" id="ok">I am on the desktop</button>'+
+    '<button class="b ghost" id="changePlat">Change platform</button>'+
     '<button class="b ghost" id="back">Back</button></div>'+
   '</div>');
-  c.querySelector("#ok").addEventListener("click",function(){ S.host_platform="ubuntu_live"; save(); scrAndroidBash("linux_live"); });
+  c.querySelector("#ok").addEventListener("click",function(){ S.host_platform="ubuntu_live"; save(); scrAndroidBash("linux_live", "ubuntu_live"); });
+  c.querySelector("#changePlat").addEventListener("click",scrPlatform);
   c.querySelector("#back").addEventListener("click",scrPrep);
 }
 
@@ -921,6 +938,55 @@ function scrNote(correct,cls,name,mode){
   c.querySelector("#n").focus();
 }
 
+/* TESTABLE:buildAndroidBlock */
+function buildAndroidBlock(cur){
+  var isPhone = !!(cur && cur.dev && cur.dev.phone);
+  var naVal = isPhone ? "unknown" : "not_applicable";
+  function NA_android(v){
+    return (v===undefined || v===null || v==="") ? naVal : v;
+  }
+
+  if(cur && cur.android_raw){
+    return {
+      android_raw: cur.android_raw,
+      android_derivation: "pending"
+    };
+  }
+  var a = cur ? cur.android : null;
+  if(a){
+    return {
+      product_model:NA_android(a.product_model), product_device:NA_android(a.product_device),
+      manufacturer:NA_android(a.manufacturer), board_platform:NA_android(a.board_platform),
+      chipset_family:NA_android(a.chipset_family), chipset_source:NA_android(a.chipset_source),
+      chipset_candidates:NA_android(a.chipset_candidates),
+      cpu_abi:NA_android(a.cpu_abi),
+      partition_basis:NA_android(a.partition_basis), bootloader_basis:NA_android(a.bootloader_basis),
+      hardware:NA_android(a.hardware), android_version:NA_android(a.android_version),
+      sdk:NA_android(a.sdk), security_patch:NA_android(a.security_patch),
+      build_fingerprint:NA_android(a.build_fingerprint), partition_scheme:NA_android(a.partition_scheme),
+      slot_suffix:NA_android(a.slot_suffix), bootloader_state:NA_android(a.bootloader_state),
+      verified_boot_state:NA_android(a.verified_boot_state),
+      bootloader_unlockable: a.bootloader_unlockable || "unknown"
+    };
+  }
+  return {
+    product_model: naVal, product_device: naVal,
+    manufacturer: naVal, board_platform: naVal,
+    chipset_family: naVal, chipset_source: naVal,
+    chipset_candidates: naVal,
+    cpu_abi: naVal, partition_basis: naVal, bootloader_basis: naVal,
+    hardware: naVal, android_version: naVal,
+    sdk: naVal, security_patch: naVal,
+    build_fingerprint: naVal,
+    partition_scheme: naVal,
+    slot_suffix: naVal,
+    bootloader_state: naVal,
+    verified_boot_state: naVal,
+    bootloader_unlockable: naVal
+  };
+}
+/* END TESTABLE:buildAndroidBlock */
+
 function NA(v){ return (v===undefined||v===null||v==="")?"not_applicable":v; }
 
 function saveRecord(correct,cls,name,mode,note){
@@ -928,43 +994,7 @@ function saveRecord(correct,cls,name,mode,note){
   var mins=t0?Math.max(1,Math.round((Date.now()-t0)/60000)):null;
   var descFile = cap._descriptor_file || (cur.descText ? (slug(name) + "-" + Date.now().toString(36) + ".desc") : "not_saved");
 
-  var androidObj;
-  if(cur.android_raw){
-    androidObj = {
-      android_raw: cur.android_raw,
-      android_derivation: "pending"
-    };
-  } else if(a){
-    androidObj = {
-      product_model:NA(a.product_model), product_device:NA(a.product_device),
-      manufacturer:NA(a.manufacturer), board_platform:NA(a.board_platform),
-      chipset_family:NA(a.chipset_family), chipset_source:NA(a.chipset_source),
-      chipset_candidates:NA(a.chipset_candidates),
-      cpu_abi:NA(a.cpu_abi),
-      partition_basis:NA(a.partition_basis), bootloader_basis:NA(a.bootloader_basis),
-      hardware:NA(a.hardware), android_version:NA(a.android_version),
-      sdk:NA(a.sdk), security_patch:NA(a.security_patch),
-      build_fingerprint:NA(a.build_fingerprint), partition_scheme:NA(a.partition_scheme),
-      slot_suffix:NA(a.slot_suffix), bootloader_state:NA(a.bootloader_state),
-      verified_boot_state:NA(a.verified_boot_state),
-      bootloader_unlockable:"unknown"
-    };
-  } else {
-    androidObj = {
-      product_model:"not_applicable", product_device:"not_applicable",
-      manufacturer:"not_applicable", board_platform:"not_applicable",
-      chipset_family:"not_applicable", chipset_source:"not_applicable",
-      cpu_abi:"not_applicable", partition_basis:"not_applicable", bootloader_basis:"not_applicable",
-      hardware:"not_applicable", android_version:"not_applicable",
-      sdk:"not_applicable", security_patch:"not_applicable",
-      build_fingerprint:"not_applicable",
-      partition_scheme: cur.dev.phone ? "unknown" : "not_applicable",
-      slot_suffix:"not_applicable",
-      bootloader_state: cur.dev.phone ? "unknown" : "not_applicable",
-      verified_boot_state:"not_applicable",
-      bootloader_unlockable:"not_applicable"
-    };
-  }
+  var androidObj = buildAndroidBlock(cur);
 
   var rec={
     schema_version:"0.4", record_id:uuid(), tester:S.tester, consent_ack:true,

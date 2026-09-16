@@ -29,6 +29,7 @@ bash "$HERE/check-index.sh"; rc=$?
 echo "  TRACKER"; bash "$HERE/check-tracker.sh" || exit 1
 echo "  WHAT WOULD GO PUBLIC"; bash "$HERE/check-public-safe.sh" || exit 1
 echo "  DESCRIPTOR PRIVACY"; bash "$HERE/check-descriptor-privacy.sh" || exit 1
+python3 "$HERE/test_contributions_validation.py" || exit 1
 echo "  DATA"; python3 "$HERE/../data/merge.py" --check >/dev/null 2>&1 \
   && echo "  contributions validate" || echo "  contributions have problems, run data/merge.py --check"
 [ "$soft" = 1 ] && exit 2

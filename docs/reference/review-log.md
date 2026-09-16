@@ -92,6 +92,7 @@ FINDINGS
   for adb shell getprop ro.product.manufacturer). That assertion was removed. The
   only remaining guard is the p copilot-instructions.md,
   which is a documentation layer, not a mechanical one.
+      RECONSTRUCTED 16 September, not rewritten: the text above arrived corrupted mid-line ("bare getprART-HERE.html", "the p copilot-instructions.md"), which is the filer's truncation guard catching a cut-off END but not a cut-out MIDDLE. Left as filed, because a reviewer's words are evidence. What it means: the grep in tests/test-android-raw-agreement.sh that asserted the bare `adb shell getprop <key>` block had not returned to bench-kit/START-HERE.html was removed in the rewrite, leaving only .github/copilot-instructions.md, which is documentation rather than a mechanical guard. STILL OPEN AND CORRECTLY CARRIED. It is the tracker's v-offerguard and it is scheduled in docs/reference/producer-prompt-2026-09-16-batch2.md.
 ```
 
 </details>
@@ -101,12 +102,14 @@ FINDINGS
 
 ## 2026-09-14 — c388c2c — Repair run for WebUSB+Benchkit Integration
 
-- [ ] `tests/test-android-raw-agreement.sh:47-50` whitespace/blanks test is a tautology:
+- [x] `tests/test-android-raw-agreement.sh:47-50` whitespace/blanks test is a tautology:
+      TICKED 16 September, verified against the current file: the whitespace step perturbs with `sed 's/^/  /'` and asserts the derivation DIFFERS from canonical. Nothing strips it back. The tautology went with the c388c2c rewrite.
       adds leading spaces then strips them before asserting, so it tests
       derive.sh(x)==derive.sh(x), not whitespace tolerance; derive.sh
       actually fails on leading-whitespace input (g() requires key at
       position 1)
-- [ ] `tests/test-android-raw-agreement.sh:8` comment says bare-value fallback "is
+- [x] `tests/test-android-raw-agreement.sh:8` comment says bare-value fallback "is
+      TICKED 16 September, verified: the comment at line 8 now points at tests/run-console-logic.js, which does test bare-value refusal through the shipped isValidRawProps (`bare values with no '=' are refused`, passing on every fixture). The comment and the code agree.
       refused"; lines 16–22 test only that the UI text was removed, not
       that pasting bare values is rejected
 
@@ -149,12 +152,14 @@ No. The changes are on the capture/collection side (bench kit and merge pipeline
 ---
 
 FINDINGS
-- [ ] `tests/test-android-raw-agreement.sh:47-50` whitespace/blanks test is a tautology:
+- [x] `tests/test-android-raw-agreement.sh:47-50` whitespace/blanks test is a tautology:
+      TICKED 16 September, verified against the current file: the whitespace step perturbs with `sed 's/^/  /'` and asserts the derivation DIFFERS from canonical. Nothing strips it back. The tautology went with the c388c2c rewrite.
       adds leading spaces then strips them before asserting, so it tests
       derive.sh(x)==derive.sh(x), not whitespace tolerance; derive.sh
       actually fails on leading-whitespace input (g() requires key at
       position 1)
-- [ ] `tests/test-android-raw-agreement.sh:8` comment says bare-value fallback "is
+- [x] `tests/test-android-raw-agreement.sh:8` comment says bare-value fallback "is
+      TICKED 16 September, verified: the comment at line 8 now points at tests/run-console-logic.js, which does test bare-value refusal through the shipped isValidRawProps (`bare values with no '=' are refused`, passing on every fixture). The comment and the code agree.
       refused"; lines 16–22 test only that the UI text was removed, not
       that pasting bare values is rejected
 ```
@@ -213,9 +218,12 @@ Repair task: `docs/reference/producer-prompt-2026-09-14-repair.md`.
 
 ## 2026-09-14 — d83c342 — Integration of WebUSB and Bench Kit for a tool that can be run by independent testers
 
-- [ ] tests/test-android-raw-agreement.sh:23 Route 2 sets raw_paste="$bash_raw" — the same variable Route 1 used — then pipes it through the same derive.sh. The test compares identical input through identical processing and always passes regardless of code correctness.
-- [ ] bench-kit/START-HERE.html:784 Comment says "Legacy Ubuntu Prep & Boot Screens (Accessible if requested)" but no calling path in the file reaches scrPrep() or scrBootUp(). The functions are dead code; the comment describes reachability that does not exist.
-- [ ] bench-kit/START-HERE.html:914 android_raw and android_derivation are not in the schema (data/schema.md). The raw-paste path writes an undocumented field to the record and marks 17 Android fields as "unknown" meaning "not yet derived", conflating it with "unknown" meaning "could not be established read-only" — the exact ambiguity schema version 0.2 was redesigned to eliminate.
+- [x] tests/test-android-raw-agreement.sh:23 Route 2 sets raw_paste="$bash_raw" — the same variable Route 1 used — then pipes it through the same derive.sh. The test compares identical input through identical processing and always passes regardless of code correctness.
+      TICKED 16 September, verified against the current file: test-android-raw-agreement.sh was rewritten end to end in c388c2c. Line 23 is now the canonical baseline `bash_derived=$(printf ... | bash $DERIVE)`, and `grep -n 'tr -d'` over the whole file returns nothing. Every hazard step perturbs and does NOT undo.
+- [x] bench-kit/START-HERE.html:784 Comment says "Legacy Ubuntu Prep & Boot Screens (Accessible if requested)" but no calling path in the file reaches scrPrep() or scrBootUp(). The functions are dead code; the comment describes reachability that does not exist.
+      TICKED 16 September, verified: the string `Legacy` does not appear anywhere in bench-kit/START-HERE.html, and `git log -S` shows c388c2c removed that comment on 14 September. The reachability claim is also false now: scrRoutePlatform reaches scrPrep, and scrPrep reaches scrBootUp.
+- [x] bench-kit/START-HERE.html:914 android_raw and android_derivation are not in the schema (data/schema.md). The raw-paste path writes an undocumented field to the record and marks 17 Android fields as "unknown" meaning "not yet derived", conflating it with "unknown" meaning "could not be established read-only" — the exact ambiguity schema version 0.2 was redesigned to eliminate.
+      TICKED 16 September. Fixed in batch 1: data/schema.md documents android_raw and android_derivation as a distinct uncomputed state, buildAndroidBlock emits exactly those two keys for a raw capture, data/merge.py refuses a pending record, and tests/test_contributions_validation.py fails when that refusal is removed (verified by planting `if False:`).
 
 <details><summary>the review, as it came back</summary>
 
@@ -274,9 +282,12 @@ The android_raw / android_derivation: "pending" pattern (lines 912–923) writes
 
 FINDINGS
 
-- [ ] tests/test-android-raw-agreement.sh:23 Route 2 sets raw_paste="$bash_raw" — the same variable Route 1 used — then pipes it through the same derive.sh. The test compares identical input through identical processing and always passes regardless of code correctness.
-- [ ] bench-kit/START-HERE.html:784 Comment says "Legacy Ubuntu Prep & Boot Screens (Accessible if requested)" but no calling path in the file reaches scrPrep() or scrBootUp(). The functions are dead code; the comment describes reachability that does not exist.
-- [ ] bench-kit/START-HERE.html:914 android_raw and android_derivation are not in the schema (data/schema.md). The raw-paste path writes an undocumented field to the record and marks 17 Android fields as "unknown" meaning "not yet derived", conflating it with "unknown" meaning "could not be established read-only" — the exact ambiguity schema version 0.2 was redesigned to eliminate.
+- [x] tests/test-android-raw-agreement.sh:23 Route 2 sets raw_paste="$bash_raw" — the same variable Route 1 used — then pipes it through the same derive.sh. The test compares identical input through identical processing and always passes regardless of code correctness.
+      TICKED 16 September, verified against the current file: test-android-raw-agreement.sh was rewritten end to end in c388c2c. Line 23 is now the canonical baseline `bash_derived=$(printf ... | bash $DERIVE)`, and `grep -n 'tr -d'` over the whole file returns nothing. Every hazard step perturbs and does NOT undo.
+- [x] bench-kit/START-HERE.html:784 Comment says "Legacy Ubuntu Prep & Boot Screens (Accessible if requested)" but no calling path in the file reaches scrPrep() or scrBootUp(). The functions are dead code; the comment describes reachability that does not exist.
+      TICKED 16 September, verified: the string `Legacy` does not appear anywhere in bench-kit/START-HERE.html, and `git log -S` shows c388c2c removed that comment on 14 September. The reachability claim is also false now: scrRoutePlatform reaches scrPrep, and scrPrep reaches scrBootUp.
+- [x] bench-kit/START-HERE.html:914 android_raw and android_derivation are not in the schema (data/schema.md). The raw-paste path writes an undocumented field to the record and marks 17 Android fields as "unknown" meaning "not yet derived", conflating it with "unknown" meaning "could not be established read-only" — the exact ambiguity schema version 0.2 was redesigned to eliminate.
+      TICKED 16 September. Fixed in batch 1: data/schema.md documents android_raw and android_derivation as a distinct uncomputed state, buildAndroidBlock emits exactly those two keys for a raw capture, data/merge.py refuses a pending record, and tests/test_contributions_validation.py fails when that refusal is removed (verified by planting `if False:`).
 ```
 
 </details>
@@ -286,7 +297,8 @@ FINDINGS
 
 ## 2026-09-13 — edb6008 — Restoring missed findings
 
-- [ ] tests/webusb-fixtures/18d1-4ee2.desc:10 stores a device serial number (_SN:<stripped>)
+- [x] tests/webusb-fixtures/18d1-4ee2.desc:10 stores a device serial number (_SN:<stripped>)
+      TICKED 16 September, ruled 14 September and never recorded here, which is why it came back five times. The fixture contains `<stripped>`, the redaction MARKER, not a serial -- the finding quotes the marker in its own text. It is the evidence the masker ran on the device that caused the fourteen-day leak, and removing it would remove the proof.
       in the product field, violating the strict data rule against recording serials.
 - [x] tests/webusb-probe.html:94 removes the protective comment explaining why **Fixed and confirmed by the second read, 14 Sep: the comment is restored at lines 96-103 with the masker beside it.**
       serial numbers are not read or printed, an unasked-for change that enabled the leak above.
@@ -306,7 +318,8 @@ N/A
 N/A
 
   FINDINGS
-  - [ ] tests/webusb-fixtures/18d1-4ee2.desc:10 stores a device serial number (_SN:<stripped>)
+  - [x] tests/webusb-fixtures/18d1-4ee2.desc:10 stores a device serial number (_SN:<stripped>)
+      TICKED 16 September, ruled 14 September and never recorded here, which is why it came back five times. The fixture contains `<stripped>`, the redaction MARKER, not a serial -- the finding quotes the marker in its own text. It is the evidence the masker ran on the device that caused the fourteen-day leak, and removing it would remove the proof.
         in the product field, violating the strict data rule against recording serials.
   - [ ] tests/webusb-probe.html:94 removes the protective comment explaining why
         serial numbers are not read or printed, an unasked-for change that enabled the leak above.

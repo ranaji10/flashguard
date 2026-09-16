@@ -28,6 +28,7 @@ function is(got, want, label) {
 eval(lift("sameDeviceAgain"));
 eval(lift("normaliseRawProps"));
 eval(lift("isValidRawProps"));
+eval(lift("buildAndroidBlock"));
 
 console.log("\n  sameDeviceAgain");
 {
@@ -95,6 +96,51 @@ for (const file of propFiles) {
   if (canonical.trim().length > 0) {
     is(isValidRawProps(canonical), true, `${file}: valid raw props accepted by isValidRawProps`);
   }
+}
+
+console.log("\n  buildAndroidBlock");
+{
+  // 1. Browser-only phone capture: all Android fields must be "unknown", never "not_applicable"
+  const curPhone = { dev: { k: "android", phone: true } };
+  const blockPhone = buildAndroidBlock(curPhone);
+  const keys = Object.keys(blockPhone);
+  is(keys.length >= 18, true, "browser-only phone: contains all android fields");
+  const naKeys = keys.filter(k => blockPhone[k] === "not_applicable");
+  is(naKeys.length, 0, "browser-only phone: zero fields are not_applicable");
+  const nonUnknownKeys = keys.filter(k => blockPhone[k] !== "unknown");
+  is(nonUnknownKeys.length, 0, "browser-only phone: all fields are unknown");
+
+  // 2. Browser-only non-phone capture: all Android fields must be "not_applicable", never "unknown"
+  const curCamera = { dev: { k: "camera", phone: false } };
+  const blockCamera = buildAndroidBlock(curCamera);
+  const cameraKeys = Object.keys(blockCamera);
+  const unknownKeys = cameraKeys.filter(k => blockCamera[k] === "unknown");
+  is(unknownKeys.length, 0, "browser-only non-phone: zero fields are unknown");
+  const nonNaKeys = cameraKeys.filter(k => blockCamera[k] !== "not_applicable");
+  is(nonNaKeys.length, 0, "browser-only non-phone: all fields are not_applicable");
+
+  // 3. Derived phone capture with empty slot_suffix: NA_android empty string produces "unknown", not "not_applicable"
+  const curDerived = {
+    dev: { k: "android", phone: true },
+    android: { product_model: "Pixel 4", slot_suffix: "", partition_scheme: "unknown" }
+  };
+  const blockDerived = buildAndroidBlock(curDerived);
+  is(blockDerived.product_model, "Pixel 4", "derived phone: populated field passed through");
+  is(blockDerived.slot_suffix, "unknown", "derived phone: empty slot_suffix becomes unknown, not not_applicable");
+  const derivedNaKeys = Object.keys(blockDerived).filter(k => blockDerived[k] === "not_applicable");
+  is(derivedNaKeys.length, 0, "derived phone: zero fields are not_applicable on phone");
+
+  // 4. Raw getprop pending capture: emits android_raw and android_derivation: pending, NO derived fields
+  const curRaw = {
+    dev: { k: "android", phone: true },
+    android_raw: "ro.product.model=Pixel 4"
+  };
+  const blockRaw = buildAndroidBlock(curRaw);
+  is(blockRaw.android_raw, "ro.product.model=Pixel 4", "raw capture: android_raw present");
+  is(blockRaw.android_derivation, "pending", "raw capture: android_derivation is pending");
+  is(blockRaw.product_model, undefined, "raw capture: derived product_model omitted");
+  is(blockRaw.partition_scheme, undefined, "raw capture: derived partition_scheme omitted");
+  is(Object.keys(blockRaw).length, 2, "raw capture: exactly two keys emitted");
 }
 
 console.log(`\n  ${pass} passed, ${fail} failed\n`);

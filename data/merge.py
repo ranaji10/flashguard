@@ -100,7 +100,7 @@ def main():
                 continue
             android_block = rec.get("detected", {}).get("android", {})
             if isinstance(android_block, dict) and android_block.get("android_derivation") == "pending":
-                problems.append(f"{where}: android_derivation is pending -- derive properties before merging")
+                problems.append(f"{where}: android_derivation is pending -- derivation has not been run")
                 continue
             if rec.get("record_type") == "session_note":
                 notes.append((f.name, rec))

@@ -42,6 +42,13 @@ the question it exists to answer.
 
 A missing key is a defect, not a third kind of absence. Write the sentinel.
 
+### Pending derivation (raw capture path)
+
+`android_raw` holds verbatim captured property text awaiting derivation on the maintainer machine,
+and `android_derivation` is one of `pending` or `derived`. A record with `android_derivation: pending`
+carries no derived Android fields at all (they are omitted, not written as `"unknown"` or `"pending"`).
+This is uncomputed state, not `"unknown"` (which is a final assertion that a field applied but could not be read).
+
 ---
 
 ## Record
