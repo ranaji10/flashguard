@@ -23,8 +23,16 @@
 # buffer: whole runs of characters were missing, and the finding line read
 # "tracker-export.py:6ths of the body and note" -- unreadable, unfixable, and destined to be
 # carried forward for ever because nobody can honestly tick something they cannot read. The
-# guard costs one re-copy. Set SKIP_SANITY=1 to file anyway when a terse review is genuinely
-# correct and simply does not look like the usual shape.
+# guard costs one re-copy. To file anyway when a terse review is genuinely correct and simply
+# does not look like the usual shape, put the variable on the RIGHT of the pipe:
+#
+#     pbpaste | SKIP_SANITY=1 bash tests/review-log-add.sh "short label"
+#
+# NOT `SKIP_SANITY=1 pbpaste | bash ...`, which is what this script printed until
+# 16 September. A variable assignment before a pipeline element applies to THAT element
+# only, so it reached pbpaste and never reached this script: the escape hatch was
+# documented, printed on every refusal, and could not work. Reported by Ranaji, who said
+# it "doesn't seem to do anything", which was exactly right.
 set -u
 cd "$(git rev-parse --show-toplevel)" || exit 1
 LOG="docs/reference/review-log.md"
@@ -116,11 +124,29 @@ if not os.environ.get("SKIP_SANITY"):
         if re.search(r':\d+[a-z]', f):
             complaints.append("a line number runs straight into a word here, which is what a\n"
                               "      part-copied buffer looks like:\n      %s" % f)
+    # A CARRY-FORWARD ANSWER IS NOT A REVIEW, and it does not belong in this log at all.
+    # It has no numbered answers, so the truncation guard fires and tells the person to
+    # re-copy a clipboard that was never truncated. Ranaji hit this on 16 September and
+    # correctly read the result as the script doing nothing. Carry answers are ticked by
+    # hand; see docs/reference/review-workflow.md.
+    carryish = (not re.search(r'^\s*- \[ \]', raw, re.M)
+                and re.search(r'(?im)^\s*finding:', raw)
+                and re.search(r'(?i)(move to the tracker|not re-opened|carried through|survived \d+ review)', raw))
+    if carryish:
+        sys.exit("this looks like a CARRY-FORWARD answer, not a blind review.\n\n"
+                 "It names findings and says what happened to them, and it has no numbered\n"
+                 "answers and no new '- [ ]' boxes. That is the second pass, and it is NOT\n"
+                 "filed: nothing new was reviewed, so there is nothing to add to the log.\n\n"
+                 "What to do instead: open docs/reference/review-log.md and tick by hand the\n"
+                 "findings the answer says are fixed, writing the reason beside each one. A\n"
+                 "tick with no reason is how a finding comes back a fifth time.\n\n"
+                 "Then:  bash tests/review-carry.sh    to confirm the list actually shrank.")
+
     if complaints:
         sys.exit("this does not look like a whole review:\n  - " +
                  "\n  - ".join(complaints) +
                  "\n\nRe-copy the answer once the CLI has finished printing, and try again."
-                 "\nIf it really is fine:  SKIP_SANITY=1 pbpaste | bash tests/review-log-add.sh ..."
+                 "\nIf it really is fine:  pbpaste | SKIP_SANITY=1 bash tests/review-log-add.sh \"label\""
                  "\n\nDO NOT paste the findings back to the reviewer. It has filesystem access,"
                  "\nit will helpfully start fixing things, and the session that reviewed the work"
                  "\nbecomes the session that wrote it. Findings go to this log, then to the"

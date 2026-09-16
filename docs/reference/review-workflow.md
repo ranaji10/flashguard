@@ -288,7 +288,9 @@ So the control is procedural and it is yours:
 - Findings go into `review-log.md`, then to the **producer**. Never back to the reviewer.
 - The only second message a reviewer ever gets is `review-carry.sh` output, which asks about
   OLD findings and requests no work.
-- If the filer refuses a paste, fix the paste or use `SKIP_SANITY=1`. Do not improvise a
+- If the filer refuses a paste, fix the paste or put the override on the RIGHT of the pipe:
+  `pbpaste | SKIP_SANITY=1 bash tests/review-log-add.sh "label"`. Not before `pbpaste`,
+  which sets it on `pbpaste` and never reaches the script. Do not improvise a
   route that ends at the reviewer.
 
 **If the reviewer has written files, the review is void.** Not because the fixes are wrong —
