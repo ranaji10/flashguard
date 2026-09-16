@@ -143,71 +143,87 @@ console.log("\n  buildAndroidBlock");
   is(Object.keys(blockRaw).length, 2, "raw capture: exactly two keys emitted");
 }
 
-console.log("\n  host_platform, host_shell, capture_route & browser_enumeration schema agreement");
+console.log("\n  host_platform, host_shell, capture_route, browser_enumeration & browser_enumeration_source schema agreement");
 {
+  const COVERED_SCHEMA_FIELDS = [
+    "host_platform",
+    "host_shell",
+    "capture_route",
+    "browser_enumeration",
+    "browser_enumeration_source"
+  ];
+
   const schemaPath = path.join(__dirname, "../data/schema.md");
   const schemaText = fs.readFileSync(schemaPath, "utf8");
 
-  const platMatch = schemaText.match(/"host_platform":\s*"([^"]+)"/);
-  if (!platMatch) throw new Error("data/schema.md missing host_platform definition");
-  const allowedPlatforms = new Set(platMatch[1].split("|").map(s => s.trim()));
-
-  const shellMatch = schemaText.match(/"host_shell":\s*"([^"]+)"/);
-  if (!shellMatch) throw new Error("data/schema.md missing host_shell definition");
-  const allowedShells = new Set(shellMatch[1].split("|").map(s => s.trim()));
-
-  const routeMatch = schemaText.match(/"capture_route":\s*"([^"]+)"/);
-  if (!routeMatch) throw new Error("data/schema.md missing capture_route definition");
-  const allowedRoutes = new Set(routeMatch[1].split("|").map(s => s.trim()));
-
-  const enumMatch = schemaText.match(/"browser_enumeration":\s*"([^"]+)"/);
-  if (!enumMatch) throw new Error("data/schema.md missing browser_enumeration definition");
-  const allowedEnums = new Set(enumMatch[1].split("|").map(s => s.trim()));
+  const allowedSets = {};
+  for (const field of COVERED_SCHEMA_FIELDS) {
+    const m = schemaText.match(new RegExp(`"${field}":\\s*"([^"]+)"`));
+    if (!m) throw new Error(`data/schema.md missing ${field} definition`);
+    allowedSets[field] = new Set(m[1].split("|").map(s => s.trim()));
+  }
 
   // 1. Prove that undeclared values fail schema validation
-  const plantedInvalidPlatform = "windows_powershell";
-  is(allowedPlatforms.has(plantedInvalidPlatform), false, "planted undeclared platform windows_powershell is rejected by schema");
+  is(allowedSets.host_platform.has("windows_powershell"), false, "planted undeclared platform windows_powershell is rejected by schema");
+  is(allowedSets.host_shell.has("bash"), false, "planted undeclared shell bash is rejected by schema");
+  is(allowedSets.capture_route.has("usb_direct"), false, "planted undeclared route usb_direct is rejected by schema");
+  is(allowedSets.browser_enumeration.has("failed"), false, "planted undeclared browser_enumeration failed is rejected by schema");
+  is(allowedSets.browser_enumeration_source.has("automated"), false, "planted undeclared browser_enumeration_source automated is rejected by schema");
 
-  const plantedInvalidShell = "bash";
-  is(allowedShells.has(plantedInvalidShell), false, "planted undeclared shell bash is rejected by schema");
+  // 2. Extract values for each field from START-HERE.html
+  const extracted = {};
 
-  const plantedInvalidRoute = "usb_direct";
-  is(allowedRoutes.has(plantedInvalidRoute), false, "planted undeclared route usb_direct is rejected by schema");
-
-  const plantedInvalidEnum = "failed";
-  is(allowedEnums.has(plantedInvalidEnum), false, "planted undeclared browser_enumeration failed is rejected by schema");
-
-  // 2. Extract all platform values used or referenced in START-HERE.html
+  // host_platform
   const dataPMatches = Array.from(html.matchAll(/data-p="([^"]+)"/g)).map(m => m[1]);
   const hostPlatAssigns = Array.from(html.matchAll(/host_platform\s*[:=]\s*"([^"]+)"/g)).map(m => m[1]);
   const scrRouteCalls = Array.from(html.matchAll(/scrRoutePlatform\("([^"]+)"\)/g)).map(m => m[1]);
+  extracted.host_platform = new Set([...dataPMatches, ...hostPlatAssigns, ...scrRouteCalls]);
 
-  const allHtmlPlatforms = [...new Set([...dataPMatches, ...hostPlatAssigns, ...scrRouteCalls])];
-  for (const plat of allHtmlPlatforms) {
-    is(allowedPlatforms.has(plat), true, `START-HERE.html platform '${plat}' is declared in data/schema.md`);
-  }
-
-  // 3. Extract all shell values used or referenced in START-HERE.html
+  // host_shell (including ternary assignments and fallbacks)
   const dataSMatches = Array.from(html.matchAll(/data-s="([^"]+)"/g)).map(m => m[1]);
   const hostShellAssigns = Array.from(html.matchAll(/host_shell\s*[:=]\s*"([^"]+)"/g)).map(m => m[1]);
+  const ternaryShells = Array.from(html.matchAll(/host_shell\s*=\s*isCmd\s*\?\s*"([^"]+)"\s*:\s*"([^"]+)"/g))
+    .flatMap(m => [m[1], m[2]]);
+  const fallbackShells = Array.from(html.matchAll(/hostPlat\s*===\s*"windows"\s*\?\s*"([^"]+)"\s*:\s*"([^"]+)"/g))
+    .flatMap(m => [m[1], m[2]]);
+  extracted.host_shell = new Set([...dataSMatches, ...hostShellAssigns, ...ternaryShells, ...fallbackShells]);
 
-  const allHtmlShells = [...new Set([...dataSMatches, ...hostShellAssigns])];
-  for (const sh of allHtmlShells) {
-    is(allowedShells.has(sh), true, `START-HERE.html shell '${sh}' is declared in data/schema.md`);
-  }
-
-  // 4. Extract all capture_route values in START-HERE.html
+  // capture_route (including direct assignments, fallbacks, and scrAndroidBash calls)
   const captureRouteAssigns = Array.from(html.matchAll(/capture_route\s*[:=]\s*"([^"]+)"/g)).map(m => m[1]);
-  const allHtmlRoutes = [...new Set(captureRouteAssigns)];
-  for (const route of allHtmlRoutes) {
-    is(allowedRoutes.has(route), true, `START-HERE.html capture_route '${route}' is declared in data/schema.md`);
+  const scrAndroidBashCalls = Array.from(html.matchAll(/scrAndroidBash\("([^"]+)"/g)).map(m => m[1]);
+  const fallbackRoutes = Array.from(html.matchAll(/capture_route\)\s*\|\|\s*\(.*?:\s*"([^"]+)"\)/g)).map(m => m[1]);
+  extracted.capture_route = new Set([...captureRouteAssigns, ...scrAndroidBashCalls, ...fallbackRoutes]);
+
+  // browser_enumeration
+  const browserEnumAssigns = Array.from(html.matchAll(/browser_enumeration\s*[:=]\s*"([^"]+)"/g)).map(m => m[1]);
+  const fallbackEnums = Array.from(html.matchAll(/browser_enumeration\)\s*\|\|\s*"([^"]+)"/g)).map(m => m[1]);
+  extracted.browser_enumeration = new Set([...browserEnumAssigns, ...fallbackEnums]);
+
+  // browser_enumeration_source (including ternary assignment)
+  const browserSourceAssigns = Array.from(html.matchAll(/browser_enumeration_source\s*[:=]\s*"([^"]+)"/g)).map(m => m[1]);
+  const ternarySources = Array.from(html.matchAll(/browser_enumeration_source\s*[:=]\s*.*?["']([^"']+)["']\s*:\s*["']([^"']+)["']/g))
+    .flatMap(m => [m[1], m[2]]);
+  extracted.browser_enumeration_source = new Set([...browserSourceAssigns, ...ternarySources]);
+
+  // Forward assertion: every value found in HTML is declared in schema
+  for (const field of COVERED_SCHEMA_FIELDS) {
+    for (const val of extracted[field]) {
+      is(allowedSets[field].has(val), true, `START-HERE.html ${field} '${val}' is declared in data/schema.md`);
+    }
   }
 
-  // 5. Extract all browser_enumeration values in START-HERE.html
-  const browserEnumAssigns = Array.from(html.matchAll(/browser_enumeration\s*[:=]\s*"([^"]+)"/g)).map(m => m[1]);
-  const allHtmlEnums = [...new Set(browserEnumAssigns)];
-  for (const benum of allHtmlEnums) {
-    is(allowedEnums.has(benum), true, `START-HERE.html browser_enumeration '${benum}' is declared in data/schema.md`);
+  // Reverse assertion: every value declared in schema was found in HTML or is explicitly listed as unwritten
+  const UNWRITTEN_VALUES = {
+    // Values declared in schema that this HTML file is not expected to write directly, with one-line reason
+  };
+
+  for (const field of COVERED_SCHEMA_FIELDS) {
+    for (const val of allowedSets[field]) {
+      const found = extracted[field].has(val);
+      const isUnwritten = UNWRITTEN_VALUES[field] && UNWRITTEN_VALUES[field][val];
+      is(found || Boolean(isUnwritten), true,
+        `schema ${field} value '${val}' is found in START-HERE.html${isUnwritten ? ' (unwritten: ' + UNWRITTEN_VALUES[field][val] + ')' : ''}`);
+    }
   }
 
   // 6. Test buildRecord / saveRecord resolution across all capture routes & enumerations
@@ -226,10 +242,22 @@ console.log("\n  host_platform, host_shell, capture_route & browser_enumeration 
       is(rec.host_shell, "powershell", "powershell branch: host_shell is powershell");
       is(rec.capture_route, "adb_host", "powershell branch: capture_route is adb_host");
       is(rec.browser_enumeration, "not_attempted", "powershell branch: browser_enumeration is not_attempted");
-      is(allowedPlatforms.has(rec.host_platform), true, "powershell branch: host_platform in schema enum");
-      is(allowedShells.has(rec.host_shell), true, "powershell branch: host_shell in schema enum");
-      is(allowedRoutes.has(rec.capture_route), true, "powershell branch: capture_route in schema enum");
-      is(allowedEnums.has(rec.browser_enumeration), true, "powershell branch: browser_enumeration in schema enum");
+      is(rec.browser_enumeration_source, "not_applicable", "powershell branch: browser_enumeration_source is not_applicable");
+      is(allowedSets.host_platform.has(rec.host_platform), true, "powershell branch: host_platform in schema enum");
+      is(allowedSets.host_shell.has(rec.host_shell), true, "powershell branch: host_shell in schema enum");
+      is(allowedSets.capture_route.has(rec.capture_route), true, "powershell branch: capture_route in schema enum");
+      is(allowedSets.browser_enumeration.has(rec.browser_enumeration), true, "powershell branch: browser_enumeration in schema enum");
+      is(allowedSets.browser_enumeration_source.has(rec.browser_enumeration_source), true, "powershell branch: browser_enumeration_source in schema enum");
+    }
+
+    // Windows fallback with no shell recorded
+    {
+      const cur = { dev: { k: "phone", phone: true }, host_platform: "windows", capture_route: "adb_host", browser_enumeration: "not_attempted", android_raw: "ro.product.model=Pixel 4" };
+      const S = { host_platform: "windows", tester: "test" };
+      const rec = buildRecord(cur, S, true, "adb", "Pixel 4", "default", "", {}, "test.desc", 1, "test-agent");
+      is(rec.host_platform, "windows", "windows fallback: host_platform is windows");
+      is(rec.host_shell, "unknown", "windows fallback with no shell recorded returns unknown, not powershell");
+      is(allowedSets.host_shell.has(rec.host_shell), true, "windows fallback: host_shell unknown in schema enum");
     }
 
     // cmd branch
@@ -241,10 +269,12 @@ console.log("\n  host_platform, host_shell, capture_route & browser_enumeration 
       is(rec.host_shell, "cmd", "cmd branch: host_shell is cmd");
       is(rec.capture_route, "adb_host", "cmd branch: capture_route is adb_host");
       is(rec.browser_enumeration, "enumerated", "cmd branch: browser_enumeration is enumerated");
-      is(allowedPlatforms.has(rec.host_platform), true, "cmd branch: host_platform in schema enum");
-      is(allowedShells.has(rec.host_shell), true, "cmd branch: host_shell in schema enum");
-      is(allowedRoutes.has(rec.capture_route), true, "cmd branch: capture_route in schema enum");
-      is(allowedEnums.has(rec.browser_enumeration), true, "cmd branch: browser_enumeration in schema enum");
+      is(rec.browser_enumeration_source, "tester", "cmd branch: browser_enumeration_source is tester");
+      is(allowedSets.host_platform.has(rec.host_platform), true, "cmd branch: host_platform in schema enum");
+      is(allowedSets.host_shell.has(rec.host_shell), true, "cmd branch: host_shell in schema enum");
+      is(allowedSets.capture_route.has(rec.capture_route), true, "cmd branch: capture_route in schema enum");
+      is(allowedSets.browser_enumeration.has(rec.browser_enumeration), true, "cmd branch: browser_enumeration in schema enum");
+      is(allowedSets.browser_enumeration_source.has(rec.browser_enumeration_source), true, "cmd branch: browser_enumeration_source in schema enum");
     }
 
     // macOS branch with browser enumeration failure / tester_cancelled
@@ -256,10 +286,12 @@ console.log("\n  host_platform, host_shell, capture_route & browser_enumeration 
       is(rec.host_shell, "not_applicable", "macos branch: host_shell is not_applicable");
       is(rec.capture_route, "adb_host", "macos branch: capture_route is adb_host");
       is(rec.browser_enumeration, "tester_cancelled", "macos branch: browser_enumeration is tester_cancelled");
-      is(allowedPlatforms.has(rec.host_platform), true, "macos branch: host_platform in schema enum");
-      is(allowedShells.has(rec.host_shell), true, "macos branch: host_shell in schema enum");
-      is(allowedRoutes.has(rec.capture_route), true, "macos branch: capture_route in schema enum");
-      is(allowedEnums.has(rec.browser_enumeration), true, "macos branch: browser_enumeration in schema enum");
+      is(rec.browser_enumeration_source, "tester", "macos branch: browser_enumeration_source is tester");
+      is(allowedSets.host_platform.has(rec.host_platform), true, "macos branch: host_platform in schema enum");
+      is(allowedSets.host_shell.has(rec.host_shell), true, "macos branch: host_shell in schema enum");
+      is(allowedSets.capture_route.has(rec.capture_route), true, "macos branch: capture_route in schema enum");
+      is(allowedSets.browser_enumeration.has(rec.browser_enumeration), true, "macos branch: browser_enumeration in schema enum");
+      is(allowedSets.browser_enumeration_source.has(rec.browser_enumeration_source), true, "macos branch: browser_enumeration_source in schema enum");
     }
 
     // Live Linux USB branch
@@ -271,10 +303,12 @@ console.log("\n  host_platform, host_shell, capture_route & browser_enumeration 
       is(rec.host_shell, "not_applicable", "ubuntu_live branch: host_shell is not_applicable");
       is(rec.capture_route, "linux_live", "ubuntu_live branch: capture_route is linux_live");
       is(rec.browser_enumeration, "not_listed", "ubuntu_live branch: browser_enumeration is not_listed");
-      is(allowedPlatforms.has(rec.host_platform), true, "ubuntu_live branch: host_platform in schema enum");
-      is(allowedShells.has(rec.host_shell), true, "ubuntu_live branch: host_shell in schema enum");
-      is(allowedRoutes.has(rec.capture_route), true, "ubuntu_live branch: capture_route in schema enum");
-      is(allowedEnums.has(rec.browser_enumeration), true, "ubuntu_live branch: browser_enumeration in schema enum");
+      is(rec.browser_enumeration_source, "tester", "ubuntu_live branch: browser_enumeration_source is tester");
+      is(allowedSets.host_platform.has(rec.host_platform), true, "ubuntu_live branch: host_platform in schema enum");
+      is(allowedSets.host_shell.has(rec.host_shell), true, "ubuntu_live branch: host_shell in schema enum");
+      is(allowedSets.capture_route.has(rec.capture_route), true, "ubuntu_live branch: capture_route in schema enum");
+      is(allowedSets.browser_enumeration.has(rec.browser_enumeration), true, "ubuntu_live branch: browser_enumeration in schema enum");
+      is(allowedSets.browser_enumeration_source.has(rec.browser_enumeration_source), true, "ubuntu_live branch: browser_enumeration_source in schema enum");
     }
   } catch (e) {
     console.log("    FAIL  buildRecord evaluation:", e.message);

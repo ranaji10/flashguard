@@ -1,0 +1,81 @@
+{
+  "methods": {
+    "fastboot_xiaomi": {
+      "steps": [
+        "Create a Mi Account and bind it to the device in Developer options",
+        "Download and run the official Mi Unlock application on Windows",
+        "Wait out the vendor-enforced waiting period if prompted",
+        "Complete the unlock procedure in the Mi Unlock application"
+      ],
+      "link": "https://en.miui.com/unlock/"
+    },
+    "fastboot_xiaomi_hyperos": {
+      "steps": [
+        "Create and verify an official Xiaomi Community account",
+        "Pass the vendor community verification process",
+        "Bind the account to the device in Developer options",
+        "Complete the unlock procedure in the Mi Unlock application"
+      ],
+      "link": "https://en.miui.com/unlock/"
+    },
+    "fastboot_motorola": {
+      "steps": [
+        "Boot into fastboot mode and retrieve the device unlock data string",
+        "Sign in to the Motorola Bootloader Unlock portal",
+        "Submit the unlock data string to request an unlock key",
+        "Apply the received unlock key to the device"
+      ],
+      "link": "https://motorola-global-portal.custhelp.com/app/standalone/bootloader/unlock-your-device-a"
+    },
+    "fastboot_sony": {
+      "steps": [
+        "Open the phone dialer and enter the service menu code to verify unlock eligibility",
+        "Visit the Sony Open Devices unlock portal",
+        "Submit the device IMEI to request an unlock code",
+        "Apply the received unlock code to the device"
+      ],
+      "link": "https://developer.sony.com/open-source/aosp-on-xperia-open-devices/get-started/unlock-bootloader/"
+    },
+    "fastboot_fairphone": {
+      "steps": [
+        "Visit the Fairphone support portal to generate an unlock code for your device serial and IMEI",
+        "Enable OEM unlocking in Developer options using the generated unlock code"
+      ],
+      "link": "https://support.fairphone.com"
+    },
+    "fastboot_htc": {
+      "steps": [
+        "Boot into fastboot mode and retrieve the identifier token",
+        "Sign in to the HTCDev portal",
+        "Submit the identifier token to receive your Unlock_code.bin key file",
+        "Apply the received unlock key file to the device"
+      ],
+      "link": "https://www.htcdev.com/bootloader/"
+    },
+    "fastboot_oneplus_tmo": {
+      "steps": [
+        "Boot into fastboot mode and retrieve the unlock token",
+        "Submit token to the OnePlus support portal to request unlock token file",
+        "Apply the received unlock token file to the device"
+      ],
+      "link": "https://service.oneplus.com"
+    },
+    "fastboot_realme_china": {
+      "steps": [
+        "Sign in with a HeyTap account",
+        "Install the vendor in-depth test APK and submit unlock application during monthly slot window",
+        "Wait for approval notification in the application",
+        "Proceed with unlock once approval is granted"
+      ]
+    },
+    "fastboot_lenovo": {
+      "steps": [
+        "Sign in with a Lenovo account in Developer options or visit the ZUI unlock portal",
+        "Wait out the required account association period if prompted",
+        "Retrieve the unlock token and apply it to the device"
+      ],
+      "link": "https://www.lenovo.com"
+    }
+  },
+  "exclusions": {}
+}

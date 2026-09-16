@@ -97,6 +97,27 @@ Absence of a prerequisite is not "none required". There are three distinct state
 Only an explicit prerequisite block whose required states are confirmed by the fingerprint
 can yield a `safe` verdict.
 
+### Three kinds of unestablished prerequisite
+
+When a prerequisite is not confirmed satisfied, there are three distinct reasons that must not blur into one:
+
+- **`unknown`** — the field applies to this device and could not be established read-only.
+  Already defined. Unchanged.
+- **not establishable from the device, ever** (`unlock-out-of-band`) — the prerequisite is real,
+  it is not satisfied-or-unsatisfied as far as any device property is concerned, and no better
+  capture, no newer tool and no more patient tester will change that. The evidence sits in a
+  vendor's database, an account portal, or an external tool (e.g. Xiaomi Mi Unlock, Motorola web
+  portal, Fairphone support portal, Sony unlock site). This is a property of the **unlock method**,
+  not of the capture, and it is therefore knowable from the recipe alone without any fingerprint
+  at all.
+- **absent** — neither of the above. The prerequisite block itself is missing or unrecorded.
+  Never means "none required". Unchanged.
+
+When an unlock prerequisite has `unlock_class: "out_of_band"`, the verifier emits the reason code
+`unlock-out-of-band` with `outcome: "abstain"` (reason result `abstain`) and verdict
+`cannot-verify`. It carries in the evidence block human-readable guidance stating what the person
+must do out-of-band, and optionally a link to the authoritative upstream documentation.
+
 ---
 
 ## Graded variant matching

@@ -1030,7 +1030,7 @@ function NA(v){ return (v===undefined||v===null||v==="")?"not_applicable":v; }
 function buildRecord(cur, S, correct, cls, name, mode, note, cap, descFile, mins, userAgent){
   var androidObj = buildAndroidBlock(cur);
   var hostPlat = (cur && cur.host_platform) || (S && S.host_platform) || "not_stated";
-  var hostSh = (cur && cur.host_shell) || (S && S.host_shell) || (hostPlat === "windows" ? "powershell" : "not_applicable");
+  var hostSh = (cur && cur.host_shell) || (S && S.host_shell) || (hostPlat === "windows" ? "unknown" : "not_applicable");
   if (hostPlat !== "windows") {
     hostSh = "not_applicable";
   }

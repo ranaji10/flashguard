@@ -101,6 +101,7 @@ Read before writing the proposal or changing a design.
 | `data/prerequisite_survey.py` | Pure text-in, record-out classifier for upstream prerequisite evidence. |
 | `data/survey_upstream.py` | Filesystem runner that counts the cloned upstream sources without importing their text. |
 | `data/recipe_format_coverage.py` | Reproducible measurement of v0.1 recipe-field coverage in the cloned upstream records. |
+| `data/unlock_guidance.json` | Out-of-band unlock procedures and links keyed by unlock method. |
 | `data/recipes/` | The corpus. Five recipes, all `cannot-verify`, none safe. |
 | `tests/all.sh` | Everything checkable without a device. Run before every commit. |
 | `tests/promote.py` | Descriptors to fixtures, with the ground-truth and consistency gates. |

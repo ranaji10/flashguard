@@ -72,8 +72,13 @@ Version 0.2 keeps the v0.1 fields valid and adds `prerequisites`,
 `install_method`, and `source_fields_unused`. It drops `assets` and
 `operations.asset_id`; operations remain declarative `{kind, partition}` records.
 Each prerequisite is an object with open-vocabulary `state`, `required`,
-`declared_by`, and `source_evidence`. A declaration is not fingerprint evidence:
-`safe` requires the fingerprint to confirm every required state.
+`declared_by`, `source_evidence`, and the unlock classification fields `unlock_class`
+(`command | out_of_band | unknown`) and optional `unlock_method`. A declaration is not
+fingerprint evidence: `safe` requires the fingerprint to confirm every required state.
+When `unlock_class` is `out_of_band`, the prerequisite is not establishable from device state,
+and the verifier emits `unlock-out-of-band` (`cannot-verify`) with out-of-band guidance in
+the evidence block. Absence of `unlock_class` is not `command`: an omitted field abstains with
+the generic missing prerequisite reason.
 
 The `prerequisites` key has three distinct meanings: absent means the author did
 not record whether prerequisites were considered; `{}` means the author declares

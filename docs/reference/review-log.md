@@ -51,6 +51,41 @@ quoted inside the stored answer is not counted a second time.
 
 <!-- NEWEST REVIEW DIRECTLY BELOW -->
 
+## 2026-09-16 — uncommitted-on-bba77c0 — Batch 3 task + Nothing1 recipe
+
+- [ ] flashguard/verify.py:409 assigning None to required when       requirement is not tion check (requiredis not None), falling through to pass and creating a direct path toa false safe verdic
+- [ ] docs/reasoning/recipe-format.md:81 claims that an omitted      unlock_class abstaireason, but the codeskips checking for omission and verifies it identically to a valid requirement.
+- [ ] tests/test_verify_v2.py:327 test_omitted_unlock_class_...      passes for the wronletely because themock fingerprint() lacks bootloader_unlocked data, not because the code enforces the o
+- [ ] flashguard/verify.py:3 importing get_guidance to supply  out-of-band data sta/unlock_guidance.json from the filesystem on the verify path, violating the strict non-negotiable propain a pure function.
+
+<details><summary>the review, as it came back</summary>
+
+```
+Based on a review of the uncommitted diff, here are the answers to your questions:
+
+1. What changed that was not asked for?
+   flashguard/verify.py adds if fingerprint is None: fingerprint = {} at the top of _verify_v2. This silently mutates the input to prevent a crash, and appears to have been added solely to support the author's new test patterns (for fp in (None, {}, fingerprint()):) rather than a requested change to the application's contract.
+2. What did it decide that was not already in a file?
+   The code decided to treat an omitted unlock_class as fully verifiable (identical to "command"), falling through to typical verification loops if the fingerprint possesses the needed field. This directly contradicts the written rule.
+3. Does any test pass for a reason other than the code being correct?
+   Yes. test_omitted_unlock_class_returns_missing_bootloader_and_not_unlock_out_of_band passes entirely by coincidence. It calls verify(fingerprint(), recipe), but fingerprint() does not contain the bootloader_unlocked key. The test passes because the verification naturally aborts on the missing fingerprint data, not because the verifier successfully handled the omitted unlock_class. If fingerprint("unlocked") had been used, it would have returned safe.
+4. Does any file, name or comment describe something as existing that does not?
+   Yes. docs/reasoning/recipe-format.md explicitly claims that "an omitted field abstains with the generic missing prerequisite reason." The code does not implement this behavior.
+5. Does anything here create a path to a false safe?
+   Yes. The change to required = requirement.get("required") if isinstance(requirement, dict) else None is critical. If a recipe mistakenly supplies a string instead of a dictionary (e.g., "bootloader_unlocked": "unlocked"), required is assigned None. The mismatch checker (elif required is not None and observed != required:) will evaluate to false, meaning any observed state on the device will quietly fall through to the else block, record "pass", and return a false safe.
+
+  FINDINGS
+- [ ] flashguard/verify.py:409 assigning None to required when       requirement is not tion check (requiredis not None), falling through to pass and creating a direct path toa false safe verdic
+- [ ] docs/reasoning/recipe-format.md:81 claims that an omitted      unlock_class abstaireason, but the codeskips checking for omission and verifies it identically to a valid requirement.
+- [ ] tests/test_verify_v2.py:327 test_omitted_unlock_class_...      passes for the wronletely because themock fingerprint() lacks bootloader_unlocked data, not because the code enforces the o
+- [ ] flashguard/verify.py:3 importing get_guidance to supply  out-of-band data sta/unlock_guidance.json from the filesystem on the verify path, violating the strict non-negotiable propain a pure function.
+```
+
+</details>
+
+---
+
+
 ## 2026-09-16 — uncommitted-on-e7ad22c — Added tests for capture route and browser enumeration
 
 - [ ] tests/run-console-logic.js:146 schema agreement checks were added prematurely, violating

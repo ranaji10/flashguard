@@ -26,6 +26,7 @@ BASE_RECIPE = {
         "bootloader_unlocked": {
             "state": "OPEN",
             "required": "unlocked",
+            "unlock_class": "command",
             "declared_by": "unlock_bootloader",
             "source_evidence": "synthetic config unlock step",
         }
@@ -282,6 +283,71 @@ class StateIsNotRead(unittest.TestCase):
                          "fields_consumed names `state` (%r). Either the verifier reads it, "
                          "which is forbidden, or the stamp is claiming a check that did not "
                          "happen, which is worse." % (named,))
+
+
+class UnlockOutOfBandTest(unittest.TestCase):
+    """Prerequisites that cannot be established from device state (out-of-band unlock)."""
+
+    def _oob_recipe(self, method="fastboot_fairphone", unlock_class="out_of_band"):
+        recipe = copy.deepcopy(BASE_RECIPE)
+        recipe["prerequisites"] = {
+            "bootloader_unlocked": {
+                "state": "OPEN",
+                "required": "unlocked",
+                "unlock_class": unlock_class,
+                "unlock_method": method,
+                "declared_by": "unlock_bootloader",
+                "source_evidence": "synthetic oob unlock",
+            }
+        }
+        return recipe
+
+    def test_out_of_band_unlock_abstains_with_unlock_out_of_band_and_no_fingerprint(self):
+        recipe = self._oob_recipe("fastboot_fairphone")
+        for fp in (None, {}, fingerprint()):
+            result = verify(fp, recipe)
+            self.assertEqual(result["verdict"], "cannot-verify")
+            codes = [r["code"] for r in result["reasons"]]
+            self.assertIn("unlock-out-of-band", codes)
+            oob_reasons = [r for r in result["reasons"] if r["code"] == "unlock-out-of-band"]
+            self.assertTrue(all(r["result"] == "abstain" for r in oob_reasons))
+            self.assertIn("guidance", result["evidence"])
+            self.assertTrue(len(result["evidence"]["guidance"]["steps"]) > 0)
+
+    def test_command_unlock_never_returns_unlock_out_of_band(self):
+        recipe = self._oob_recipe("fastboot_nexus", unlock_class="command")
+        for fp in (None, {}, fingerprint(), fingerprint("unlocked"), fingerprint("locked")):
+            result = verify(fp, recipe)
+            codes = [r["code"] for r in result["reasons"]]
+            self.assertNotIn("unlock-out-of-band", codes,
+                             "command unlock must never return unlock-out-of-band")
+        # Fingerprint confirming unlock on command-class recipe yields safe
+        safe_result = verify(fingerprint("unlocked"), recipe)
+        self.assertEqual(safe_result["verdict"], "safe")
+
+    def test_omitted_unlock_class_returns_missing_bootloader_and_not_unlock_out_of_band(self):
+        recipe = copy.deepcopy(BASE_RECIPE)
+        del recipe["prerequisites"]["bootloader_unlocked"]["unlock_class"]
+        # The fingerprint MATCHES the required state. If omission were ever read as
+        # "command", this would verify clean and return safe. It must not: absence of
+        # unlock_class abstains regardless of what the device reports.
+        result = verify(fingerprint("unlocked"), recipe)
+        self.assertEqual(result["verdict"], "cannot-verify")
+        codes = [r["code"] for r in result["reasons"]]
+        self.assertIn("missing-bootloader_unlocked", codes)
+        self.assertNotIn("unlock-out-of-band", codes)
+
+    def test_guidance_for_known_method_present_and_for_unknown_absent(self):
+        known_recipe = self._oob_recipe("fastboot_sony")
+        known_result = verify(None, known_recipe)
+        self.assertIn("guidance", known_result["evidence"])
+        self.assertIn("steps", known_result["evidence"]["guidance"])
+        self.assertIn("link", known_result["evidence"]["guidance"])
+
+        unknown_recipe = self._oob_recipe("fastboot_obscure_unknown_vendor")
+        unknown_result = verify(None, unknown_recipe)
+        self.assertNotIn("guidance", unknown_result["evidence"],
+                         "guidance for unknown method must be absent rather than empty or invented")
 
 
 if __name__ == "__main__":

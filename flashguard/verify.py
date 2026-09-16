@@ -1,11 +1,21 @@
 """Pure v0.1 and v0.2 recipe verification."""
 
+from flashguard.guidance import get_guidance
+
 
 _FINGERPRINT_FIELDS = (
     ("product_device", "target.product_device", "device-mismatch"),
     ("variant", "target.variant", "variant-mismatch"),
     ("partition_scheme", "target.partition_scheme", "partition-scheme-mismatch"),
 )
+
+# The only prerequisite the recipe format currently uses `unlock_class` for. The schema
+# (docs/reasoning/recipe-format.md) has no formal way yet to mark an arbitrary prerequisite
+# as "this is an unlock step" versus, say, a minimum-version check, and every recipe in the
+# corpus only ever names this one. Scoping the check to this key, rather than to every
+# prerequisite, is a deliberate and narrow choice: a future prerequisite kind that also
+# represents an unlock will need adding here, or the schema will need a real "kind" field.
+_UNLOCK_PREREQUISITE_NAME = "bootloader_unlocked"
 
 
 def _reason(code, result, fields, message):
@@ -221,6 +231,8 @@ def verify(fingerprint, recipe):
 
 
 def _verify_v2(fingerprint, recipe):
+    if fingerprint is None:
+        fingerprint = {}
     reasons = []
     target = recipe["target"]
     fields_consumed = []
@@ -384,7 +396,37 @@ def _verify_v2(fingerprint, recipe):
             "evidence": _build_evidence(fingerprint, fields_consumed),
         }
 
+    guidance = None
     for name, requirement in recipe["prerequisites"].items():
+        unlock_class = requirement.get("unlock_class") if isinstance(requirement, dict) else None
+
+        if unlock_class == "out_of_band":
+            method_name = requirement.get("unlock_method") or recipe.get("install_method")
+            method_guidance = get_guidance(method_name)
+            if method_guidance:
+                guidance = method_guidance
+            reasons.append(
+                _reason(
+                    "unlock-out-of-band",
+                    "abstain",
+                    ["prerequisites." + name],
+                    f"Prerequisite '{name}' requires an out-of-band unlock procedure that cannot be established from device state.",
+                )
+            )
+            continue
+
+        if name == _UNLOCK_PREREQUISITE_NAME and unlock_class != "command":
+            # Absence is not a value here: an omitted (or "unknown", or malformed)
+            # classification on the unlock prerequisite must never be read as "command".
+            # Whether this unlock is even establishable from device state is itself
+            # unknown, so abstain with the same reason used for missing fingerprint
+            # evidence rather than run the command-style check against whatever the
+            # fingerprint happens to say. See docs/reasoning/recipe-format.md and
+            # producer-prompt-2026-09-16-batch3. Non-unlock prerequisites (android_version
+            # and anything else) never carry unlock_class and are unaffected.
+            reasons.append(_reason("missing-" + name, "abstain", [name, "prerequisites." + name], "Required prerequisite fingerprint evidence is missing."))
+            continue
+
         observed = fingerprint.get(name)
         fields_consumed.append(name)
         required = requirement.get("required")
@@ -410,10 +452,13 @@ def _verify_v2(fingerprint, recipe):
             reasons.append(_reason("prerequisite-" + name + "-confirmed", "pass", [name], "Fingerprint confirms the required prerequisite state."))
 
     verdict = "cannot-verify" if any(reason["result"] == "abstain" for reason in reasons) else "safe"
+    evidence = _build_evidence(fingerprint, fields_consumed)
+    if guidance is not None:
+        evidence["guidance"] = guidance
     return {
         "verdict": verdict,
         "reasons": reasons,
         "coverage": {"schema_version": "0.2"},
-        "evidence": _build_evidence(fingerprint, fields_consumed),
+        "evidence": evidence,
     }
 
