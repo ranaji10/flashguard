@@ -51,6 +51,27 @@ quoted inside the stored answer is not counted a second time.
 
 <!-- NEWEST REVIEW DIRECTLY BELOW -->
 
+## 2026-09-16 — uncommitted-on-5573d4b — Batch 4 task
+
+Nothing found. Recorded because a log of only non-empty reviews is a biased log, and because "has this been reviewed at all" is a question worth being able to answer.
+
+<details><summary>the review, as it came back</summary>
+
+```
+FINDINGS
+- flashguard/verify.py:459 upstream_untested gate is new behavior not requested; it reads source.untested (a withdrawn/deleted field per deleted unlock_guidance.json) and references upstream testing state that is documented as "pending resolution" rather than decided; the not_untested (false) branch does not upgrade safe, but true does add an abstain reason (correct direction), yet the decision to act on absence as unestablished and on presence as refusal has not been finalized in a file
+- docs/reasoning/verdict-contract.md:140 new section records upstream untested flag rules, but the "pending upstream resolution" subsection explicitly says absence-of-flag behavior is unsettled — this is a decision presented as unsettled, not one decided
+- tests/test_verify_v2.py (all UpstreamUntestedGateTest): all pass correctly (untested → cannot-verify, not_untested returns identical reasons, absent/unestablished returns identical); the false-safe prevention works; but test_not_untested_recipe_returns_byte_identical_reasons asserts byte-identical reasons for a field value (false) whose effect is documented as "no effect today," which is consistent
+- data/unlock_guidance.json deleted and flashguard/guidance.py deleted, but flashguard/verify.py:3 still imports get_guidance and verify.py:399-472 still builds guidance evidence; the import will fail at runtime if guidance.py is genuinely removed, yet the file exists in working tree (git status shows it untracked, not deleted from tree) — this is a discrepancy: the commit deletes it but the working copy keeps it, and the verifier relies on it
+- No false-safe path: upstream_untested in (True, ...) always adds an abstain reason, so verdict can never become safe; unsafe (identity/prerequisite mismatch) takes precedence over the abstain because it returns early; this ordering is safe
+- tests/test_verify_v2.py:386 test asserts fields_consumed never contains "source" — correct per the contract (fingerprint evidence only), and the new source.upstream_untested reason uses fields (not fields_consumed) for its evidence, which is correct
+```
+
+</details>
+
+---
+
+
 ## 2026-09-16 — uncommitted-on-bba77c0 — Batch 3 task + Nothing1 recipe
 
 - [ ] flashguard/verify.py:409 assigning None to required when       requirement is not tion check (requiredis not None), falling through to pass and creating a direct path toa false safe verdic

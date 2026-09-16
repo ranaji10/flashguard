@@ -140,6 +140,47 @@ kit records `identity_source`.
 
 ---
 
+## Upstream untested flag and provenance gating
+
+OpenAndroidInstaller configs carry an optional boolean `untested: true`, indicating
+that a configuration was authored but never confirmed on physical hardware.
+
+A recipe derived from an upstream configuration marked untested must **never reach `safe`**,
+even when all fingerprint prerequisites and identity fields match cleanly.
+
+### The rule
+
+- **Recipe marked untested (`upstream_untested: true` / `"untested"`):** The verifier emits
+  the reason code `recipe-untested-upstream` with outcome `abstain` and verdict
+  `cannot-verify`. The reason message explicitly names upstream's statement about the
+  configuration as the limit, distinguishing it from device or fingerprint uncertainty.
+- **Recipe marked not-untested (`upstream_untested: false` / `"not_untested"`):** No effect today.
+  It is not a licence to upgrade anything.
+- **Recipe has not established it (`upstream_untested: "unestablished"` / `null` or omitted):**
+  No effect. The verifier abstains only for whatever other reasons apply.
+
+### Both halves and the open question
+
+1. **The flag being SET is safe to act on today.** If upstream explicitly states a config was
+   never confirmed on hardware, refusing `safe` is conservative and sound regardless of any
+   other evidence.
+2. **The flag being ABSENT is not yet a fact.** Absence represents "tested" only if upstream
+   reliably clears `untested: true` once hardware verification is confirmed. We have reached
+   out to OpenAndroidInstaller maintainers and are awaiting confirmation of their maintenance
+   lifecycle.
+
+### Pending upstream resolution
+
+- **If upstream confirms the flag is actively cleared upon hardware confirmation:** Absence
+  of the flag becomes an established positive signal (upstream-tested).
+- **If upstream indicates flags are stale or unmaintained:** Absence remains unestablished,
+  and recipes without independent confirmation cannot be treated as tested on that basis alone.
+
+Absence is not a value: an unrecorded or unestablished testing state must never be read as
+"tested".
+
+---
+
 ## Every verdict carries its evidence
 
 The verifier output includes an `evidence` record carrying:

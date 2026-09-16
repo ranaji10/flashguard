@@ -9,6 +9,7 @@
     "device_facts_from": "https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/avicii.yaml",
     "consulted": "2026-09-06",
     "authored": "independent",
+    "upstream_untested": "unestablished",
     "verdict_reason": "The config identifies avicii as an A/B device, names dtbo and vbmeta as additional partitions, and includes a temporary recovery stage."
   },
   "target": {

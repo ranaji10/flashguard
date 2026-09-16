@@ -350,5 +350,87 @@ class UnlockOutOfBandTest(unittest.TestCase):
                          "guidance for unknown method must be absent rather than empty or invented")
 
 
+class UpstreamUntestedGateTest(unittest.TestCase):
+    """A recipe derived from an upstream config marked untested must never reach safe."""
+
+    def test_untested_recipe_cannot_reach_safe_even_with_confirmed_prerequisites(self):
+        """Build a fingerprint that would otherwise produce safe and assert it does not."""
+        recipe = copy.deepcopy(BASE_RECIPE)
+        recipe["source"]["upstream_untested"] = True
+
+        fp = fingerprint("unlocked")
+        result = verify(fp, recipe)
+        self.assertNotEqual(result["verdict"], "safe",
+                            "a recipe marked untested by upstream must never reach safe")
+        self.assertEqual(result["verdict"], "cannot-verify")
+        codes = [r["code"] for r in result["reasons"]]
+        self.assertIn("recipe-untested-upstream", codes)
+
+        untested_reasons = [r for r in result["reasons"] if r["code"] == "recipe-untested-upstream"]
+        self.assertEqual(len(untested_reasons), 1)
+        self.assertEqual(untested_reasons[0]["result"], "abstain")
+        self.assertIn("source.upstream_untested", untested_reasons[0]["fields"])
+
+    def test_untested_string_value_also_triggers_gate(self):
+        recipe = copy.deepcopy(BASE_RECIPE)
+        recipe["source"]["upstream_untested"] = "untested"
+        result = verify(fingerprint("unlocked"), recipe)
+        self.assertEqual(result["verdict"], "cannot-verify")
+        self.assertIn("recipe-untested-upstream", [r["code"] for r in result["reasons"]])
+
+    def test_not_untested_recipe_returns_byte_identical_reasons(self):
+        """A recipe marked not-untested returns exactly what it returned before the change."""
+        baseline_recipe = copy.deepcopy(BASE_RECIPE)
+        baseline_result = verify(fingerprint("unlocked"), baseline_recipe)
+        self.assertEqual(baseline_result["verdict"], "safe")
+
+        for false_val in (False, "not_untested"):
+            tested_recipe = copy.deepcopy(BASE_RECIPE)
+            tested_recipe["source"]["upstream_untested"] = false_val
+            result = verify(fingerprint("unlocked"), tested_recipe)
+            self.assertEqual(result["verdict"], baseline_result["verdict"])
+            self.assertEqual(
+                result["reasons"], baseline_result["reasons"],
+                "reasons must be byte-identical when recipe is not marked untested",
+            )
+
+    def test_absent_upstream_untested_returns_byte_identical_reasons(self):
+        """A recipe with the field absent or unestablished returns exactly what it returned before."""
+        baseline_recipe = copy.deepcopy(BASE_RECIPE)
+        baseline_result = verify(fingerprint("unlocked"), baseline_recipe)
+
+        for unestablished_val in ("unestablished", None):
+            recipe = copy.deepcopy(BASE_RECIPE)
+            recipe["source"]["upstream_untested"] = unestablished_val
+            result = verify(fingerprint("unlocked"), recipe)
+            self.assertEqual(result["verdict"], baseline_result["verdict"])
+            self.assertEqual(
+                result["reasons"], baseline_result["reasons"],
+                "reasons must be byte-identical when upstream untested field is absent/unestablished",
+            )
+
+    def test_untested_recipe_with_hardware_mismatch_is_still_unsafe(self):
+        """unsafe > cannot-verify: a contradicting fingerprint is still unsafe."""
+        recipe = copy.deepcopy(BASE_RECIPE)
+        recipe["source"]["upstream_untested"] = True
+
+        result = verify(fingerprint("locked"), recipe)
+        self.assertEqual(result["verdict"], "unsafe")
+        self.assertIn("prerequisite-bootloader_unlocked-mismatch", [r["code"] for r in result["reasons"]])
+
+    def test_upstream_untested_field_never_named_in_fields_consumed(self):
+        """fields_consumed is for fingerprint evidence only, never recipe provenance."""
+        recipe = copy.deepcopy(BASE_RECIPE)
+        recipe["source"]["upstream_untested"] = True
+
+        fp = fingerprint("unlocked")
+        fp["record_id"] = "untested-evidence-test"
+        result = verify(fp, recipe)
+        consumed = result.get("evidence", {}).get("fields_consumed", [])
+        for f in consumed:
+            self.assertNotIn("source", str(f))
+            self.assertNotIn("upstream_untested", str(f))
+
+
 if __name__ == "__main__":
     unittest.main()

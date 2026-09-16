@@ -451,6 +451,22 @@ def _verify_v2(fingerprint, recipe):
         else:
             reasons.append(_reason("prerequisite-" + name + "-confirmed", "pass", [name], "Fingerprint confirms the required prerequisite state."))
 
+    source = recipe.get("source", {})
+    upstream_untested = source.get("upstream_untested")
+    if upstream_untested is None and "untested" in source:
+        upstream_untested = source.get("untested")
+
+    if upstream_untested in (True, "untested", "true", "marked_untested"):
+        source_field = "source.upstream_untested" if "upstream_untested" in source else "source.untested"
+        reasons.append(
+            _reason(
+                "recipe-untested-upstream",
+                "abstain",
+                [source_field],
+                "Upstream marked this configuration as untested on physical hardware.",
+            )
+        )
+
     verdict = "cannot-verify" if any(reason["result"] == "abstain" for reason in reasons) else "safe"
     evidence = _build_evidence(fingerprint, fields_consumed)
     if guidance is not None:

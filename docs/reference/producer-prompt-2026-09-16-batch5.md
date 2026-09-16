@@ -103,13 +103,95 @@ record looks exactly like one that was rewritten away.
 
 After this batch `bash tests/check-disputed.sh` should report zero open disagreements.
 
-## 5. The reason codes stay separate
+## 5. Two false-safe paths left by batches 3 and 4, both reproduced
+
+Batch 3 shipped a false safe and the checker caught it, which is the third time that has
+happened here and the third time it was caught. These two are what is left, and **both are
+reachable by the recipes this batch is about to write.** Fix them before writing any recipe.
+
+### 5a. The unlock gate is keyed on one hard-coded prerequisite name
+
+```
+flashguard/verify.py:18    _UNLOCK_PREREQUISITE_NAME = "bootloader_unlocked"
+flashguard/verify.py:418   if name == _UNLOCK_PREREQUISITE_NAME and unlock_class != "command":
+```
+
+Against `BASE_RECIPE` the fix works: omitted, `"unknown"` and malformed `unlock_class` all
+return `cannot-verify` with `missing-bootloader_unlocked`, `out_of_band` returns
+`unlock-out-of-band`, and `command` still returns `safe`. All four verified.
+
+**Rename the prerequisite and the false safe comes straight back.** I took `BASE_RECIPE`, renamed
+`bootloader_unlocked` to `oem_unlocking_enabled`, dropped `unlock_class`, mirrored the fingerprint
+key, and ran it:
+
+```
+verdict: safe
+reasons: match-product_device pass, match-partition_scheme pass,
+         prerequisite-oem_unlocking_enabled-confirmed pass
+```
+
+The commit that fixed it says so itself: *"the schema has no formal way yet to mark a prerequisite
+as an unlock step."* That is the defect, and it stops being theoretical the moment a recipe is
+written from a different upstream vocabulary. `oem_unlocking_enabled` is an Android setting name,
+not an invention.
+
+**Fix: mark the unlock step in the recipe, do not infer it from a name.** Add an explicit marker
+to the prerequisite, and make the verifier abstain when a recipe declares an `unlock_bootloader`
+operation and no prerequisite carries that marker. An unfindable unlock step must be loud, not
+absent.
+
+**Do not use `declared_by` for this**, tempting as it is: it already carries
+`"unlock_bootloader"`. It is provenance, the contract says provenance is legitimately unread, and
+reading a provenance field as a safety input is precisely what `identity_source` did on
+13 September on the path to `safe`.
+
+### 5b. The untested gate allowlists the wrong direction
+
+```
+flashguard/verify.py:459   if upstream_untested in (True, "untested", "true", "marked_untested"):
+```
+
+It lists the values that BLOCK. Everything else reaches `safe`. The documented vocabulary is
+`true | false | "unestablished"`, and those three behave correctly — but anything outside it does
+not:
+
+```
+upstream_untested = "marked"   ->  safe
+```
+
+A typo in a hand-written recipe — `"True"`, `"yes"`, `"marked untested"` — silently means "not
+untested". **This is the same defect batch 3's checker just caught one file away**, where absent,
+`"unknown"` and malformed `unlock_class` all fell through to the permissive branch. It was fixed
+there and shipped here.
+
+**Fix: allowlist the values that PERMIT.** Only an explicit `false` and `"unestablished"` may pass;
+everything else abstains, with a reason that distinguishes "upstream marked this untested" from
+"this recipe's testing claim is not a value I recognise". The second is a recipe defect and should
+read like one.
+
+**While you are there:** lines 456-457 fall back to a second field name, `source.untested`, if
+`upstream_untested` is absent. One thing under two names is what this whole batch exists to undo.
+Pick one, and if the fallback is kept for older recipes, say for how long in a comment.
+
+### 5c. Prove both
+
+- Rename the unlock prerequisite in a test recipe, omit `unlock_class`, assert `cannot-verify`.
+- Declare an `unlock_bootloader` operation with no marked unlock prerequisite, assert
+  `cannot-verify` and not `safe`.
+- Set `upstream_untested` to a value outside the vocabulary, assert `cannot-verify` with the
+  recipe-defect reason.
+- And keep a test that `command` plus a confirming fingerprint still reaches `safe`, so the fixes
+  are not just making everything abstain.
+
+Plant each defect back and watch the test fail before you call it done.
+
+## 6. The reason codes stay separate
 
 Batch 4 adds a gate on upstream's `untested` flag. This one adds a gate on model coverage. They
 fail for different reasons and must not share a reason code or a mechanism. Either alone blocks
 `safe`; neither cancels the other.
 
-## 6. Tests
+## 7. Tests
 
 - A fingerprint whose model is in the recipe's list, with every prerequisite confirmed, returns
   `safe`. Without this the batch has only made the verifier stricter.
@@ -122,7 +204,7 @@ fail for different reasons and must not share a reason code or a mechanism. Eith
 - The asset identity check behaves as section 3 decides, with a test for the mismatch case.
 - Plant a defect that lets an uncovered model reach `safe`, watch a test fail, restore it.
 
-## 7. Two recipes to write while you are here
+## 8. Two recipes to write while you are here
 
 - **`Spacewar`** is a single-model codename (`A063`), command-class unlock, A/B, and there is a
   real capture with all seven fields. It is the clean first case.

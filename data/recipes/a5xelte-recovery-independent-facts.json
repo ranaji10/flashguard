@@ -9,6 +9,7 @@
     "device_facts_from": "https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/a5xelte.yaml",
     "consulted": "2026-09-06",
     "authored": "independent",
+    "upstream_untested": "unestablished",
     "verdict_reason": "The config identifies a5xelte and its supported aliases as a non-A/B device, with a recovery flash step."
   },
   "target": {

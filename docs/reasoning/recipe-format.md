@@ -102,9 +102,14 @@ Every recipe carries a `source` block. It is not decoration:
   "device_facts_from": "https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/oriole.yaml",
   "consulted": "2026-09-06",
   "authored": "independent",
+  "upstream_untested": "unestablished",
   "verdict_reason": "why a human assigned this verdict"
 }
 ```
+
+`upstream_untested` records upstream's testing claim across the licensing boundary:
+`true` (marked untested upstream), `false` (not marked untested), or `"unestablished"`
+(default, uninspected/unknown).
 
 `authored` is one of:
 

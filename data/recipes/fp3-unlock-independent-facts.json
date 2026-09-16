@@ -9,6 +9,7 @@
     "device_facts_from": "https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/FP3.yaml",
     "consulted": "2026-09-06",
     "authored": "independent",
+    "upstream_untested": "unestablished",
     "verdict_reason": "The config identifies FP3 as A/B and requires bootloader unlock, including a critical unlock step, before temporary recovery."
   },
   "target": {
