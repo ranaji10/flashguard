@@ -51,6 +51,44 @@ quoted inside the stored answer is not counted a second time.
 
 <!-- NEWEST REVIEW DIRECTLY BELOW -->
 
+## 2026-09-16 — uncommitted-on-e7ad22c — Added tests for capture route and browser enumeration
+
+- [ ] tests/run-console-logic.js:146 schema agreement checks were added prematurely, violating
+      the explicit deferrt asked to wait forthe variant omission decision                                       [ ] tests/run-consoextraction allows thetest to pass vacuously if no                                        assignments happen  since an empty arrayskips the assertion loop                                            [ ] tests/run-consot claims to test"across all capture routes &                                        enumerations" but tndpicked combinations
+- [ ] tests/run-console-logic.js:243 the comment "macOS branch with   browser enumeration
+      implies the existence of specific branching logic in the builder    that does not exist
+- [ ] tests/run-console-logic.js:256 the Linux host platform test was changed from ubuntu
+      to ubuntu_live without being asked for and without an accompanying decision in a file
+
+<details><summary>the review, as it came back</summary>
+
+```
+
+1. What changed that was not asked for?
+   The agreement checks for capture_route and browser_enumeration were added prematurely. The tracker note in OPEN.md explicitly deferred this step by stating "After that we can run some checks" referring to the variant omission decision being settled first. Additionally, the existing test for Linux was changed from targeting ubuntu_installed to ubuntu_live, which was not requested.
+2. What did it decide that was not already in a file?
+   It arbitrarily mapped combinations in the testing fixtures, such as deciding the macOS test should represent browser_enumeration: "tester_cancelled" paired with capture_route: "adb_host", and changed the Linux test framework to represent a "Live Linux USB branch" via ubuntu_live. These specific data mappings and mock scenarios were not recorded in any decision file.
+3. Does any test pass for a reason other than the code being correct?
+   Yes. For both capture_route (line 199) and browser_enumeration (line 206), the tests extract assignments from START-HERE.html using a regex and iterate over the results to assert they are in the schema. If the regex fails to match anything, the resulting arrays are empty, and the for loops execute zero times. This allows the test to silently pass vacuously. (Additionally, the "is rejected by schema" assertions just check if a hardcoded invalid string is missing from a JS Set, not whether the actual validator catches it).
+4. Does any file, name or comment describe something as existing that does not?
+   Yes. The comment "Test buildRecord / saveRecord resolution across all capture routes & enumerations" (line 215) claims to test all routes and enumerations, but only tests four hardcoded ones. Furthermore, comments referring to "macOS branch with browser enumeration failure / tester_cancelled" (line 243) and "Live Linux USB branch" (line 256) falsely describe static fixtures as if they correspond to specific branching logic in the target code.
+5. Does anything here create a path to a false safe?
+   No. The changes in this diff are limited to internal test assertions and do not create a path to a false safe in the codebase's verifier.
+
+  FINDINGS
+- [ ] tests/run-console-logic.js:146 schema agreement checks were added prematurely, violating
+  the explicit deferrt asked to wait forthe variant omission decision                                       [ ] tests/run-consoextraction allows thetest to pass vacuously if no                                        assignments happen  since an empty arrayskips the assertion loop                                            [ ] tests/run-consot claims to test"across all capture routes &                                        enumerations" but tndpicked combinations
+- [ ] tests/run-console-logic.js:243 the comment "macOS branch with   browser enumeration
+  implies the existence of specific branching logic in the builder    that does not exist
+- [ ] tests/run-console-logic.js:256 the Linux host platform test was changed from ubuntu
+  to ubuntu_live without being asked for and without an accompanying decision in a file
+```
+
+</details>
+
+---
+
+
 ## 2026-09-16 — uncommitted-on-3ed8346 — Batch 2b changes on the BenchKit based on MAC vs windows commands
 
 - [ ] tests/run-console-logic.js:157 the schema validation test merely checks whether a string is present in its own hardcoded Set parsed from the Markdown file, instead of testing any actual schema enforcer, meaning the test asserts a tautology and proves nothing about validation.

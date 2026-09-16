@@ -156,14 +156,79 @@ The schema-agreement test added in 2b will pick up the new value automatically, 
 the schema text rather than a copy of the list. Add one assertion that a Windows record with no
 shell recorded comes back `unknown` and not `powershell`.
 
-## 7. Stay inside the prerequisite block
+## 7. Two things the new agreement test found by not finding them
+
+The `capture_route` and `browser_enumeration` extension is good work and it holds. Both of these
+came out of checking what it does **not** cover, and neither is a live safety problem.
+
+### 7a. LIVE. `browser_enumeration_source` writes a value the schema does not declare
+
+`data/schema.md:73` declares it as a single value:
+
+```
+"browser_enumeration_source": "tester",
+```
+
+and the prose at line 185 says the same. The page writes two:
+
+```
+START-HERE.html:1045
+browser_enumeration_source: (... browser_enumeration !== "not_attempted") ? "tester" : "not_applicable",
+```
+
+`not_attempted` is the **default**, so `not_applicable` is written on the majority of records and
+has been since 13 September. The verifier never reads the field, so nothing is unsafe. It is a
+page and schema that disagree, in the one field sitting next to the four the new test covers.
+
+**Fix the schema, not the page.** `not_applicable` is the correct value: where no enumeration was
+attempted there is no source, so the field cannot apply, which is exactly what that sentinel
+means everywhere else in the document. Declare `tester | not_applicable` in both the JSON block
+and the prose, and say in half a sentence when each applies.
+
+Then add it to the agreement test as a fifth field.
+
+### 7b. The test reports what it found and is silent about what it never looked for
+
+The scan builds each field's value set by unioning extraction patterns its author chose:
+`data-p="..."`, `data-s="..."`, literal assignments, `scrRoutePlatform("...")` arguments. That is
+a sensible set and it caught real values. It also means coverage is exactly the union of the
+patterns somebody thought of, and a value reached by any other route is invisible.
+
+**Reproduced, and it is the most distinctive route we have.** `capture_route` is set on the
+Ubuntu-live path from a call argument:
+
+```
+START-HERE.html:876   scrAndroidBash("linux_live", "ubuntu_live");
+START-HERE.html:778   cur.capture_route = route;
+```
+
+No pattern looks at `scrAndroidBash` arguments, so the scan asserts only `browser` and `adb_host`
+and never mentions `linux_live`. I changed that argument to `linux_stick`, an undeclared value:
+**node exited 0 and the suite stayed at its soft 2.** The Ubuntu route would have written an
+undeclared value into every live-stick record and nothing would have said so.
+
+There is a `ubuntu_live branch: capture_route is linux_live` assertion, and it does not help: it
+feeds `buildRecord` a hand-written fixture and checks the pass-through. Its name reads like route
+coverage and it is record-builder coverage. A test whose name implies more than it checks is the
+family this repository keeps cataloguing.
+
+**Fix, and it is one assertion rather than a new pattern for every call site:** add the reverse
+direction. For each covered field, assert that every value the schema declares was found by at
+least one extraction pattern, or appears in a short explicit list of values this file is not
+expected to write, each with a one-line reason. That flags `linux_live` as declared-but-unseen
+and makes the choice visible instead of silent.
+
+**And name the covered fields in one place** at the top of that block, so "which fields does this
+check" is answerable by reading rather than by counting assertions. Five after 7a.
+
+## 8. Stay inside the prerequisite block
 
 Batch 5 will add a field to the recipe's `target` block, and batch 4 adds one to `source`.
 Confine every recipe change in this batch to the **prerequisite block**. Three producers editing
 three parts of one schema is fine; three producers editing one part of it is a merge conflict
 nobody will notice until a recipe silently loses a field.
 
-## 8. Tests
+## 9. Tests
 
 - A recipe declaring an out-of-band unlock returns `cannot-verify` with `unlock-out-of-band`
   **and no fingerprint supplied at all**.
