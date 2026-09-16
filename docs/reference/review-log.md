@@ -51,6 +51,24 @@ quoted inside the stored answer is not counted a second time.
 
 <!-- NEWEST REVIEW DIRECTLY BELOW -->
 
+## 2026-09-16 — uncommitted-on-3ed8346 — Batch 2b changes on the BenchKit based on MAC vs windows commands
+
+- [ ] tests/run-console-logic.js:157 the schema validation test merely checks whether a string is present in its own hardcoded Set parsed from the Markdown file, instead of testing any actual schema enforcer, meaning the test asserts a tautology and proves nothing about validation.
+- [ ] tests/run-console-logic.js:177 the regex /host_shell\s*[:=]\s*"([^"]+)"/g fails to match the ternary assignment cur.host_shell = isCmd ? "cmd" : "powershell" in the application code, allowing the check to pass without actually validating those assigned values.
+
+<details><summary>the review, as it came back</summary>
+
+```
+FINDINGS
+- [ ] tests/run-console-logic.js:157 the schema validation test merely checks whether a string is present in its own hardcoded Set parsed from the Markdown file, instead of testing any actual schema enforcer, meaning the test asserts a tautology and proves nothing about validation.
+- [ ] tests/run-console-logic.js:177 the regex /host_shell\s*[:=]\s*"([^"]+)"/g fails to match the ternary assignment cur.host_shell = isCmd ? "cmd" : "powershell" in the application code, allowing the check to pass without actually validating those assigned values.
+```
+
+</details>
+
+---
+
+
 ## 2026-09-16 — uncommitted-on-dba8e8f — Batch 2 changes on the BenchKit based on research
 
 Nothing found. Recorded because a log of only non-empty reviews is a biased log, and because "has this been reviewed at all" is a question worth being able to answer.

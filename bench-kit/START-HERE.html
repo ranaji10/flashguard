@@ -298,7 +298,7 @@
 (function(){
 "use strict";
 
-var KEY="bench.v4", S={ host_platform:"not_stated", tester:"", consent:false, setup:0, records:[], descriptors:[], seen:{}, devices:{}, wrapup:"" };
+var KEY="bench.v4", S={ host_platform:"not_stated", host_shell:"not_applicable", tester:"", consent:false, setup:0, records:[], descriptors:[], seen:{}, devices:{}, wrapup:"" };
 try{ var raw=localStorage.getItem(KEY); if(raw){ S=Object.assign(S,JSON.parse(raw)||{}); } }catch(e){}
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 
@@ -708,24 +708,22 @@ function scrWindowsShell(){
     '<h1>Which shell are you using on Windows?</h1>'+
     '<p class="sub">PowerShell and Command Prompt handle command quoting differently.</p>'+
     '<div class="picks">'+
-      '<button class="pick" data-p="windows_powershell"><b>PowerShell</b><small>Default terminal in Windows 10 & 11</small></button>'+
-      '<button class="pick" data-p="windows_cmd"><b>Command Prompt (cmd)</b><small>Classic cmd.exe</small></button>'+
+      '<button class="pick" data-s="powershell"><b>PowerShell</b><small>Default terminal in Windows 10 & 11</small></button>'+
+      '<button class="pick" data-s="cmd"><b>Command Prompt (cmd)</b><small>Classic cmd.exe</small></button>'+
     '</div>'+
     '<div class="btns" style="margin-top:16px"><button class="b ghost" id="changePlat">Back to OS list</button></div>'+
   '</div>');
   [].slice.call(c.querySelectorAll(".pick")).forEach(function(b){
     b.addEventListener("click",function(){
-      var p = b.getAttribute("data-p");
-      scrAndroidRaw(p);
+      var s = b.getAttribute("data-s");
+      scrAndroidRaw("windows", s);
     });
   });
   c.querySelector("#changePlat").addEventListener("click",scrPlatform);
 }
 
 function scrRoutePlatform(p){
-  if (p === "windows_powershell" || p === "windows_cmd") {
-    scrAndroidRaw(p);
-  } else if (p === "windows") {
+  if (p === "windows") {
     scrWindowsShell();
   } else if (p === "ubuntu_live") {
     scrPrep();
@@ -778,7 +776,9 @@ function scrAndroidBash(route, platform){
     err.className="alert bad";
     cur.android=cap.android;
     cur.capture_route = route;
-    if(plat && plat !== "ubuntu_live"){ S.host_platform = plat; save(); }
+    cur.host_platform = plat;
+    cur.host_shell = "not_applicable";
+    if(plat && plat !== "ubuntu_live"){ S.host_platform = plat; S.host_shell = "not_applicable"; save(); }
     if(cap.android.product_model && cap.android.product_model!=="unknown"){
       cur.name=((cap.android.manufacturer||"")+" "+cap.android.product_model).trim();
     }
@@ -788,15 +788,18 @@ function scrAndroidBash(route, platform){
   p.addEventListener("paste",function(){ setTimeout(tryParse,60); });
   c.querySelector("#changePlat").addEventListener("click",scrPlatform);
   c.querySelector("#skip").addEventListener("click",function(){
-    if(plat && plat !== "ubuntu_live"){ S.host_platform = plat; save(); }
+    cur.host_platform = plat;
+    cur.host_shell = "not_applicable";
+    if(plat && plat !== "ubuntu_live"){ S.host_platform = plat; S.host_shell = "not_applicable"; save(); }
     scrConfirm();
   });
 }
 
 /* ---------- Step 2 (Windows raw path): getprop command block ---------- */
-function scrAndroidRaw(platform){
-  var plat = platform || S.host_platform || "windows_powershell";
-  var isCmd = (plat === "windows_cmd");
+function scrAndroidRaw(platform, shell){
+  var plat = platform || S.host_platform || "windows";
+  var sh = shell || S.host_shell || "powershell";
+  var isCmd = (sh === "cmd");
   var shellName = isCmd ? "Command Prompt (cmd)" : "PowerShell";
   var propList = "ro.product.manufacturer ro.product.model ro.product.device ro.product.board ro.board.platform ro.hardware ro.soc.manufacturer ro.soc.model ro.product.cpu.abi ro.build.version.release ro.build.version.sdk ro.build.version.security_patch ro.build.fingerprint ro.build.ab_update ro.virtual_ab.enabled ro.boot.slot_suffix ro.boot.verifiedbootstate ro.boot.flash.locked ro.boot.vbmeta.device_state";
   var rawCmd = isCmd
@@ -830,14 +833,18 @@ function scrAndroidRaw(platform){
     cur.android_raw = t.trim();
     cur.android_derivation = "pending";
     cur.capture_route = "adb_host";
-    if(plat){ S.host_platform = plat; save(); }
+    cur.host_platform = "windows";
+    cur.host_shell = isCmd ? "cmd" : "powershell";
+    if(plat){ S.host_platform = "windows"; S.host_shell = cur.host_shell; save(); }
     scrConfirm();
   }
   p.addEventListener("input",tryParse);
   p.addEventListener("paste",function(){ setTimeout(tryParse,60); });
   c.querySelector("#changePlat").addEventListener("click",scrPlatform);
   c.querySelector("#skip").addEventListener("click",function(){
-    if(plat){ S.host_platform = plat; save(); }
+    cur.host_platform = "windows";
+    cur.host_shell = isCmd ? "cmd" : "powershell";
+    if(plat){ S.host_platform = "windows"; S.host_shell = cur.host_shell; save(); }
     scrConfirm();
   });
 }
@@ -866,7 +873,7 @@ function scrBootUp(){
     '<button class="b ghost" id="changePlat">Change platform</button>'+
     '<button class="b ghost" id="back">Back</button></div>'+
   '</div>');
-  c.querySelector("#ok").addEventListener("click",function(){ S.host_platform="ubuntu_live"; save(); scrAndroidBash("linux_live", "ubuntu_live"); });
+  c.querySelector("#ok").addEventListener("click",function(){ S.host_platform="ubuntu_live"; S.host_shell="not_applicable"; save(); scrAndroidBash("linux_live", "ubuntu_live"); });
   c.querySelector("#changePlat").addEventListener("click",scrPlatform);
   c.querySelector("#back").addEventListener("click",scrPrep);
 }
@@ -892,7 +899,9 @@ function sameDeviceAgain(cur, rec){
     android_raw: null,
     descText: null,
     capture_route: null,
-    browser_enumeration: null
+    browser_enumeration: null,
+    host_platform: rec.host_platform || null,
+    host_shell: rec.host_shell || null
   };
 }
 /* END TESTABLE:sameDeviceAgain */
@@ -1017,43 +1026,55 @@ function buildAndroidBlock(cur){
 
 function NA(v){ return (v===undefined||v===null||v==="")?"not_applicable":v; }
 
+/* TESTABLE:buildRecord */
+function buildRecord(cur, S, correct, cls, name, mode, note, cap, descFile, mins, userAgent){
+  var androidObj = buildAndroidBlock(cur);
+  var hostPlat = (cur && cur.host_platform) || (S && S.host_platform) || "not_stated";
+  var hostSh = (cur && cur.host_shell) || (S && S.host_shell) || (hostPlat === "windows" ? "powershell" : "not_applicable");
+  if (hostPlat !== "windows") {
+    hostSh = "not_applicable";
+  }
+
+  return {
+    schema_version:"0.4", record_id:uuid(), tester:(S&&S.tester)||"", consent_ack:true,
+    date:new Date().toISOString().slice(0,10),
+    host_platform: hostPlat,
+    host_shell: hostSh,
+    capture_route: (cur&&cur.capture_route) || ((cur&&cur.dev&&cur.dev.phone) ? "adb_host" : "browser"),
+    browser_enumeration: (cur&&cur.browser_enumeration) || "not_attempted",
+    browser_enumeration_source: (cur&&cur.browser_enumeration && cur.browser_enumeration !== "not_attempted") ? "tester" : "not_applicable",
+    browser_enumeration_context: userAgent || "not_recorded",
+    host:{
+      os: hostPlat,
+      method: (cur&&cur.capture_route) || "browser",
+      browser: userAgent || "not_applicable"
+    },
+    connection:"not_recorded", cable_notes:"",
+    reported_device:name||(cur&&cur.dev&&cur.dev.name)||"unnamed",
+    device_local_id:(cur&&cur.localId)||slug(name||(cur&&cur.dev&&cur.dev.name)),
+    device_mode:mode||(cur&&cur.mode)||"default",
+    usb_mode:(cur&&cur.mode)||"not_recorded",
+    descriptor_file:descFile||"not_saved",
+    detected:{
+      usb_vendor_id:NA(cap&&cap.usb_vendor_id), usb_product_id:NA(cap&&cap.usb_product_id),
+      device_class:cls, usb_interface_class:NA(cap&&cap.usb_interface_class),
+      android: androidObj
+    },
+    identity_source:((cur&&cur.idsrc)||"unidentified"),
+    classification_correct:!!correct,
+    classifier_confidence:((cap&&cap.classifier_confidence)===undefined?null:cap.classifier_confidence),
+    verifier_runs:[], related_records:[],
+    duration_minutes:mins, notes:note||""
+  };
+}
+/* END TESTABLE:buildRecord */
+
 function saveRecord(correct,cls,name,mode,note){
   var cap=cur.cap||{}, a=cur.android;
   var mins=t0?Math.max(1,Math.round((Date.now()-t0)/60000)):null;
   var descFile = cap._descriptor_file || (cur.descText ? (slug(name) + "-" + Date.now().toString(36) + ".desc") : "not_saved");
 
-  var androidObj = buildAndroidBlock(cur);
-
-  var rec={
-    schema_version:"0.4", record_id:uuid(), tester:S.tester, consent_ack:true,
-    date:new Date().toISOString().slice(0,10),
-    host_platform: S.host_platform || "not_stated",
-    capture_route: cur.capture_route || (cur.dev.phone ? "adb_host" : "browser"),
-    browser_enumeration: cur.browser_enumeration || "not_attempted",
-    browser_enumeration_source: (cur.browser_enumeration && cur.browser_enumeration !== "not_attempted") ? "tester" : "not_applicable",
-    browser_enumeration_context: navigator.userAgent || "not_recorded",
-    host:{
-      os: S.host_platform || "not_stated",
-      method: cur.capture_route || "browser",
-      browser: navigator.userAgent || "not_applicable"
-    },
-    connection:"not_recorded", cable_notes:"",
-    reported_device:name||cur.dev.name||"unnamed",
-    device_local_id:cur.localId||slug(name||cur.dev.name),
-    device_mode:mode||cur.mode||"default",
-    usb_mode:cur.mode||"not_recorded",
-    descriptor_file:descFile,
-    detected:{
-      usb_vendor_id:NA(cap.usb_vendor_id), usb_product_id:NA(cap.usb_product_id),
-      device_class:cls, usb_interface_class:NA(cap.usb_interface_class),
-      android: androidObj
-    },
-    identity_source:(cur.idsrc||"unidentified"),
-    classification_correct:!!correct,
-    classifier_confidence:(cap.classifier_confidence===undefined?null:cap.classifier_confidence),
-    verifier_runs:[], related_records:[],
-    duration_minutes:mins, notes:note||""
-  };
+  var rec = buildRecord(cur, S, correct, cls, name, mode, note, cap, descFile, mins, navigator.userAgent);
 
   S.records.push(rec);
   S.devices=S.devices||{};
@@ -1143,6 +1164,7 @@ function getSessionExportObject(){
   return {
     handle: handle,
     host_platform: S.host_platform || "not_stated",
+    host_shell: S.host_shell || "not_applicable",
     session_timestamp: ts,
     session_notes: S.wrapup || "",
     manifest: {
@@ -1205,7 +1227,7 @@ document.getElementById("cp").addEventListener("click",function(){
 document.getElementById("restart").addEventListener("click",function(){
   if(S.records.length && !confirm("Start over? "+S.records.length+" record"+(S.records.length===1?"":"s")+
      " will be cleared from this page. Download them first if you have not.")) return;
-  S={host_platform:"not_stated",tester:S.tester,consent:S.consent,setup:0,records:[],descriptors:[],seen:{},devices:{},wrapup:""}; save(); scrWho();
+  S={host_platform:"not_stated",host_shell:"not_applicable",tester:S.tester,consent:S.consent,setup:0,records:[],descriptors:[],seen:{},devices:{},wrapup:""}; save(); scrWho();
 });
 
 if(!S.tester||!S.consent) scrWho();

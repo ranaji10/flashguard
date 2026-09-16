@@ -143,5 +143,100 @@ console.log("\n  buildAndroidBlock");
   is(Object.keys(blockRaw).length, 2, "raw capture: exactly two keys emitted");
 }
 
+console.log("\n  host_platform & host_shell schema agreement");
+{
+  const schemaPath = path.join(__dirname, "../data/schema.md");
+  const schemaText = fs.readFileSync(schemaPath, "utf8");
+
+  const platMatch = schemaText.match(/"host_platform":\s*"([^"]+)"/);
+  if (!platMatch) throw new Error("data/schema.md missing host_platform definition");
+  const allowedPlatforms = new Set(platMatch[1].split("|").map(s => s.trim()));
+
+  const shellMatch = schemaText.match(/"host_shell":\s*"([^"]+)"/);
+  if (!shellMatch) throw new Error("data/schema.md missing host_shell definition");
+  const allowedShells = new Set(shellMatch[1].split("|").map(s => s.trim()));
+
+  // 1. Prove that an undeclared value fails the schema validation
+  const plantedInvalidPlatform = "windows_powershell";
+  is(allowedPlatforms.has(plantedInvalidPlatform), false, "planted undeclared platform windows_powershell is rejected by schema");
+
+  const plantedInvalidShell = "bash";
+  is(allowedShells.has(plantedInvalidShell), false, "planted undeclared shell bash is rejected by schema");
+
+  // 2. Extract all platform values used or referenced in START-HERE.html
+  const dataPMatches = Array.from(html.matchAll(/data-p="([^"]+)"/g)).map(m => m[1]);
+  const hostPlatAssigns = Array.from(html.matchAll(/host_platform\s*[:=]\s*"([^"]+)"/g)).map(m => m[1]);
+  const scrRouteCalls = Array.from(html.matchAll(/scrRoutePlatform\("([^"]+)"\)/g)).map(m => m[1]);
+
+  const allHtmlPlatforms = [...new Set([...dataPMatches, ...hostPlatAssigns, ...scrRouteCalls])];
+  for (const plat of allHtmlPlatforms) {
+    is(allowedPlatforms.has(plat), true, `START-HERE.html platform '${plat}' is declared in data/schema.md`);
+  }
+
+  // 3. Extract all shell values used or referenced in START-HERE.html
+  const dataSMatches = Array.from(html.matchAll(/data-s="([^"]+)"/g)).map(m => m[1]);
+  const hostShellAssigns = Array.from(html.matchAll(/host_shell\s*[:=]\s*"([^"]+)"/g)).map(m => m[1]);
+
+  const allHtmlShells = [...new Set([...dataSMatches, ...hostShellAssigns])];
+  for (const sh of allHtmlShells) {
+    is(allowedShells.has(sh), true, `START-HERE.html shell '${sh}' is declared in data/schema.md`);
+  }
+
+  // 4. Test buildRecord / saveRecord resolution for PowerShell, cmd, macOS, and Linux
+  try {
+    const uuid = () => "00000000-0000-0000-0000-000000000000";
+    const slug = s => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const NA = v => (v === undefined || v === null || v === "" ? "not_applicable" : v);
+    eval(lift("buildRecord"));
+
+    // PowerShell branch
+    {
+      const cur = { dev: { k: "phone", phone: true }, host_platform: "windows", host_shell: "powershell", android_raw: "ro.product.model=Pixel 4" };
+      const S = { host_platform: "windows", host_shell: "powershell", tester: "test" };
+      const rec = buildRecord(cur, S, true, "adb", "Pixel 4", "default", "", {}, "test.desc", 1, "test-agent");
+      is(rec.host_platform, "windows", "powershell branch: host_platform is windows");
+      is(rec.host_shell, "powershell", "powershell branch: host_shell is powershell");
+      is(allowedPlatforms.has(rec.host_platform), true, "powershell branch: host_platform in schema enum");
+      is(allowedShells.has(rec.host_shell), true, "powershell branch: host_shell in schema enum");
+    }
+
+    // cmd branch
+    {
+      const cur = { dev: { k: "phone", phone: true }, host_platform: "windows", host_shell: "cmd", android_raw: "ro.product.model=Pixel 4" };
+      const S = { host_platform: "windows", host_shell: "cmd", tester: "test" };
+      const rec = buildRecord(cur, S, true, "adb", "Pixel 4", "default", "", {}, "test.desc", 1, "test-agent");
+      is(rec.host_platform, "windows", "cmd branch: host_platform is windows");
+      is(rec.host_shell, "cmd", "cmd branch: host_shell is cmd");
+      is(allowedPlatforms.has(rec.host_platform), true, "cmd branch: host_platform in schema enum");
+      is(allowedShells.has(rec.host_shell), true, "cmd branch: host_shell in schema enum");
+    }
+
+    // macOS branch
+    {
+      const cur = { dev: { k: "phone", phone: true }, host_platform: "macos", host_shell: "not_applicable", android: { product_model: "Pixel 4" } };
+      const S = { host_platform: "macos", host_shell: "not_applicable", tester: "test" };
+      const rec = buildRecord(cur, S, true, "adb", "Pixel 4", "default", "", {}, "test.desc", 1, "test-agent");
+      is(rec.host_platform, "macos", "macos branch: host_platform is macos");
+      is(rec.host_shell, "not_applicable", "macos branch: host_shell is not_applicable");
+      is(allowedPlatforms.has(rec.host_platform), true, "macos branch: host_platform in schema enum");
+      is(allowedShells.has(rec.host_shell), true, "macos branch: host_shell in schema enum");
+    }
+
+    // Linux branch
+    {
+      const cur = { dev: { k: "phone", phone: true }, host_platform: "ubuntu_installed", host_shell: "not_applicable", android: { product_model: "Pixel 4" } };
+      const S = { host_platform: "ubuntu_installed", host_shell: "not_applicable", tester: "test" };
+      const rec = buildRecord(cur, S, true, "adb", "Pixel 4", "default", "", {}, "test.desc", 1, "test-agent");
+      is(rec.host_platform, "ubuntu_installed", "ubuntu_installed branch: host_platform is ubuntu_installed");
+      is(rec.host_shell, "not_applicable", "ubuntu_installed branch: host_shell is not_applicable");
+      is(allowedPlatforms.has(rec.host_platform), true, "ubuntu_installed branch: host_platform in schema enum");
+      is(allowedShells.has(rec.host_shell), true, "ubuntu_installed branch: host_shell in schema enum");
+    }
+  } catch (e) {
+    console.log("    FAIL  buildRecord evaluation:", e.message);
+    fail++;
+  }
+}
+
 console.log(`\n  ${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

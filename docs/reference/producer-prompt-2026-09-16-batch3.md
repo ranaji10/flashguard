@@ -105,7 +105,7 @@ Requirements:
   moving what is already there. **Do not build the model check in this batch.** It is batch 5
   and it is waiting on a ruling.
 
-## 6. The guidance may carry a link out, and a way back in
+## 5. The guidance may carry a link out, and a way back in
 
 Ranaji asked whether the tool could send a person to the upstream page, let them do the steps
 there, and take them back. Yes, and it is one more field rather than a new mechanism.
@@ -124,6 +124,38 @@ there, and take them back. Yes, and it is one more field rather than a new mecha
   application — it is recorded as a **claim with its source**, the way `browser_enumeration`
   records `tester`, and it can never lift the verdict above `cannot-verify`.
 
+## 6. One line carried over from batch 2b
+
+`bench-kit/START-HERE.html`, in `buildRecord`, ends its `host_shell` fallback with a guess:
+
+```
+var hostSh = (cur && cur.host_shell) || (S && S.host_shell) || (hostPlat === "windows" ? "powershell" : "not_applicable");
+```
+
+On Windows, with no shell recorded anywhere, that invents `powershell`. **It is not reachable
+through the shipped page today** — every route sets `cur.host_shell`, and the default state
+carries `host_shell: "not_applicable"`, which `Object.assign` preserves across a restored
+session. Checked by exercising `buildRecord` in node against a fresh state, a stale state with
+the key absent, and an empty string; all three reach the guess only when called directly.
+
+So this is a guess sitting in the code waiting for a path, not a live defect. It is in this
+batch because it is one line and because an unreachable branch that encodes an assumption is
+exactly what shipped a false safe on 13 September.
+
+**Two parts, and the first is the reason the second exists.** `host_shell` has no value meaning
+"this was Windows and the shell was not established". Its three values are `powershell`, `cmd`
+and `not_applicable`, and on Windows the field *does* apply, so `not_applicable` is wrong and a
+guess is worse.
+
+1. Add `unknown` to `host_shell` in `data/schema.md`, meaning exactly what it means everywhere
+   else in that document: it applies and could not be established.
+2. Replace the guess with `unknown`. The non-Windows case is already forced to
+   `not_applicable` by the line below it, so the fallback only has to answer the Windows case.
+
+The schema-agreement test added in 2b will pick up the new value automatically, because it reads
+the schema text rather than a copy of the list. Add one assertion that a Windows record with no
+shell recorded comes back `unknown` and not `powershell`.
+
 ## 7. Stay inside the prerequisite block
 
 Batch 5 will add a field to the recipe's `target` block, and batch 4 adds one to `source`.
@@ -131,7 +163,7 @@ Confine every recipe change in this batch to the **prerequisite block**. Three p
 three parts of one schema is fine; three producers editing one part of it is a merge conflict
 nobody will notice until a recipe silently loses a field.
 
-## 5. Tests
+## 8. Tests
 
 - A recipe declaring an out-of-band unlock returns `cannot-verify` with `unlock-out-of-band`
   **and no fingerprint supplied at all**.

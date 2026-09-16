@@ -67,6 +67,7 @@ This is uncomputed state, not `"unknown"` (which is a final assertion that a fie
     "browser": "not_applicable | Chrome 128 | Edge"
   },
   "host_platform": "macos | windows | ubuntu_live | ubuntu_installed | linux_other | not_stated",
+  "host_shell": "powershell | cmd | not_applicable",
   "capture_route": "browser | adb_host | linux_live",
   "browser_enumeration": "enumerated | not_listed | tester_cancelled | not_attempted",
   "browser_enumeration_source": "tester",
@@ -171,6 +172,11 @@ an unrecorded capture must not be assumed to have used any particular route. See
 by the tester: `macos | windows | ubuntu_live | ubuntu_installed | linux_other | not_stated`.
 Absence means `not_stated`, never an assumption. The platform is always asked, never inferred
 from userAgent strings.
+
+**`host_shell`** Added 16 September. The shell explicitly selected by the tester:
+`powershell | cmd | not_applicable`. Quoting differs between the two Windows shells and the
+command handed to the tester differs with it, so a record that does not say which shell produced
+it cannot be re-derived with confidence.
 
 **`browser_enumeration`**, **`browser_enumeration_source`**, **`browser_enumeration_context`**
 Added 13 September after the first cross-platform WebUSB probe run on macOS and Windows.
