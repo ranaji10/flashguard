@@ -52,17 +52,17 @@ def has(text, pattern):
 def facts(text, source):
     evidence = survey_text(text, source)
     if source == "openandroidinstaller":
-        variant = has(text, r"^\s*(supported_device_codes|variant):")
+        models = has(text, r"^\s*(models|device_models|supported_device_codes):")
         assets = has(text, r"^\s*(assets|payload|image_file):")
         operations = has(text, r"^steps:")
         partitions = has(text, r"^\s*additional_steps:")
     elif source == "postmarketos":
-        variant = has(text, r"^deviceinfo_variant=")
+        models = has(text, r"^deviceinfo_models=")
         assets = False
         operations = has(text, r"^deviceinfo_flash_method=|^deviceinfo_.*partition=")
         partitions = has(text, r"^deviceinfo_(partition_type|super_partitions)=")
     else:
-        variant = has(text, r"^variant:")
+        models = has(text, r"^\s*models:")
         assets = False
         operations = has(text, r"^(install_method|before_install|before_recovery_install):")
         partitions = has(text, r"^before_recovery_install:")
@@ -78,13 +78,12 @@ def facts(text, source):
         "expected_verdict_reason": False,
         "verdict_gap_reason": False,
         "target.product_device": evidence["identity"] == "structured",
-        "target.variant": variant,
+        "target.models": models,
         "target.partition_scheme": evidence["partition_scheme"] == "structured",
         "assets": assets,
         "assets.asset_id": assets,
         "assets.role": assets,
         "assets.product_device": evidence["identity"] == "structured" and assets,
-        "assets.variant": variant and assets,
         "operations": operations,
         "operations.kind": operations,
         "operations.partition": partitions,

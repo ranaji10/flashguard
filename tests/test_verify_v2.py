@@ -1,5 +1,7 @@
 import copy
+import json
 import pathlib
+import re
 import sys
 import unittest
 
@@ -16,17 +18,20 @@ BASE_RECIPE = {
         "device_facts_from": "synthetic",
         "consulted": "2026-09-08",
         "authored": "independent",
+        "upstream_untested": "unestablished",
     },
     "target": {
         "product_device": "spacewar",
+        "models": ["A063"],
         "partition_scheme": "virtual_A/B",
     },
     "install_method": "fastboot_nexus",
     "prerequisites": {
-        "bootloader_unlocked": {
+        "bootloader_state": {
             "state": "OPEN",
             "required": "unlocked",
             "unlock_class": "command",
+            "unlock_step": True,
             "declared_by": "unlock_bootloader",
             "source_evidence": "synthetic config unlock step",
         }
@@ -36,13 +41,14 @@ BASE_RECIPE = {
 }
 
 
-def fingerprint(bootloader_state=None, product_device="spacewar"):
+def fingerprint(bootloader_state=None, product_device="spacewar", product_model="A063"):
     result = {
         "product_device": product_device,
+        "product_model": product_model,
         "partition_scheme": "virtual_A/B",
     }
     if bootloader_state is not None:
-        result["bootloader_unlocked"] = bootloader_state
+        result["bootloader_state"] = bootloader_state
     return result
 
 
@@ -58,7 +64,7 @@ class VerifyV2Test(unittest.TestCase):
     def test_missing_prerequisite_evidence_abstains(self):
         result = verify(fingerprint(), BASE_RECIPE)
         self.assertEqual(result["verdict"], "cannot-verify")
-        self.assertIn("bootloader_unlocked", str(result["reasons"]))
+        self.assertIn("bootloader_state", str(result["reasons"]))
 
     def test_minimum_version_below_requirement_is_unsafe(self):
         recipe = dict(BASE_RECIPE)
@@ -77,7 +83,7 @@ class VerifyV2Test(unittest.TestCase):
         recipe = {
             "schema_version": "0.1",
             "recipe_id": "legacy",
-            "target": {"product_device": "spacewar", "variant": "x", "partition_scheme": "virtual_A/B"},
+            "target": {"product_device": "spacewar", "models": ["A063"], "partition_scheme": "virtual_A/B"},
             "assets": [],
             "operations": [],
         }
@@ -90,11 +96,11 @@ class VerifyV2Test(unittest.TestCase):
 
     def test_partial_real_samsung_fingerprint_cannot_satisfy_unlock(self):
         result = verify(
-            {"product_device": "a5y17lte", "partition_scheme": "unknown"},
-            dict(BASE_RECIPE, target={"product_device": "a5y17lte", "partition_scheme": "unknown"}),
+            {"product_device": "a5y17lte", "product_model": "SM-A520F", "partition_scheme": "unknown"},
+            dict(BASE_RECIPE, target={"product_device": "a5y17lte", "models": ["SM-A520F"], "partition_scheme": "unknown"}),
         )
         self.assertEqual(result["verdict"], "cannot-verify")
-        self.assertIn("bootloader_unlocked", str(result["reasons"]))
+        self.assertIn("bootloader_state", str(result["reasons"]))
 
     def test_prerequisite_presence_states_are_distinct(self):
         absent = dict(BASE_RECIPE)
@@ -104,23 +110,87 @@ class VerifyV2Test(unittest.TestCase):
         self.assertNotEqual(verify(fingerprint("unlocked"), absent)["reasons"], verify(fingerprint("unlocked"), declared_none)["reasons"])
         self.assertNotEqual(verify(fingerprint("unlocked"), declared_none)["reasons"], verify(fingerprint("unlocked"), author_unknown)["reasons"])
 
-    def test_exact_variant_match_gives_definite_verdict(self):
-        recipe = dict(BASE_RECIPE, target={"product_device": "spacewar", "variant": "global", "partition_scheme": "virtual_A/B"})
-        fp = dict(fingerprint("unlocked"), variant="global")
+    def test_exact_model_match_gives_safe_verdict(self):
+        recipe = dict(BASE_RECIPE, target={"product_device": "spacewar", "models": ["A063"], "partition_scheme": "virtual_A/B"})
+        fp = fingerprint("unlocked", product_model="A063")
         result = verify(fp, recipe)
         self.assertEqual(result["verdict"], "safe")
+        self.assertTrue(any(r["code"] == "match-product_model" for r in result["reasons"]))
+
+    def test_model_not_in_allowlist_returns_unsafe(self):
+        """A fingerprint whose codename matches and whose model is not in the list returns unsafe."""
+        recipe = {
+            "schema_version": "0.2",
+            "recipe_id": "a5xelte-recovery-v2",
+            "source": {"device_facts_from": "synthetic", "consulted": "2026-09-16", "authored": "independent", "upstream_untested": "unestablished"},
+            "target": {
+                "product_device": "a5xelte",
+                "models": ["SM-A510F"],
+                "partition_scheme": "single",
+            },
+            "install_method": "heimdall_flash_recovery",
+            "prerequisites": {
+                "bootloader_state": {
+                    "state": "OPEN",
+                    "required": "unlocked",
+                    "unlock_class": "command",
+                    "unlock_step": True,
+                    "declared_by": "unlock_bootloader",
+                    "source_evidence": "synthetic config unlock step",
+                }
+            },
+            "operations": [{"kind": "write-image", "partition": "recovery"}],
+            "source_fields_unused": [],
+        }
+        fp = {
+            "product_device": "a5xelte",
+            "product_model": "SM-A510M",
+            "partition_scheme": "single",
+            "bootloader_state": "unlocked",
+        }
+        result = verify(fp, recipe)
+        self.assertEqual(result["verdict"], "unsafe", "A model outside the allowlist must return unsafe.")
+        codes = [r["code"] for r in result["reasons"]]
+        self.assertIn("model-mismatch", codes)
+
+    def test_absent_or_unknown_product_model_abstains_and_does_not_return_unsafe(self):
+        """A fingerprint with product_model absent or unknown abstains, not unsafe."""
+        for missing_val in (None, "", "unknown", "not_applicable"):
+            fp = fingerprint("unlocked")
+            if missing_val is None:
+                del fp["product_model"]
+            else:
+                fp["product_model"] = missing_val
+            result = verify(fp, BASE_RECIPE)
+            self.assertEqual(result["verdict"], "cannot-verify", f"Missing product_model ({missing_val}) must abstain, not return unsafe.")
+            codes = [r["code"] for r in result["reasons"]]
+            self.assertIn("missing-product_model", codes)
+            self.assertNotIn("model-mismatch", codes)
+
+    def test_recipe_with_no_model_list_abstains(self):
+        """A recipe with no model list (or empty list) abstains and does not pass."""
+        for empty_models in (None, []):
+            recipe = copy.deepcopy(BASE_RECIPE)
+            if empty_models is None:
+                del recipe["target"]["models"]
+            else:
+                recipe["target"]["models"] = empty_models
+            result = verify(fingerprint("unlocked"), recipe)
+            self.assertEqual(result["verdict"], "cannot-verify")
+            codes = [r["code"] for r in result["reasons"]]
+            self.assertIn("models-unestablished", codes)
 
     def test_supported_device_codes_alias_gives_definite_verdict_with_alias_named(self):
         recipe = dict(
             BASE_RECIPE,
             target={
                 "product_device": "spacewar",
-                "variant": "global",
+                "models": ["A063"],
                 "partition_scheme": "virtual_A/B",
                 "supported_device_codes": ["spacewar-eea", "spacewar-in"],
             },
         )
-        fp = dict(fingerprint("unlocked", product_device="spacewar-eea"), variant="spacewar-eea")
+        fp = dict(fingerprint("unlocked", product_device="spacewar-eea", product_model="A063"))
         result = verify(fp, recipe)
         self.assertEqual(result["verdict"], "safe")
         self.assertTrue(
@@ -130,58 +200,14 @@ class VerifyV2Test(unittest.TestCase):
             )
         )
 
-    def test_unconfirmed_variant_with_agreeing_partition_and_bootloader_abstains_naming_variant(self):
-        recipe = dict(BASE_RECIPE, target={"product_device": "spacewar", "variant": "global", "partition_scheme": "virtual_A/B"})
-        fp = fingerprint("unlocked")
-        result = verify(fp, recipe)
-        self.assertEqual(result["verdict"], "cannot-verify")
-        self.assertNotEqual(result["verdict"], "safe")
-        self.assertTrue(
-            any(
-                reason.get("code") == "missing-variant" or "variant" in reason.get("fields", [])
-                for reason in result["reasons"]
-                if reason.get("result") == "abstain"
-            )
-        )
-
-    def test_human_confirmed_variant_treated_as_exact_and_records_human_provenance(self):
-        recipe = dict(BASE_RECIPE, target={"product_device": "spacewar", "variant": "global", "partition_scheme": "virtual_A/B"})
-        fp = dict(fingerprint("unlocked"), variant="global", variant_confirmed_by="human")
-        result = verify(fp, recipe)
-        self.assertEqual(result["verdict"], "safe")
-        self.assertTrue(
-            any(
-                "human" in reason.get("message", "").lower() or reason.get("code") == "match-variant-human-confirmed"
-                for reason in result["reasons"]
-            )
-        )
-
-    def test_tester_identified_device_is_not_variant_confirmation(self):
-        """identity_source says a tester named the DEVICE. It is not variant confirmation.
-
-        The verifier read identity_source in ("tester_identified", ...) as human variant
-        confirmation for one commit. That field is carried by 8 of the 10 records in the
-        real matrix and is set whenever a tester names the device at capture time, so almost
-        every real record would have confirmed its own variant with no human involved --
-        wiring the tester-says-A5-about-an-A3 limitation straight into the path to safe.
-        """
-        recipe = dict(BASE_RECIPE, target={"product_device": "spacewar", "variant": "global",
-                                           "partition_scheme": "virtual_A/B"})
-        fp = dict(fingerprint("unlocked"), variant="global",
-                  identity_source="tester_identified")
-        result = verify(fp, recipe)
-        codes = [r["code"] for r in result["reasons"]]
-        self.assertNotIn("match-variant-human-confirmed", codes,
-                         "a tester naming the device does not confirm the variant")
-        self.assertIn("match-variant", codes)
-
     def test_definite_verdict_carries_record_id_timestamp_and_consumed_fields(self):
         fp = {
             "record_id": "rec-001",
             "capture_timestamp": "2026-09-08",
             "product_device": "spacewar",
+            "product_model": "A063",
             "partition_scheme": "virtual_A/B",
-            "bootloader_unlocked": "unlocked",
+            "bootloader_state": "unlocked",
         }
         result = verify(fp, BASE_RECIPE)
         self.assertEqual(result["verdict"], "safe")
@@ -189,40 +215,126 @@ class VerifyV2Test(unittest.TestCase):
         self.assertEqual(result["evidence"]["record_id"], "rec-001")
         self.assertEqual(result["evidence"]["capture_timestamp"], "2026-09-08")
         self.assertTrue(
-            {"product_device", "partition_scheme", "bootloader_unlocked"}.issubset(
+            {"product_device", "product_model", "partition_scheme", "bootloader_state"}.issubset(
                 set(result["evidence"]["fields_consumed"])
             )
         )
 
-
-
-    def test_alias_device_code_does_not_confirm_an_unknown_variant(self):
-        """The branch that shipped a false safe on 13 September.
-
-        An unknown variant recorded NO reason at all when the device code appeared in
-        supported_device_codes -- a bare `pass`. It contributed nothing, everything else
-        passed, and the verdict came out SAFE while fields_consumed still claimed the
-        variant had been consumed, so the evidence said it was checked.
-
-        The sibling test passes because its fingerprint device code is not an alias, so it
-        never enters this branch. A test that passes for the case it happens to construct
-        is not coverage of the case it is named after.
-        """
-        recipe = copy.deepcopy(BASE_RECIPE)
-        recipe["target"]["variant"] = "spacewar"
-        recipe["target"]["supported_device_codes"] = ["spacewar"]
-
-        fp = fingerprint("unlocked")
-        fp["variant"] = "unknown"
-        fp["record_id"] = "alias-unknown-variant"
-        fp["capture_timestamp"] = "2026-09-13T00:00:00Z"
-
+    def test_v01_asset_product_device_mismatch_returns_unsafe(self):
+        """v0.1 asset identity mismatch against target.product_device returns unsafe."""
+        recipe = {
+            "schema_version": "0.1",
+            "recipe_id": "oriole-system-only",
+            "target": {
+                "product_device": "oriole",
+                "models": ["GD1YQ"],
+                "partition_scheme": "A/B",
+            },
+            "assets": [
+                {
+                    "asset_id": "system",
+                    "role": "system",
+                    "product_device": "raven",
+                }
+            ],
+            "operations": [
+                {"kind": "write-image", "partition": "system", "asset_id": "system"}
+            ],
+        }
+        fp = {
+            "product_device": "oriole",
+            "product_model": "GD1YQ",
+            "partition_scheme": "A/B",
+        }
         result = verify(fp, recipe)
-        self.assertNotEqual(result["verdict"], "safe",
-                            "an unconfirmed variant must never reach safe, alias or not")
+        self.assertEqual(result["verdict"], "unsafe")
+        codes = [r["code"] for r in result["reasons"]]
+        self.assertIn("asset-product_device-mismatch", codes)
+
+
+class UnlockGateDefectsTest(unittest.TestCase):
+    """Prove fixes for unlock gate defects 5a and 6."""
+
+    def test_renamed_unlock_prerequisite_omitted_unlock_class_abstains(self):
+        """Rename unlock prerequisite to oem_unlocking_enabled, omit unlock_class, assert cannot-verify."""
+        recipe = copy.deepcopy(BASE_RECIPE)
+        recipe["prerequisites"] = {
+            "oem_unlocking_enabled": {
+                "state": "OPEN",
+                "required": "unlocked",
+                "unlock_step": True,
+                "declared_by": "unlock_bootloader",
+                "source_evidence": "synthetic setting",
+            }
+        }
+        fp = {
+            "product_device": "spacewar",
+            "product_model": "A063",
+            "partition_scheme": "virtual_A/B",
+            "oem_unlocking_enabled": "unlocked",
+        }
+        result = verify(fp, recipe)
         self.assertEqual(result["verdict"], "cannot-verify")
-        self.assertIn("missing-variant", [r["code"] for r in result["reasons"]],
-                      "an unconfirmed variant must record a reason, not be swallowed")
+        codes = [r["code"] for r in result["reasons"]]
+        self.assertIn("unlock-class-undeclared", codes)
+
+    def test_unlock_operation_without_marked_unlock_prerequisite_abstains(self):
+        """Declare unlock_bootloader operation with no marked unlock prerequisite, assert cannot-verify."""
+        recipe = copy.deepcopy(BASE_RECIPE)
+        recipe["operations"] = [{"kind": "unlock_bootloader", "partition": "bootloader"}]
+        recipe["prerequisites"] = {
+            "android_version": {
+                "state": "OPEN",
+                "required": 12,
+                "declared_by": "requirements.android",
+                "source_evidence": "synthetic requirement",
+            }
+        }
+        fp = {
+            "product_device": "spacewar",
+            "product_model": "A063",
+            "partition_scheme": "virtual_A/B",
+            "android_version": 12,
+        }
+        result = verify(fp, recipe)
+        self.assertEqual(result["verdict"], "cannot-verify")
+        codes = [r["code"] for r in result["reasons"]]
+        self.assertIn("unmarked-unlock-step", codes)
+
+    def test_untested_zero_does_not_reach_safe(self):
+        """Assert source.upstream_untested = 0 or 0.0 does not reach safe."""
+        for zero_val in (0, 0.0):
+            recipe = copy.deepcopy(BASE_RECIPE)
+            recipe["source"]["upstream_untested"] = zero_val
+            fp = fingerprint("unlocked")
+            result = verify(fp, recipe)
+            self.assertNotEqual(result["verdict"], "safe")
+            self.assertEqual(result["verdict"], "cannot-verify")
+            codes = [r["code"] for r in result["reasons"]]
+            self.assertIn("recipe-untested-unrecognized", codes)
+
+    def test_declared_by_unlock_treated_as_unlock_step_without_operations_entry(self):
+        """Assert a prerequisite whose declared_by names an unlock is treated as unlock step without operations entry."""
+        recipe = copy.deepcopy(BASE_RECIPE)
+        recipe["operations"] = []
+        recipe["prerequisites"] = {
+            "custom_unlock": {
+                "state": "OPEN",
+                "required": "unlocked",
+                "declared_by": "unlock_bootloader",
+                "source_evidence": "source config unlock step",
+            }
+        }
+        fp = {
+            "product_device": "spacewar",
+            "product_model": "A063",
+            "partition_scheme": "virtual_A/B",
+            "custom_unlock": "unlocked",
+        }
+        result = verify(fp, recipe)
+        self.assertEqual(result["verdict"], "cannot-verify")
+        codes = [r["code"] for r in result["reasons"]]
+        self.assertIn("unlock-class-undeclared", codes)
 
 
 class StateIsNotRead(unittest.TestCase):
@@ -270,9 +382,7 @@ class StateIsNotRead(unittest.TestCase):
     def test_state_is_never_named_in_the_evidence(self):
         """fields_consumed is what an auditor reads. It must not claim `state` was used.
 
-        The false safe of 13 September listed `variant` in fields_consumed on a path that
-        recorded no variant reason, so the evidence stamp asserted a check that had not
-        happened. The same stamp must never assert this one.
+        The evidence stamp must never assert unread provenance fields were consumed.
         """
         fp = fingerprint("unlocked")
         fp["record_id"] = "state-evidence"
@@ -291,11 +401,12 @@ class UnlockOutOfBandTest(unittest.TestCase):
     def _oob_recipe(self, method="fastboot_fairphone", unlock_class="out_of_band"):
         recipe = copy.deepcopy(BASE_RECIPE)
         recipe["prerequisites"] = {
-            "bootloader_unlocked": {
+            "bootloader_state": {
                 "state": "OPEN",
                 "required": "unlocked",
                 "unlock_class": unlock_class,
                 "unlock_method": method,
+                "unlock_step": True,
                 "declared_by": "unlock_bootloader",
                 "source_evidence": "synthetic oob unlock",
             }
@@ -327,14 +438,14 @@ class UnlockOutOfBandTest(unittest.TestCase):
 
     def test_omitted_unlock_class_returns_missing_bootloader_and_not_unlock_out_of_band(self):
         recipe = copy.deepcopy(BASE_RECIPE)
-        del recipe["prerequisites"]["bootloader_unlocked"]["unlock_class"]
+        del recipe["prerequisites"]["bootloader_state"]["unlock_class"]
         # The fingerprint MATCHES the required state. If omission were ever read as
         # "command", this would verify clean and return safe. It must not: absence of
         # unlock_class abstains regardless of what the device reports.
         result = verify(fingerprint("unlocked"), recipe)
         self.assertEqual(result["verdict"], "cannot-verify")
         codes = [r["code"] for r in result["reasons"]]
-        self.assertIn("missing-bootloader_unlocked", codes)
+        self.assertIn("unlock-class-undeclared", codes)
         self.assertNotIn("unlock-out-of-band", codes)
 
     def test_guidance_for_known_method_present_and_for_unknown_absent(self):
@@ -378,24 +489,33 @@ class UpstreamUntestedGateTest(unittest.TestCase):
         self.assertEqual(result["verdict"], "cannot-verify")
         self.assertIn("recipe-untested-upstream", [r["code"] for r in result["reasons"]])
 
+    def test_unrecognized_upstream_untested_value_abstains_with_recipe_defect_reason(self):
+        """Values outside permitted (False, unestablished, None) and untested trigger recipe defect."""
+        for bad_val in ("marked", "yes", "True", 123):
+            recipe = copy.deepcopy(BASE_RECIPE)
+            recipe["source"]["upstream_untested"] = bad_val
+            result = verify(fingerprint("unlocked"), recipe)
+            self.assertEqual(result["verdict"], "cannot-verify")
+            codes = [r["code"] for r in result["reasons"]]
+            self.assertIn("recipe-untested-unrecognized", codes)
+
     def test_not_untested_recipe_returns_byte_identical_reasons(self):
-        """A recipe marked not-untested returns exactly what it returned before the change."""
+        """A recipe marked not-untested returns safe with confirmed prerequisites."""
         baseline_recipe = copy.deepcopy(BASE_RECIPE)
         baseline_result = verify(fingerprint("unlocked"), baseline_recipe)
         self.assertEqual(baseline_result["verdict"], "safe")
 
-        for false_val in (False, "not_untested"):
-            tested_recipe = copy.deepcopy(BASE_RECIPE)
-            tested_recipe["source"]["upstream_untested"] = false_val
-            result = verify(fingerprint("unlocked"), tested_recipe)
-            self.assertEqual(result["verdict"], baseline_result["verdict"])
-            self.assertEqual(
-                result["reasons"], baseline_result["reasons"],
-                "reasons must be byte-identical when recipe is not marked untested",
-            )
+        tested_recipe = copy.deepcopy(BASE_RECIPE)
+        tested_recipe["source"]["upstream_untested"] = False
+        result = verify(fingerprint("unlocked"), tested_recipe)
+        self.assertEqual(result["verdict"], "safe")
+        self.assertEqual(
+            result["reasons"], baseline_result["reasons"],
+            "reasons must be byte-identical when recipe is not marked untested",
+        )
 
     def test_absent_upstream_untested_returns_byte_identical_reasons(self):
-        """A recipe with the field absent or unestablished returns exactly what it returned before."""
+        """A recipe with the field absent or unestablished returns safe with confirmed prerequisites."""
         baseline_recipe = copy.deepcopy(BASE_RECIPE)
         baseline_result = verify(fingerprint("unlocked"), baseline_recipe)
 
@@ -416,7 +536,7 @@ class UpstreamUntestedGateTest(unittest.TestCase):
 
         result = verify(fingerprint("locked"), recipe)
         self.assertEqual(result["verdict"], "unsafe")
-        self.assertIn("prerequisite-bootloader_unlocked-mismatch", [r["code"] for r in result["reasons"]])
+        self.assertIn("prerequisite-bootloader_state-mismatch", [r["code"] for r in result["reasons"]])
 
     def test_upstream_untested_field_never_named_in_fields_consumed(self):
         """fields_consumed is for fingerprint evidence only, never recipe provenance."""
@@ -430,6 +550,80 @@ class UpstreamUntestedGateTest(unittest.TestCase):
         for f in consumed:
             self.assertNotIn("source", str(f))
             self.assertNotIn("upstream_untested", str(f))
+
+
+def _get_capture_fields_and_mapping():
+    derive_sh = ROOT / "bench-kit" / "scripts" / "derive.sh"
+    with open(derive_sh, encoding="utf-8") as f:
+        derive_content = f.read()
+    derive_fields = set(re.findall(r"^p\s+([a-zA-Z0-9_]+)", derive_content, re.MULTILINE))
+
+    schema_md = ROOT / "data" / "schema.md"
+    with open(schema_md, encoding="utf-8") as f:
+        schema_content = f.read()
+
+    schema_android_fields = set()
+    android_match = re.search(r'"android":\s*\{([^}]+)\}', schema_content)
+    if android_match:
+        schema_android_fields = set(re.findall(r'"([a-zA-Z0-9_]+)":', android_match.group(1)))
+
+    mapping = {}
+    in_mapping_table = False
+    for line in schema_content.splitlines():
+        if "## Prerequisite condition to fingerprint evidence mapping" in line:
+            in_mapping_table = True
+            continue
+        if in_mapping_table:
+            if line.startswith("## "):
+                break
+            match = re.search(r"\|\s*`?([a-zA-Z0-9_]+)`?\s*\|\s*`?([a-zA-Z0-9_]+)`?\s*\|", line)
+            if match:
+                k, v = match.groups()
+                if k not in ("Prerequisite condition", "---", "Value", "Field"):
+                    mapping[k] = v
+
+    capture_fields = derive_fields | schema_android_fields
+    return capture_fields, mapping
+
+
+def check_recipe_prerequisites_produceable(recipe, recipe_name="<recipe>"):
+    capture_fields, mapping = _get_capture_fields_and_mapping()
+    prerequisites = recipe.get("prerequisites") or {}
+    for prereq_name in prerequisites.keys():
+        evidence_field = mapping.get(prereq_name, prereq_name)
+        if evidence_field not in capture_fields:
+            raise AssertionError(
+                f"Recipe '{recipe_name}' prerequisite '{prereq_name}' requires evidence field "
+                f"'{evidence_field}' which is produced by no capture route."
+            )
+
+
+class RecipePrerequisitesProduceableTest(unittest.TestCase):
+    """Fail the build when a recipe names a prerequisite whose evidence field appears in no capture route."""
+
+    def test_all_recipes_on_disk_require_only_producible_fields(self):
+        for recipe_dir in (ROOT / "data" / "recipes", ROOT / "data" / "recipes-v0.2"):
+            if not recipe_dir.is_dir():
+                continue
+            for recipe_path in sorted(recipe_dir.glob("*.json")):
+                with open(recipe_path, encoding="utf-8") as fh:
+                    recipe = json.load(fh)
+                check_recipe_prerequisites_produceable(recipe, recipe_path.name)
+
+    def test_unproduced_prerequisite_field_fails_check_with_informative_error(self):
+        bad_recipe = copy.deepcopy(BASE_RECIPE)
+        bad_recipe["prerequisites"] = {
+            "unproduced_hardware_sensor": {
+                "state": "OPEN",
+                "required": "active",
+            }
+        }
+        with self.assertRaises(AssertionError) as ctx:
+            check_recipe_prerequisites_produceable(bad_recipe, "bad_recipe.json")
+        msg = str(ctx.exception)
+        self.assertIn("bad_recipe.json", msg)
+        self.assertIn("unproduced_hardware_sensor", msg)
+        self.assertIn("no capture route", msg)
 
 
 if __name__ == "__main__":

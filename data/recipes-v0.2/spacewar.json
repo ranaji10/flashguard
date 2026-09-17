@@ -1,0 +1,39 @@
+{
+  "schema_version": "0.2",
+  "recipe_id": "spacewar-recovery-v2",
+  "human_assessment": "safe",
+  "expected_verdict": "cannot-verify",
+  "expected_verdict_reason": "Single-model codename A063 with virtual A/B partition scheme. The real capture has locked bootloader so verification requires an unlocked device.",
+  "verdict_gap_reason": "The human knows the procedure is standard command-class unlock for Nothing Phone (1), but the recorded capture has a locked bootloader.",
+  "source": {
+    "authored": "independent",
+    "consulted": "2026-09-16",
+    "device_facts_from": "https://wiki.lineageos.org/devices/Spacewar/",
+    "upstream_untested": "unestablished"
+  },
+  "target": {
+    "product_device": "Spacewar",
+    "models": [
+      "A063"
+    ],
+    "partition_scheme": "virtual_A/B"
+  },
+  "install_method": "fastboot_nexus",
+  "prerequisites": {
+    "bootloader_state": {
+      "state": "OPEN",
+      "required": "unlocked",
+      "unlock_class": "command",
+      "unlock_step": true,
+      "declared_by": "unlock_bootloader",
+      "source_evidence": "LineageOS Spacewar fastboot unlock command"
+    }
+  },
+  "operations": [
+    {
+      "kind": "boot-recovery",
+      "partition": "boot"
+    }
+  ],
+  "source_fields_unused": []
+}

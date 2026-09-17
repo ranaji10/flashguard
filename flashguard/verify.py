@@ -3,21 +3,6 @@
 from flashguard.guidance import get_guidance
 
 
-_FINGERPRINT_FIELDS = (
-    ("product_device", "target.product_device", "device-mismatch"),
-    ("variant", "target.variant", "variant-mismatch"),
-    ("partition_scheme", "target.partition_scheme", "partition-scheme-mismatch"),
-)
-
-# The only prerequisite the recipe format currently uses `unlock_class` for. The schema
-# (docs/reasoning/recipe-format.md) has no formal way yet to mark an arbitrary prerequisite
-# as "this is an unlock step" versus, say, a minimum-version check, and every recipe in the
-# corpus only ever names this one. Scoping the check to this key, rather than to every
-# prerequisite, is a deliberate and narrow choice: a future prerequisite kind that also
-# represents an unlock will need adding here, or the schema will need a real "kind" field.
-_UNLOCK_PREREQUISITE_NAME = "bootloader_unlocked"
-
-
 def _reason(code, result, fields, message):
     return {
         "code": code,
@@ -70,10 +55,10 @@ def _validate_recipe(recipe):
     if not isinstance(target, dict):
         return "Invalid recipe: target must be an object."
     target_fields = ("product_device", "partition_scheme")
-    if recipe.get("schema_version") == "0.1":
-        target_fields = target_fields + ("variant",)
     if any(field not in target for field in target_fields):
         return "Invalid recipe: target is missing a required field."
+    if "models" in target and not isinstance(target["models"], list):
+        return "Invalid recipe: models must be an array."
     if "supported_device_codes" in target and not isinstance(target["supported_device_codes"], list):
         return "Invalid recipe: supported_device_codes must be an array."
     operations = recipe.get("operations")
@@ -100,7 +85,7 @@ def _validate_recipe(recipe):
     for asset in assets:
         if not isinstance(asset, dict):
             return "Invalid recipe: every asset must be an object."
-        if any(field not in asset for field in ("asset_id", "role", "product_device", "variant")):
+        if any(field not in asset for field in ("asset_id", "role", "product_device")):
             return "Invalid recipe: every asset needs identity fields."
         asset_ids.append(asset["asset_id"])
     if len(asset_ids) != len(set(asset_ids)):
@@ -124,60 +109,141 @@ def verify(fingerprint, recipe):
     if recipe.get("schema_version") == "0.2":
         return _verify_v2(fingerprint, recipe)
 
+    if fingerprint is None:
+        fingerprint = {}
     reasons = []
     unsafe = False
     abstained = False
     target = recipe.get("target", {})
     fields_consumed = []
 
-    for fingerprint_key, target_path, code in _FINGERPRINT_FIELDS:
-        expected = target.get(fingerprint_key)
-        observed = fingerprint.get(fingerprint_key)
-        fields_consumed.append(fingerprint_key)
-        fields = [fingerprint_key, target_path]
-        if observed in (None, "", "unknown", "not_applicable"):
-            abstained = True
-            reasons.append(
-                _reason(
-                    "missing-" + fingerprint_key,
-                    "abstain",
-                    fields,
-                    "Required fingerprint evidence is absent or unknown.",
-                )
+    # Check product_device
+    observed_device = fingerprint.get("product_device")
+    fields_consumed.append("product_device")
+    expected_device = target.get("product_device")
+    if observed_device in (None, "", "unknown", "not_applicable"):
+        abstained = True
+        reasons.append(
+            _reason(
+                "missing-product_device",
+                "abstain",
+                ["product_device", "target.product_device"],
+                "Required fingerprint evidence is absent or unknown.",
             )
-        elif observed != expected:
+        )
+    elif observed_device != expected_device:
+        unsafe = True
+        reasons.append(
+            _reason(
+                "device-mismatch",
+                "fail",
+                ["product_device", "target.product_device"],
+                "Fingerprint value contradicts the recipe target.",
+            )
+        )
+    else:
+        reasons.append(
+            _reason(
+                "match-product_device",
+                "pass",
+                ["product_device", "target.product_device"],
+                "Fingerprint value matches the recipe target.",
+            )
+        )
+
+    # Check partition_scheme
+    observed_scheme = fingerprint.get("partition_scheme")
+    fields_consumed.append("partition_scheme")
+    expected_scheme = target.get("partition_scheme")
+    if observed_scheme in (None, "", "unknown", "not_applicable"):
+        abstained = True
+        reasons.append(
+            _reason(
+                "missing-partition_scheme",
+                "abstain",
+                ["partition_scheme", "target.partition_scheme"],
+                "Required fingerprint evidence is absent or unknown.",
+            )
+        )
+    elif observed_scheme != expected_scheme:
+        unsafe = True
+        reasons.append(
+            _reason(
+                "partition-scheme-mismatch",
+                "fail",
+                ["partition_scheme", "target.partition_scheme"],
+                "Fingerprint value contradicts the recipe target.",
+            )
+        )
+    else:
+        reasons.append(
+            _reason(
+                "match-partition_scheme",
+                "pass",
+                ["partition_scheme", "target.partition_scheme"],
+                "Fingerprint value matches the recipe target.",
+            )
+        )
+
+    # Check models
+    observed_model = fingerprint.get("product_model")
+    fields_consumed.append("product_model")
+    target_models = target.get("models")
+    if "models" not in target or target_models is None or not isinstance(target_models, list) or len(target_models) == 0:
+        abstained = True
+        reasons.append(
+            _reason(
+                "models-unestablished",
+                "abstain",
+                ["target.models"],
+                "Recipe model coverage is unestablished.",
+            )
+        )
+    elif observed_model in (None, "", "unknown", "not_applicable"):
+        abstained = True
+        reasons.append(
+            _reason(
+                "missing-product_model",
+                "abstain",
+                ["product_model", "target.models"],
+                "Target product_model is unconfirmed from fingerprint.",
+            )
+        )
+    elif observed_model not in target_models:
+        unsafe = True
+        reasons.append(
+            _reason(
+                "model-mismatch",
+                "fail",
+                ["product_model", "target.models"],
+                f"Fingerprint model '{observed_model}' contradicts the recipe target models.",
+            )
+        )
+    else:
+        reasons.append(
+            _reason(
+                "match-product_model",
+                "pass",
+                ["product_model", "target.models"],
+                f"Fingerprint model '{observed_model}' matches recipe target models.",
+            )
+        )
+
+    # Asset identity decision: Assets in v0.1 are pinned per codename (product_device).
+    # Each asset's product_device must match target.product_device. Model eligibility
+    # is enforced at the recipe target.models level.
+    for asset in recipe.get("assets", []):
+        asset_id = asset.get("asset_id", "")
+        if asset.get("product_device") != target.get("product_device"):
             unsafe = True
             reasons.append(
                 _reason(
-                    code,
+                    "asset-product_device-mismatch",
                     "fail",
-                    fields,
-                    "Fingerprint value contradicts the recipe target.",
+                    ["assets." + asset_id + ".product_device", "target.product_device"],
+                    "Asset identity contradicts the recipe target.",
                 )
             )
-        else:
-            reasons.append(
-                _reason(
-                    "match-" + fingerprint_key,
-                    "pass",
-                    fields,
-                    "Fingerprint value matches the recipe target.",
-                )
-            )
-
-    for asset in recipe.get("assets", []):
-        asset_id = asset.get("asset_id", "")
-        for key in ("product_device", "variant"):
-            if asset.get(key) != target.get(key):
-                unsafe = True
-                reasons.append(
-                    _reason(
-                        "asset-" + key + "-mismatch",
-                        "fail",
-                        ["assets." + asset_id + "." + key, "target." + key],
-                        "Asset identity contradicts the recipe target.",
-                    )
-                )
 
     known_assets = {asset.get("asset_id") for asset in recipe.get("assets", [])}
     for operation in recipe.get("operations", []):
@@ -230,6 +296,21 @@ def verify(fingerprint, recipe):
     }
 
 
+def _is_unlock_prerequisite(name, req):
+    if not isinstance(req, dict):
+        return False
+    if req.get("unlock_step") is True:
+        return True
+    if "unlock_class" in req:
+        return True
+    declared_by = req.get("declared_by")
+    if isinstance(declared_by, str) and "unlock" in declared_by.lower():
+        return True
+    if name in ("bootloader_unlocked", "bootloader_state"):
+        return True
+    return False
+
+
 def _verify_v2(fingerprint, recipe):
     if fingerprint is None:
         fingerprint = {}
@@ -279,81 +360,32 @@ def _verify_v2(fingerprint, recipe):
             _reason("match-partition_scheme", "pass", ["partition_scheme", "target.partition_scheme"], "Fingerprint value matches the recipe target.")
         )
 
-    if "variant" in target:
-        observed_variant = fingerprint.get("variant")
-        fields_consumed.append("variant")
-        expected_variant = target.get("variant")
+    # Hardware model matching against allowlist
+    # The previous DISPUTED marker asked whether an alias hit in supported_device_codes could
+    # confirm a variant. That question no longer needs asking: hardware identity is confirmed
+    # directly by checking product_model against target.models. Ruled by Ranaji on 16 September
+    # on the evidence in docs/Research/variant-danger-findings.md.
+    observed_model = fingerprint.get("product_model")
+    fields_consumed.append("product_model")
+    target_models = target.get("models")
 
-        if observed_variant in (None, "", "unknown", "not_applicable"):
-            # An unconfirmed variant ALWAYS abstains, alias or no alias.
-            #
-            # This branch used to be a bare `pass` when the device code appeared in
-            # supported_device_codes, which recorded no reason at all -- so an unknown
-            # variant contributed nothing, everything else passed, and the verdict came out
-            # SAFE while fields_consumed still claimed the variant had been consumed. An
-            # auditor reading the evidence would have believed it was checked. That is the
-            # tier-3 case the contract says can never be safe, reached silently.
-            #
-            # supported_device_codes asserts something about the DEVICE CODE, not about the
-            # variant. Whether it is a variant-level or a family-level claim is unsettled,
-            # and while it is unsettled the answer is to abstain rather than to assume the
-            # generous reading.
-            #
-            # DISPUTED: is `supported_device_codes` a variant-level or a family-level claim?
-            #   position A: variant-level -- upstream lists the exact codes a recipe covers,
-            #               so an alias hit is as strong as an exact variant match.
-            #   position B: family-level -- hero2lte and hero2ltexx share a base code and
-            #               differ in radio hardware, so an alias hit says nothing about the
-            #               variant and a wrong flash can cost the modem.
-            #   settles it: no test can. It needs a reading of what upstream MEANS by the
-            #               field, which is a question for the OpenAndroidInstaller
-            #               maintainers, not for us.
-            alias_note = (" The device code is a declared alias, which does not confirm the"
-                          " variant.") if observed_device in supported_aliases else ""
-            reasons.append(
-                _reason("missing-variant", "abstain", ["variant", "target.variant"],
-                        "Target variant is unconfirmed." + alias_note)
-            )
-        elif observed_variant == expected_variant:
-            # ONE explicit, variant-specific field. Nothing else counts.
-            #
-            # This used to also accept identity_source in ("tester_identified", ...), which
-            # is a REAL schema field carried by 8 of the 10 records in the matrix and set
-            # whenever a tester names the device at capture time. It says the tester named
-            # the DEVICE. It says nothing about the variant. Reading it as variant
-            # confirmation meant almost every real record silently upgraded itself to
-            # "human-confirmed" without any human confirming a variant -- wiring the exact
-            # limitation recorded in the tracker (a tester who says A5 about an A3) directly
-            # into the path to `safe`.
-            #
-            # variant_source and human_confirmed were invented here and appear in no schema.
-            # There is one field now, it is defined in data/schema.md, and its absence means
-            # no confirmation rather than an unknown one.
-            if "variant_confirmed_by" in fingerprint:
-                fields_consumed.append("variant_confirmed_by")
-            is_human = fingerprint.get("variant_confirmed_by") == "human"
-            if is_human:
-                reasons.append(
-                    _reason(
-                        "match-variant-human-confirmed",
-                        "pass",
-                        ["variant", "target.variant", "variant_confirmed_by"],
-                        f"Fingerprint variant matches recipe target (human-supplied confirmation: {observed_variant}).",
-                    )
-                )
-            else:
-                reasons.append(
-                    _reason("match-variant", "pass", ["variant", "target.variant"], "Fingerprint variant matches recipe target.")
-                )
-        elif observed_variant in supported_aliases:
-            reasons.append(
-                _reason("match-device-alias", "pass", ["variant", "target.supported_device_codes"], f"Device code matches supported alias '{observed_variant}'.")
-            )
-        else:
-            reasons.append(
-                _reason("variant-mismatch", "fail", ["variant", "target.variant"], "Fingerprint variant contradicts the recipe target.")
-            )
-            identity_mismatch = True
+    if "models" not in target or target_models is None or not isinstance(target_models, list) or len(target_models) == 0:
+        reasons.append(
+            _reason("models-unestablished", "abstain", ["target.models"], "Recipe model coverage is unestablished.")
+        )
+    elif observed_model in (None, "", "unknown", "not_applicable"):
+        reasons.append(
+            _reason("missing-product_model", "abstain", ["product_model", "target.models"], "Target product_model is unconfirmed from fingerprint.")
+        )
+    elif observed_model not in target_models:
+        reasons.append(
+            _reason("model-mismatch", "fail", ["product_model", "target.models"], f"Fingerprint model '{observed_model}' contradicts the recipe target models.")
+        )
+        identity_mismatch = True
+    else:
+        reasons.append(
+            _reason("match-product_model", "pass", ["product_model", "target.models"], f"Fingerprint model '{observed_model}' matches recipe target models.")
+        )
 
     if identity_mismatch:
         return {
@@ -396,9 +428,40 @@ def _verify_v2(fingerprint, recipe):
             "evidence": _build_evidence(fingerprint, fields_consumed),
         }
 
+    # Check for declared unlock operations requiring an explicit unlock prerequisite step
+    has_unlock_operation = any(
+        isinstance(op, dict) and op.get("kind") in ("unlock_bootloader", "unlock")
+        for op in recipe.get("operations", [])
+    )
+    has_marked_unlock_step = any(
+        _is_unlock_prerequisite(name, req)
+        for name, req in recipe["prerequisites"].items()
+    )
+    if has_unlock_operation and not has_marked_unlock_step:
+        reasons.append(
+            _reason(
+                "unmarked-unlock-step",
+                "abstain",
+                ["operations", "prerequisites"],
+                "The recipe declares an unlock operation but no prerequisite is marked as an unlock step.",
+            )
+        )
+
     guidance = None
     for name, requirement in recipe["prerequisites"].items():
+        is_unlock = _is_unlock_prerequisite(name, requirement)
         unlock_class = requirement.get("unlock_class") if isinstance(requirement, dict) else None
+
+        if is_unlock and not unlock_class:
+            reasons.append(
+                _reason(
+                    "unlock-class-undeclared",
+                    "abstain",
+                    ["prerequisites." + name],
+                    f"Prerequisite '{name}' is an unlock step but specifies no unlock_class.",
+                )
+            )
+            continue
 
         if unlock_class == "out_of_band":
             method_name = requirement.get("unlock_method") or recipe.get("install_method")
@@ -415,21 +478,20 @@ def _verify_v2(fingerprint, recipe):
             )
             continue
 
-        if name == _UNLOCK_PREREQUISITE_NAME and unlock_class != "command":
-            # Absence is not a value here: an omitted (or "unknown", or malformed)
-            # classification on the unlock prerequisite must never be read as "command".
-            # Whether this unlock is even establishable from device state is itself
-            # unknown, so abstain with the same reason used for missing fingerprint
-            # evidence rather than run the command-style check against whatever the
-            # fingerprint happens to say. See docs/reasoning/recipe-format.md and
-            # producer-prompt-2026-09-16-batch3. Non-unlock prerequisites (android_version
-            # and anything else) never carry unlock_class and are unaffected.
-            reasons.append(_reason("missing-" + name, "abstain", [name, "prerequisites." + name], "Required prerequisite fingerprint evidence is missing."))
+        if is_unlock and unlock_class != "command":
+            reasons.append(
+                _reason(
+                    "unlock-class-undeclared",
+                    "abstain",
+                    ["prerequisites." + name],
+                    f"Prerequisite '{name}' has unrecognized unlock_class: {unlock_class!r}.",
+                )
+            )
             continue
 
         observed = fingerprint.get(name)
         fields_consumed.append(name)
-        required = requirement.get("required")
+        required = requirement.get("required") if isinstance(requirement, dict) else None
         if observed in (None, "", "unknown", "not_applicable"):
             reasons.append(_reason("missing-" + name, "abstain", [name, "prerequisites." + name], "Required prerequisite fingerprint evidence is missing."))
         elif isinstance(required, (int, float)) and isinstance(observed, (int, float)) and observed < required:
@@ -452,18 +514,39 @@ def _verify_v2(fingerprint, recipe):
             reasons.append(_reason("prerequisite-" + name + "-confirmed", "pass", [name], "Fingerprint confirms the required prerequisite state."))
 
     source = recipe.get("source", {})
-    upstream_untested = source.get("upstream_untested")
-    if upstream_untested is None and "untested" in source:
+    # source.upstream_untested is the canonical field name.
+    # source.untested is retained as a deprecated fallback during the v0.1 -> v0.2 transition.
+    if "upstream_untested" in source:
+        upstream_untested = source.get("upstream_untested")
+        source_field = "source.upstream_untested"
+    elif "untested" in source:
         upstream_untested = source.get("untested")
+        source_field = "source.untested"
+    else:
+        upstream_untested = None
+        source_field = "source.upstream_untested"
 
-    if upstream_untested in (True, "untested", "true", "marked_untested"):
-        source_field = "source.upstream_untested" if "upstream_untested" in source else "source.untested"
+    # Only an explicit False, "unestablished", or None (absent) may permit safe.
+    # True, "untested" (and legacy aliases "true", "marked_untested") indicate unverified hardware.
+    # Anything else is an unrecognized value and treated as a recipe defect.
+    if upstream_untested is False or upstream_untested is None or upstream_untested == "unestablished":
+        pass
+    elif upstream_untested is True or upstream_untested in ("untested", "true", "marked_untested"):
         reasons.append(
             _reason(
                 "recipe-untested-upstream",
                 "abstain",
                 [source_field],
                 "Upstream marked this configuration as untested on physical hardware.",
+            )
+        )
+    else:
+        reasons.append(
+            _reason(
+                "recipe-untested-unrecognized",
+                "abstain",
+                [source_field],
+                f"Recipe specifies unrecognized upstream_untested value: {upstream_untested!r}.",
             )
         )
 
@@ -477,4 +560,5 @@ def _verify_v2(fingerprint, recipe):
         "coverage": {"schema_version": "0.2"},
         "evidence": evidence,
     }
+
 

@@ -14,15 +14,19 @@
   },
   "target": {
     "product_device": "kirin",
-    "variant": "kirin",
+    "models": [
+      "I3113",
+      "I3123",
+      "I4113",
+      "I4193"
+    ],
     "partition_scheme": "A/B"
   },
   "assets": [
     {
       "asset_id": "temporary-recovery",
       "role": "recovery",
-      "product_device": "kirin",
-      "variant": "kirin"
+      "product_device": "kirin"
     }
   ],
   "operations": [

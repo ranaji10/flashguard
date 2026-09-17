@@ -14,27 +14,27 @@
   },
   "target": {
     "product_device": "avicii",
-    "variant": "avicii",
+    "models": [
+      "AC2001",
+      "AC2003"
+    ],
     "partition_scheme": "A/B"
   },
   "assets": [
     {
       "asset_id": "dtbo",
       "role": "dtbo",
-      "product_device": "avicii",
-      "variant": "avicii"
+      "product_device": "avicii"
     },
     {
       "asset_id": "vbmeta",
       "role": "vbmeta",
-      "product_device": "avicii",
-      "variant": "avicii"
+      "product_device": "avicii"
     },
     {
       "asset_id": "temporary-recovery",
       "role": "recovery",
-      "product_device": "avicii",
-      "variant": "avicii"
+      "product_device": "avicii"
     }
   ],
   "operations": [

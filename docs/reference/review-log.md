@@ -51,6 +51,595 @@ quoted inside the stored answer is not counted a second time.
 
 <!-- NEWEST REVIEW DIRECTLY BELOW -->
 
+## 2026-09-17 — uncommitted-on-a0713b1 — Batch 6 task
+
+- [ ] flashguard/verify.py:308 _is_unlock_prerequisite introduces undocumented string-matching
+      heuristics ("unlock" in declared_by.lower()) to guess if a step is an unlock, masking the absence
+      of a formal schema marker and providing a path to a false safe
+- [ ] tests/test_verify_v2.py:554 a completely unasked-for RecipePrerequisitesProduceableTest
+      was added that analyzes shell scripts and markdown with regex, out of scope for the PR
+- [ ] flashguard/verify.py:517 the source.untested fallback is retained as a "deprecated
+      fallback" indefinitely with no end date and no writer, exactly as criticized previously
+- [ ] data/recipes-v0.2/a5xelte.json:1 the recipe retains a nine-model allowlist while citing
+      an upstream config that contains no model strings, leaving its provenance unrecorded
+- [ ] tests/test_verify_v2.py:249 the test named for omitting unlock_class still manually
+      re-inserts "unlock_step": True, ensuring it passes by supplying the marker it claims to omit
+- [ ] tests/test_verify_contract.py:52 test_model_mismatch_is_unsafe_not_abstention still uses
+      GD1YQ (which is in the allowlist), passing due to a device mismatch instead of testing models
+- [ ] docs/reasoning/verdict-contract.md:123 the specification still formally defines the
+      variant field and the safety tiers built on it, although the verifier no longer reads it
+- [ ] docs/reasoning/recipe-format-coverage.md:53 the measurement record still tabulates
+      target.variant and assets.variant, which no longer exist in the working corpus
+- [ ] data/recipe_format_coverage.py:60 the postmarketos row is still matched against
+      ^deviceinfo_models=, a key that exists nowhere in the upstream device files
+- [ ] flashguard/verify.py:385 product_model is incorrectly appended to fields_consumed before
+      validation, falsely asserting the field was verified on execution paths lacking a model list
+
+<details><summary>the review, as it came back</summary>
+
+```
+1. What changed that was not asked for?
+   The diff replaces the unasked-for is_unlock_step alias by building a new, unasked-for set of implicit text-matching heuristics in _is_unlock_prerequisite (e.g., checking if declared_by contains "unlock", or matching against hardcoded key names). It also introduces a completely unrequested RecipePrerequisitesProduceableTest that statically scans bash scripts and regexes markdown tables to validate prerequisites.
+2. What did it decide that was not already in a file?
+   The heuristic matching in _is_unlock_prerequisite unilaterally decides whether a prerequisite qualifies as an unlock step by string-guessing rather than enforcing an explicit schema marker. It decided to indefinitely keep the source.untested fallback with no sunset date and exactly zero processes that write it, precisely as criticized in the previous review. Finally, it decides to keep the nine-model hardware footprint for a5xelte.json based entirely on an upstream file containing no model names, leaving the hardware scope undocumented.
+3. Does any test pass for a reason other than the code being correct?
+   Yes, two tests. test_renamed_unlock_prerequisite_omitted_unlock_class_abstains is designed to test what happens when the unlock class is omitted, yet it illegitimately inserts "unlock_step": True into the test recipe; it passes because the test actively supplies the trigger rather than demonstrating that omissions are safely evaluated. Additionally, test_model_mismatch_is_unsafe_not_abstention continues using GD1YQ—a model explicitly permitted in the SAFE_RECIPE allowlist—alongside a wrong product_device, meaning the test succeeds strictly due to a device mismatch instead of the model mismatch it claims to exercise.
+4. Does any file, name or comment describe something as existing that does not?
+   Yes, several:
+- docs/reasoning/verdict-contract.md:123 still actively defines the variant field and the safety tiers built strictly upon it, despite the verifier no longer parsing such a field.
+- docs/reasoning/recipe-format-coverage.md:53 continues to tabulate target.variant and assets.variant measurements across the corpus, though those fields have been eliminated.
+- data/recipe_format_coverage.py:60 still attempts to match the regex ^deviceinfo_models=, which exists absolutely nowhere in the upstream postmarketos sources.
+- flashguard/verify.py:385 unconditionally claims product_model was consumed as evidence, creating an evidence stamp that describes the field as safely evaluated even on code paths where no models list exists and the verification aborts early.
+
+5. Does anything here create a path to a false safe?
+   Yes. The text-guessing codebase heuristics in _is_unlock_prerequisite introduce a 0-day path to a false safe. Because the schema no longer has an enforced generic way to explicitly declare an unlock step, the verifier attempts to deduce it. If an adversarial or poorly mapped recipe demands a critical bootloader unlock but renames the prerequisite (e.g., oem_status) and avoids the "unlock" substring in declared_by, the function will classify it as a safe standard condition. The unmarked-unlock-step check is circumvented completely, evaluating to safe despite relying on untested hardware mechanisms.
+
+  FINDINGS
+- [ ] flashguard/verify.py:308 _is_unlock_prerequisite introduces undocumented string-matching
+  heuristics ("unlock" in declared_by.lower()) to guess if a step is an unlock, masking the absence
+  of a formal schema marker and providing a path to a false safe
+- [ ] tests/test_verify_v2.py:554 a completely unasked-for RecipePrerequisitesProduceableTest
+  was added that analyzes shell scripts and markdown with regex, out of scope for the PR
+- [ ] flashguard/verify.py:517 the source.untested fallback is retained as a "deprecated
+  fallback" indefinitely with no end date and no writer, exactly as criticized previously
+- [ ] data/recipes-v0.2/a5xelte.json:1 the recipe retains a nine-model allowlist while citing
+  an upstream config that contains no model strings, leaving its provenance unrecorded
+- [ ] tests/test_verify_v2.py:249 the test named for omitting unlock_class still manually
+  re-inserts "unlock_step": True, ensuring it passes by supplying the marker it claims to omit
+- [ ] tests/test_verify_contract.py:52 test_model_mismatch_is_unsafe_not_abstention still uses
+  GD1YQ (which is in the allowlist), passing due to a device mismatch instead of testing models
+- [ ] docs/reasoning/verdict-contract.md:123 the specification still formally defines the
+  variant field and the safety tiers built on it, although the verifier no longer reads it
+- [ ] docs/reasoning/recipe-format-coverage.md:53 the measurement record still tabulates
+  target.variant and assets.variant, which no longer exist in the working corpus
+- [ ] data/recipe_format_coverage.py:60 the postmarketos row is still matched against
+  ^deviceinfo_models=, a key that exists nowhere in the upstream device files
+- [ ] flashguard/verify.py:385 product_model is incorrectly appended to fields_consumed before
+  validation, falsely asserting the field was verified on execution paths lacking a model list
+```
+
+</details>
+
+---
+
+
+## 2026-09-17 — uncommitted-on-a0713b1 — Batch 5 task
+
+- [ ] `flashguard/verify.py:437` `is_unlock` is now built from `unlock_step`/`is_unlock_step`/
+      `unlock_class`, so a prerequisite named `bootloader_unlocked` carrying none of them is
+      no longer treated as an unlock and reaches `safe`; `avicii.json`
+      returns `safe` (HEAD returned `cannot-verify`) against its own `expected_verdict`
+- [ ] `data/recipes-v0.2/avicii.json:1` the recipe still declares `expected_verdict`
+      `cannot-verify` and `human_assessment` `unsafe`, and the working-tree verifier now
+      answers `safe` for a fingerprint that merely confirms `unlocked`
+- [ ] `flashguard/verify.py:422` the unlock marker is satisfied by the mere presence of
+      `unlock_class`, and a second alias `is_unlock_step` is accepted here and at `:439`
+      that appears in no recipe, schema, test or document
+- [ ] `flashguard/verify.py:354` `product_model` is appended to `fields_consumed` before the
+      models-list check, so a recipe with no list records the field as consumed on a path
+      where no model comparison happened — the same evidence-stamp defect as the
+      `variant` entry of 13 September
+- [ ] `flashguard/verify.py:511` `in (False, "unestablished", None)` also accepts numeric
+      `0`, which is outside the vocabulary the comment above it states; a hand-written
+      `0` silently means "not untested" and permits `safe`
+- [ ] `docs/reasoning/verdict-contract.md:157` documents `"not_untested"` as a permitted
+      value with no effect, but the verifier returns `cannot-verify` with
+      `recipe-untested-unrecognized` for it
+- [ ] `flashguard/verify.py:497` the `source.untested` fallback is kept without a sunset
+      date and with nothing that writes it, which is the second-name problem this change
+      exists to remove
+- [ ] `docs/reasoning/recipe-format.md:80` claims an omitted `unlock_class` abstains, which
+      is false unless the prerequisite also carries the marker; the recipe reaches `safe`
+- [ ] `tests/test_verify_v2.py:263` the test named for the rename re-inserts `unlock_step`,
+      so it does not exercise the behaviour it is named after; delete that line and it fails
+- [ ] `tests/test_verify_contract.py:50` `test_model_mismatch_is_unsafe_not_abstention` uses
+      a model that is in the allowlist, so the `unsafe` comes from the device mismatch and
+      no model mismatch is tested
+- [ ] `data/recipes-v0.2/a5xelte.json:1` the nine-model allowlist that now decides
+      `unsafe` cites a source containing no model strings and does not match the only
+      upstream file that lists models for this codename
+- [ ] `docs/reasoning/verdict-contract.md:123` the specification still defines `variant`
+      and the tiers built on it, while the verifier no longer reads any such field
+- [ ] `docs/reasoning/recipe-format-coverage.md:53` the measurement record still tabulates
+      `target.variant` and `assets.variant`, which no longer exist, against a script that
+      now emits `target.models`
+- [ ] `data/recipe_format_coverage.py:60` the postmarketOS row is matched on
+      `^deviceinfo_models=`, a key that exists nowhere in the checkout, so the row reports
+      zero for a naming error rather than a fact
+- [ ] `data/coverage.py:109` the false-safe gate counts only `expected == "unsafe"`, so a
+      recipe whose `expected_verdict` is `cannot-verify` can return `safe` unremarked
+
+<details><summary>the review, as it came back</summary>
+
+```
+Read , lines 345 to 345
+
+Read , lines 375 to 470
+
+Read , lines 445 to 498
+
+Read , lines 544 to 544
+
+Read , lines 530 to 544
+
+Read , lines 520 to 540
+
+Read , lines 540 to 544
+
+Read , lines 544 to 544
+
+Read , lines 540 to 544
+
+Ran terminal command:  cd <repo> && python3 - <<'PY'
+import copy, sys, json
+sys.path.insert(0,'.')
+from flashguard import verify
+BASE = json.load(open('tests/test_verify_v2.py').read().split('BASE_RECIPE = ')[1].split('\n\n\ndef fingerprint')[0].replace('True','true').replace('False','false')) if False else None
+PY
+echo "skip"; git ls-files data/recipes-v0.2/
+
+Ran terminal command:  git status --porcelain | head -40
+
+Ran terminal command:  cd <repo> && python3 - <<'PY'
+import sys, json
+sys.path.insert(0, '.')
+from flashguard import verify
+
+recipe = {
+  "schema_version": "0.2",
+  "recipe_id": "rename-without-marker",
+  "source": {"device_facts_from": "synthetic", "consulted": "2026-09-16",
+             "authored": "independent", "upstream_untested": "unestablished"},
+  "target": {"product_device": "spacewar", "models": ["A063"], "partition_scheme": "virtual_A/B"},
+  "install_method": "fastboot_nexus",
+  "prerequisites": {
+    "oem_unlocking_enabled": {
+      "state": "OPEN", "required": "unlocked",
+      "declared_by": "unlock_bootloader",
+      "source_evidence": "synthetic setting",
+    }
+  },
+  "operations": [{"kind": "boot-recovery", "partition": "boot"}],
+  "source_fields_unused": [],
+}
+fp = {"product_device": "spacewar", "product_model": "A063",
+      "partition_scheme": "virtual_A/B", "oem_unlocking_enabled": "unlocked"}
+r = verify(fp, recipe)
+print("A. renamed prerequisite, NO marker at all ->", r["verdict"])
+print("   codes:", [x["code"] for x in r["reasons"]])
+
+# same, but with unlock_class: "unknown" side by side, for contrast
+r2 = dict(recipe); r2["prerequisites"] = {"oem_unlocking_enabled": dict(recipe["prerequisites"]["oem_unlocking_enabled"], unlock_class="command")}
+print("B. same with unlock_class command       ->", verify(fp, r2)["verdict"])
+PY
+
+Read , lines 1 to 80
+
+Ran terminal command:  grep -n "is_unlock\|has_marked_unlock_step\|has_unlock_operation\|unlock_step\|source.untested\|_UNLOCK" flashguard/verify.py
+
+Ran terminal command:  cd <repo> && python3 - <<'PY'
+import sys, os, json
+sys.path.insert(0,'.')
+sys.argv=['x']
+import importlib.util
+spec = importlib.util.spec_from_file_location("cov", "data/coverage.py")
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+for label, d in (("v0.1","data/recipes"), ("v0.2","data/recipes-v0.2")):
+    for run in m.corpus_runs(os.path.join(d)):
+        print("%-5s %-28s expected=%-13s verdict=%-13s paired=%s" % (label, run["recipe_id"], run["expected"], run["verdict"], run["paired"]))
+PY
+
+Ran terminal command:  python3 data/coverage.py 2>&1 | grep -n -i "false safe" -B4 -A4
+
+Ran terminal command:  cd <repo> && python3 - <<'PY' 2>&1 | sed -n '1,40p'
+import sys, json, copy
+sys.path.insert(0, '.')
+from flashguard import verify
+
+avicii = json.load(open('data/recipes-v0.2/avicii.json'))
+fp = {"product_device":"avicii","product_model":"AC2001","partition_scheme":"A/B",
+      "bootloader_unlocked":"unlocked","android_version":12}
+r = verify(fp, avicii)
+print("avicii-v2, matching fingerprint ->", r["verdict"])
+print("  codes:", [x["code"] for x in r["reasons"]])
+
+# numeric zero typo in the untested field
+base = json.load(open('tests/../data/recipes-v0.2/spacewar.json'))
+b = copy.deepcopy(base)
+for val in (0, False, "unestablished"):
+    b["source"]["upstream_untested"] = val
+    fp2 = {"product_device":"Spacewar","product_model":"A063","partition_scheme":"virtual_A/B",
+           "bootloader_unlocked":"unlocked"}
+    print("upstream_untested=%-14r ->" % (val,), verify(fp2, b)["verdict"])
+PY
+
+Ran terminal command:  grep -rn "recipes-v0.2" docs/INDEX.md OPEN.md 2>/dev/null; echo "--- variant_confirmed_by writers ---"; grep -rn "variant_confirmed_by" bench-kit/ tests/ data/ 2>/dev/null | head -20; echo "--- coverage gate lines ---"; grep -n "def enforce_false_safe_gate" -A6 data/coverage.py; echo "--- not_untested refs ---"; grep -rn "not_untested" --include=*.py --include=*.md . 2>/dev/null | grep -v "^./library" | head
+
+Ran terminal command:  echo "== verify.py =="; grep -n "observed_model = fingerprint.get\|fields_consumed.append("product_model")\|has_unlock_operation\|has_marked_unlock_step\|is_unlock = isinstance\|if is_unlock and unlock_class\|upstream_untested in (False\|source.untested is retained\|Ruled by Ranaji\|Assets in v0.1 are pinned" flashguard/verify.py; echo "== coverage.py gate =="; sed -n '106,112p' data/coverage.py; echo "== recipe-format.md =="; grep -n "model or variant\|models\|unlock_class\|unlock_method" docs/reasoning/recipe-format.md; echo "== verdict-contract =="; grep -n "not_untested" docs/reasoning/verdict-contract.md; echo "== recipe-format-coverage.md =="; grep -n "target.variant\|assets.variant" docs/reasoning/recipe-format-coverage.md; echo "== recipe_format_coverage.py =="; grep -n "models\|target.models\|assets.variant" data/recipe_format_coverage.py
+
+Ran terminal command:  cd <repo> && mkdir -p /tmp/fg_review && git show HEAD:flashguard/verify.py > /tmp/fg_review/verify_head.py && git show HEAD:flashguard/guidance.py > /tmp/fg_review/guidance.py && sed -i '' 's/^from flashguard.guidance/from guidance/' /tmp/fg_review/verify_head.py && python3 - <<'PY'
+import sys, json
+sys.path.insert(0, '/tmp/fg_review')
+sys.path.insert(0, '.')
+import importlib.util
+spec = importlib.util.spec_from_file_location("vhead", "/tmp/fg_review/verify_head.py")
+head = importlib.util.module_from_spec(spec); spec.loader.exec_module(head)
+from flashguard import verify as now
+
+avicii = json.load(open('data/recipes-v0.2/avicii.json'))
+fp = {"product_device":"avicii","product_model":"AC2001","partition_scheme":"A/B",
+      "bootloader_unlocked":"unlocked","android_version":12}
+print("avicii-v2 @HEAD  ->", head.verify(fp, avicii)["verdict"])
+print("avicii-v2 @now   ->", now(fp, avicii)["verdict"])
+
+# a prerequisite named bootloader_unlocked with no unlock_class and no marker
+r = json.loads(json.dumps(avicii))
+print("now codes:", [x["code"] for x in now(fp, r)["reasons"]])
+PY
+
+Ran terminal command:  ls ../library 2>/dev/null | head; echo "== deviceinfo_models upstream =="; grep -rl "^deviceinfo_models=" ../library/upstream/pmaports 2>/dev/null | head -3; grep -rh "^deviceinfo_[a-z_]*=" ../library/upstream/pmaports 2>/dev/null | sed 's/=.*//' | sort -u | head -40; echo "== is_unlock_step =="; grep -rn "is_unlock_step" --include=*.py --include=*.json --include=*.md . 2>/dev/null | grep -v library | head; echo "== source.untested writers =="; grep -rn '"untested"' data/ tests/ 2>/dev/null | head
+
+Ran terminal command:  grep -rh "^deviceinfo_" ../library/upstream/pmaports --include=deviceinfo 2>/dev/null | sed 's/=.*//' | sort -u | grep -i "model\|variant"; echo "== count =="; grep -rh "^deviceinfo_models\|^deviceinfo_variant" ../library/upstream/pmaports --include=deviceinfo 2>/dev/null | wc -l; echo "== git log for recipes-v0.2 =="; git log --oneline -3 -- data/recipes-v0.2/ | cat; echo "== doc references to recipes-v0.2 =="; grep -rn "recipes-v0.2" --include=*.md --include=*.sh --include=*.html . 2>/dev/null | grep -v library | head
+
+Ran terminal command:  cd <repo> && python3 - <<'PY'
+import sys, json, copy
+sys.path.insert(0,'.')
+from flashguard import verify
+BASE = json.loads(open('tests/test_verify_v2.py').read().split('BASE_RECIPE = ')[1].split('\n\n\ndef fingerprint')[0])
+# The test as shipped
+r = copy.deepcopy(BASE); r["prerequisites"] = {"oem_unlocking_enabled": {
+  "state":"OPEN","required":"unlocked","unlock_step":True,
+  "declared_by":"unlock_bootloader","source_evidence":"synthetic setting"}}
+fp = {"product_device":"spacewar","product_model":"A063","partition_scheme":"virtual_A/B",
+      "oem_unlocking_enabled":"unlocked"}
+print("as shipped in the test (unlock_step present):", verify(fp, r)["verdict"])
+# Same test with ONLY the rename, which is what its docstring describes
+r2 = copy.deepcopy(BASE); r2["prerequisites"] = {"oem_unlocking_enabled": {
+  "state":"OPEN","required":"unlocked",
+  "declared_by":"unlock_bootloader","source_evidence":"synthetic setting"}}
+print("docstring's change alone (rename, no marker):  ", verify(fp, r2)["verdict"])
+print("   codes:", [x["code"] for x in verify(fp, r2)["reasons"]])
+PY
+
+Ran terminal command:  grep -rn "FALSE SAFE" --include=*.py --include=*.sh . 2>/dev/null | grep -v library
+
+Ran terminal command:  cd <repo> && sed -n '205,225p' data/coverage.py; echo "== corpus runs over all dirs =="; python3 - <<'PY'
+import sys, os, importlib.util
+sys.path.insert(0,'.')
+sys.argv=['x']
+spec = importlib.util.spec_from_file_location("cov", "data/coverage.py")
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+runs = m.corpus_runs("data/recipes")
+print("v0.1 run keys:", runs[0])
+print("expected values:", sorted({r["expected"] for r in runs}))
+PY
+
+Ran terminal command:  echo "== verdict-contract sections =="; grep -n "^## \|variant\|unlock_class\|unlock_step" docs/reasoning/verdict-contract.md; echo; echo "== test line numbers =="; sed -n '256,276p' tests/test_verify_v2.py | cat -n
+
+Ran terminal command:  grep -rn "coverage.py\|corpus_runs\|report_corpus_runs" tests/*.sh tests/*.py 2>/dev/null | head -20; echo "== all.sh =="; cat tests/all.sh
+
+Ran terminal command:  grep -n "FALSE SAFE\|coverage\|corpus\|verify" tests/review-packet.sh | head -30
+
+Ran terminal command:  bash tests/review-packet.sh 2>/dev/null | sed -n '/--- suite ---/,/--- files touched ---/p'
+
+Ran terminal command:  grep -n "suite\|verify\|coverage\|bash tests\|python3" tests/review-packet.sh
+
+Ran terminal command:  grep -rn "BUILD MUST FAIL" . --include='*' 2>/dev/null | grep -v '^./library' | grep -v Binary | head
+
+Ran terminal command:  bash tests/all.sh 2>&1 | grep -n -B12 -A3 "FALSE SAFE"
+
+Ran terminal command:  grep -n "a5xelte lists eight\|lists eight" docs/Research/TASK-3-variant-danger.md docs/Research/variant-danger-findings.md; echo "== a5xelte model count =="; python3 -c "import json;d=json.load(open('data/recipes-v0.2/a5xelte.json'));print(len(d['target']['models']), d['target']['models'])"; echo "== unmarked prereq repro summary =="; grep -n "unlock_step" flashguard/verify.py data/recipes-v0.2/*.json docs/reasoning/*.md 2>/dev/null
+
+Ran terminal command:  cd <repo> && python3 - <<'PY'
+import sys, json, importlib.util
+sys.path.insert(0, '/tmp/fg_review'); sys.path.insert(0, '.')
+spec = importlib.util.spec_from_file_location("vhead", "/tmp/fg_review/verify_head.py")
+head = importlib.util.module_from_spec(spec); spec.loader.exec_module(head)
+from flashguard import verify as now
+avicii = json.load(open('data/recipes-v0.2/avicii.json'))
+fp = {"product_device":"avicii","product_model":"AC2001","partition_scheme":"A/B",
+      "bootloader_unlocked":"unlocked","android_version":12}
+fp_variant = dict(fp, variant="avicii")
+print("HEAD, fp as the capture would name it :", head.verify(fp, avicii)["verdict"])
+print("HEAD, fp with variant added          :", head.verify(fp_variant, avicii)["verdict"])
+print("now,  fp as the capture would name it:", now(fp, avicii)["verdict"])
+PY
+
+Ran terminal command:  grep -rn "coverage" tests/*.sh tests/*.py 2>/dev/null | grep -v test_false_safe_gate | head; echo "== who prints it =="; for f in tests/*.sh tests/*.py tests/*.js; do if grep -q "coverage" "$f" 2>/dev/null; then echo "-- $f"; fi; done; echo "== run.sh tail =="; tail -20 tests/run.sh
+
+Read , lines 38 to 72
+
+Ran terminal command:  cd <repo> && python3 - <<'PY'
+import sys, json, copy
+sys.path.insert(0, '.')
+from flashguard import verify
+space = json.load(open('data/recipes-v0.2/spacewar.json'))
+fp = {"product_device":"Spacewar","product_model":"A063","partition_scheme":"virtual_A/B",
+      "bootloader_unlocked":"unlocked"}
+for v in (False, "not_untested", "unestablished"):
+    r = copy.deepcopy(space); r["source"]["upstream_untested"] = v
+    out = verify(fp, r)
+    print("upstream_untested=%-14r -> %-13s %s" % (v, out["verdict"], [x["code"] for x in out["reasons"] if x["result"]=="abstain"]))
+PY
+
+Ran terminal command:  cd <workspace> && find library/upstream/openandroidinstaller -name "a5xelte.yaml" 2>/dev/null | head -2; python3 - <<'PY'
+import re
+p = "library/upstream/openandroidinstaller/openandroidinstaller/assets/configs/a5xelte.yaml"
+try:
+    t = open(p).read()
+except FileNotFoundError:
+    import glob
+    hits = glob.glob("library/upstream/openandroidinstaller/**/a5xelte.yaml", recursive=True)
+    print("found:", hits); p = hits[0] if hits else None
+    t = open(p).read() if p else ""
+if t:
+    # print only the field-name lines, not prose
+    for line in t.splitlines():
+        s = line.strip()
+        if re.match(r'^(supported_device_codes|variant|models|device_models|codename)\b', s) or s.startswith("- "):
+            print(repr(s[:80]))
+PY
+
+Ran terminal command:  cd <workspace> && python3 - <<'PY'
+import glob, re, json
+hits = glob.glob("library/upstream/lineage_wiki/_data/devices/a5xelte.yml")
+print("lineage file:", hits)
+if hits:
+    t = open(hits[0]).read()
+    for line in t.splitlines():
+        s = line.strip()
+        if re.match(r'^models:', s) or (s.startswith('- ') and 'SM-' in s):
+            print(repr(s[:80]))
+print("---- spacewar ----")
+h2 = glob.glob("library/upstream/lineage_wiki/_data/devices/*acewar*.yml") + glob.glob("library/upstream/lineage_wiki/_data/devices/Spacewar.yml")
+print(h2)
+PY
+
+Ran terminal command:  cd <workspace> && python3 - <<'PY'
+import glob, re
+t = open("library/upstream/lineage_wiki/_data/devices/a5xelte.yml").read()
+for line in t.splitlines():
+    if line.strip().startswith("models:"):
+        val = line.split("models:",1)[1].strip()
+        print("raw:", val)
+        items = [x.strip() for x in val.strip("[]").split(",")]
+        print("count upstream:", len(items))
+        print(items)
+PY
+
+Ran terminal command:  cd <repo> && grep -n "diff\|git " tests/review-packet.sh | head -20; echo "== a5xelte recipe line/col of models =="; grep -n "models" docs/reasoning/recipe-format-coverage.md | head -5; echo "== deviceinfo key count =="; grep -rh "^deviceinfo_" ../library/upstream/pmaports --include=deviceinfo 2>/dev/null | sed 's/=.*//' | sort -u | wc -l
+
+Ran terminal command:  cd <workspace> && grep -rh "^deviceinfo_variant" library/upstream/pmaports --include=deviceinfo 2>/dev/null | wc -l; grep -rh "^deviceinfo_models" library/upstream/pmaports --include=deviceinfo 2>/dev/null | wc -l; echo "== oai device_models/device_models keys =="; grep -rh "^ *\(device_models\|device_model\|supported_device_codes\|models\):" library/upstream/openandroidinstaller/openandroidinstaller/assets/configs/*.yaml 2>/dev/null | sed 's/:.*//' | sort | uniq -c; echo "== lineage models count =="; grep -rl "^models:" library/upstream/lineage_wiki/_data/devices 2>/dev/null | wc -l
+
+Ran terminal command:  cd <repo> && cat > /tmp/fg_review/check.py <<'PY'
+import sys, json, copy
+sys.path.insert(0, '<repo>')
+from flashguard import verify
+
+BASE = {
+    "schema_version": "0.2",
+    "recipe_id": "spacewar-unlock-aware",
+    "source": {"device_facts_from": "synthetic", "consulted": "2026-09-08",
+               "authored": "independent", "upstream_untested": "unestablished"},
+    "target": {"product_device": "spacewar", "models": ["A063"],
+               "partition_scheme": "virtual_A/B"},
+    "install_method": "fastboot_nexus",
+    "prerequisites": {
+        "bootloader_unlocked": {
+            "state": "OPEN", "required": "unlocked", "unlock_class": "command",
+            "declared_by": "unlock_bootloader",
+            "source_evidence": "synthetic config unlock step"}},
+    "operations": [{"kind": "write-image", "partition": "system"}],
+    "source_fields_unused": [],
+}
+FP = {"product_device": "spacewar", "product_model": "A063",
+      "partition_scheme": "virtual_A/B", "bootloader_unlocked": "unlocked"}
+
+# Exactly what the shipped test describes: rename, omit unlock_class.
+r = copy.deepcopy(BASE)
+pre = dict(BASE["prerequisites"]["bootloader_unlocked"])
+pre.pop("unlock_class")
+r["prerequisites"] = {"oem_unlocking_enabled": pre}
+fp = dict(FP); fp.pop("bootloader_unlocked"); fp["oem_unlocking_enabled"] = "unlocked"
+out = verify(fp, r)
+print("rename + omit unlock_class, NO marker  ->", out["verdict"])
+print("   abstain codes:", [x["code"] for x in out["reasons"] if x["result"] == "abstain"])
+
+# What the shipped test actually constructs: it re-adds unlock_step.
+r2 = copy.deepcopy(r)
+r2["prerequisites"]["oem_unlocking_enabled"]["unlock_step"] = True
+out2 = verify(fp, r2)
+print("same, with unlock_step added back      ->", out2["verdict"])
+
+# The checked-in corpus recipe, unmarked unlock prerequisite.
+avicii = json.load(open('<repo>/data/recipes-v0.2/avicii.json'))
+av_fp = {"product_device": "avicii", "product_model": "AC2001",
+         "partition_scheme": "A/B", "bootloader_unlocked": "unlocked",
+         "android_version": 12}
+print("avicii.json, matching fingerprint      ->", verify(av_fp, avicii)["verdict"])
+PY
+python3 /tmp/fg_review/check.py
+
+Ran terminal command:  python3 /tmp/fg_review/check.py 2>&1 | tail -8
+
+Ran terminal command:  cd <repo> && python3 -c "
+import sys, json, copy
+sys.path.insert(0,'.')
+from flashguard import verify
+B={'schema_version':'0.2','recipe_id':'x','source':{'device_facts_from':'s','consulted':'2026-09-08','authored':'independent','upstream_untested':'unestablished'},'target':{'product_device':'spacewar','models':['A063'],'partition_scheme':'virtual_A/B'},'install_method':'fastboot_nexus','prerequisites':{'bootloader_unlocked':{'state':'OPEN','required':'unlocked','unlock_class':'command','declared_by':'unlock_bootloader','source_evidence':'s'}},'operations':[{'kind':'write-image','partition':'system'}],'source_fields_unused':[]}
+FP={'product_device':'spacewar','product_model':'A063','partition_scheme':'virtual_A/B','oem_unlocking_enabled':'unlocked'}
+r=copy.deepcopy(B); pre=dict(B['prerequisites']['bootloader_unlocked']); pre.pop('unlock_class'); r['prerequisites']={'oem_unlocking_enabled':pre}
+o=verify(FP,r); print('rename+omit class, NO marker ->',o['verdict'],[x['code'] for x in o['reasons'] if x['result']=='abstain'])
+r2=copy.deepcopy(r); r2['prerequisites']['oem_unlocking_enabled']['unlock_step']=True
+print('same WITH unlock_step added ->',verify(FP,r2)['verdict'])
+a=json.load(open('data/recipes-v0.2/avicii.json')); f2={'product_device':'avicii','product_model':'AC2001','partition_scheme':'A/B','bootloader_unlocked':'unlocked','android_version':12}
+print('avicii.json matching fp ->',verify(f2,a)['verdict'])
+"
+
+Ran terminal command:  grep -n "product_model\|models-unestablished\|"models" not in target\|asset-product_device-mismatch\|Assets in v0.1\|deprecated fallback\|upstream_untested in (False\|unmarked-unlock-step\|is_unlock = isinstance\|has_marked_unlock_step\|source.untested" flashguard/verify.py
+
+Ran terminal command:  cd <workspace> && grep -rl "SM-A510FD" library/upstream/ 2>/dev/null | head -5; echo "--- count of files mentioning SM-A510FD ---"; grep -rl "SM-A510FD" library/upstream/ 2>/dev/null | wc -l; echo "--- a5xelte.yaml model-ish tokens ---"; grep -o "SM-A510[A-Z0-9/]*" library/upstream/openandroidinstaller/openandroidinstaller/assets/configs/a5xelte.yaml | sort -u; echo "--- spacewar lineage models ---"; grep -h "^models:" library/upstream/lineage_wiki/_data/devices/Spacewar.yml
+
+Ran terminal command:  cd <workspace> && for d in FP3 FP4 avicii kirin; do f=$(ls library/upstream/lineage_wiki/_data/devices/$d.yml 2>/dev/null | head -1); if [ -n "$f" ]; then printf "%-8s %s\n" "$d" "$(grep -h '^models:' $f)"; else echo "$d: no lineage page"; fi; done; echo "--- recipe lists ---"; python3 -c "
+import json
+for n in ('fp3','fp4','avicii','kirin','a5xelte','spacewar'):
+    d=json.load(open('project/data/recipes-v0.2/%s.json'%n))
+    print('%-9s %s' % (n, d['target']['models']))
+"
+
+Ran terminal command:  cd <repo> && python3 -c "
+import sys, json
+sys.path.insert(0,'.')
+from flashguard import verify
+# v0.2 recipe with NO models list at all
+r={'schema_version':'0.2','recipe_id':'x','source':{'device_facts_from':'s','consulted':'2026-09-08','authored':'independent','upstream_untested':'unestablished'},'target':{'product_device':'spacewar','partition_scheme':'virtual_A/B'},'install_method':'fastboot_nexus','prerequisites':{'bootloader_unlocked':{'state':'OPEN','required':'unlocked','unlock_class':'command','declared_by':'unlock_bootloader','source_evidence':'s'}},'operations':[{'kind':'write-image','partition':'system'}],'source_fields_unused':[]}
+fp={'product_device':'spacewar','partition_scheme':'virtual_A/B','bootloader_unlocked':'unlocked'}
+out=verify(fp,r)
+print('verdict:',out['verdict'])
+print('reasons involving model:',[x for x in out['reasons'] if 'model' in x['code']])
+print('fields_consumed:',out['evidence']['fields_consumed'])
+"
+
+Ran terminal command:  cd <workspace> && grep -rh "^deviceinfo_" library/upstream/pmaports --include=deviceinfo 2>/dev/null | sed 's/=.*//' | sort -u | grep -i "name\|codename\|chassis\|device\b" ; echo "--- any key containing 'model' anywhere in pmaports ---"; grep -rho "^deviceinfo_[a-z_]*model[a-z_]*" library/upstream/pmaports --include=deviceinfo 2>/dev/null | sort -u | head
+
+Ran terminal command:  cd <repo> && echo "== test_verify_v2.py =="; grep -n "unlock_step\|def test_renamed_unlock\|Rename unlock prerequisite to oem" tests/test_verify_v2.py; echo; echo "== verify.py =="; grep -n "has_unlock_operation = any\|unmarked-unlock-step\|if is_unlock and unlock_class\|required = requirement.get" flashguard/verify.py; echo; echo "== recipe-format.md =="; grep -n "Absence of .unlock_class" docs/reasoning/recipe-format.md; echo; echo "== verdict-contract.md variant section =="; sed -n '121,142p' docs/reasoning/verdict-contract.md | head -5; echo; echo "== recipe-format-coverage.md rows =="; grep -n "target.variant\|assets.variant" docs/reasoning/recipe-format-coverage.md | head -3
+
+Ran terminal command:  cd <repo> && grep -n "product_model\|def test_model_mismatch\|product_device.*cheetah\|models" tests/test_verify_contract.py; echo "== recipe line refs =="; python3 -c "
+import json
+d=json.load(open('data/recipes-v0.2/avicii.json'))
+print('avicii prereq keys:', list(d['prerequisites']['bootloader_unlocked'].keys()))
+print('avicii source:', d['source'])
+print()
+a=json.load(open('data/recipes-v0.2/a5xelte.json'))
+print('a5xelte source:', a['source'])
+"
+
+I read `copilot-instructions.md`, `verifier-plan.md`, `verdict-contract.md`, `recipe-format.md`, the verifier, the recipes and the tests, and I reproduced the cases below against the working tree.
+
+## 1. What changed that was not asked for?
+
+Beyond swapping `variant` for a `models` allowlist, the diff adds four things nothing in the surrounding format asked for:
+
+- **A second name for the unlock marker**: `is_unlock_step` is accepted at `flashguard/verify.py:422` and `:439`. It appears in no recipe, no test, no doc, and no schema — the diff introduces two spellings of a safety field in the same commit that exists to collapse `upstream_untested`/`untested` into one.
+- **The `source.untested` fallback survives** at `flashguard/verify.py:497-503`, with a comment giving no expiry and no writer anywhere.
+- **A widening of what permits `safe`**: `upstream_untested in (False, "unestablished", None)` at `:511` also accepts numeric `0`, which is outside the vocabulary the diff's own comment states.
+- **`models` written into the five v0.1 corpus recipes** (`data/recipes/*.json`), which is a consequence of removing `variant`, but it also changes what the v0.1 corpus can express; `recipe-format-coverage.md` was not updated to match.
+
+Also present and unmentioned in the packet's file list: `spacewar.json` is untracked and is not named in `INDEX.md`.
+
+## 2. What did it decide that was not already in a file?
+
+- **That an unlock prerequisite without a marker is verifiable.** `flashguard/verify.py:437` defines `is_unlock` from `unlock_step`/`is_unlock_step`/`unlock_class`. A prerequisite named `bootloader_unlocked` that carries none of them is no longer an unlock at all, and falls through to the ordinary required-state check. No file says this; `docs/reasoning/recipe-format.md:80` still says the opposite.
+- **That `unlock_class` counts as proof of an unlock step** (`:422`), so the new `unmarked-unlock-step` reason is not reachable for any recipe that declares one anywhere.
+- **The `is_unlock_step` alias and the permanent `untested` fallback** — decisions made in code, in no document.
+- **That a numeric `0` is an acceptable "not untested"** — again code only.
+- **The nine-model `a5xelte` allowlist.** The allowlist is now what decides `unsafe`, and `source.device_facts_from` for that recipe cites the OpenAndroidInstaller config, which contains no model strings at all; the only file in the checkout that lists models for this codename lists eight different strings. The decision about which hardware this recipe may touch has no recorded provenance.
+
+## 3. Does any test pass for a reason other than the code being correct?
+
+Yes, two.
+
+- `tests/test_verify_v2.py:256-263`. Its docstring says "Rename unlock prerequisite to `oem_unlocking_enabled`, omit `unlock_class`", but line 263 re-inserts `"unlock_step": True`. With that line removed the recipe returns **`safe`** with `prerequisite-oem_unlocking_enabled-confirmed` and no abstention. The test passes because it supplies the marker the fix depends on, not because the rename is handled.
+- `tests/test_verify_contract.py:50`. `test_model_mismatch_is_unsafe_not_abstention` uses a fingerprint whose `product_model` is `GD1YQ`, which *is* in `SAFE_RECIPE`'s list. The `unsafe` comes from `product_device: "cheetah"` vs `"oriole"` — a device mismatch. The test never exercises a model mismatch.
+
+## 4. Does any file, name or comment describe something as existing that does not?
+
+- `docs/reasoning/recipe-format.md:80` — "Absence of `unlock_class` is not `command`: an omitted field abstains with the generic missing prerequisite reason." Reproduced false: omit `unlock_class` (and the marker) and the verifier returns `safe`, not `cannot-verify`.
+- `docs/reasoning/verdict-contract.md:123-141` — the "Graded variant matching" section still specifies a recipe/fingerprint field called `variant` and tiers built on it. The verifier no longer reads any such field.
+- `docs/reasoning/recipe-format-coverage.md:53,59,79,85,105,111` — still tabulates `target.variant` and `assets.variant`, which no longer exist, while `data/recipe_format_coverage.py:81` now emits `target.models`. The doc and the script no longer describe the same fields.
+- `data/recipe_format_coverage.py:60` — the renamed row is computed from `^deviceinfo_models=`, and no `deviceinfo_models` key exists anywhere in the postmarketOS checkout (the field-name census over `deviceinfo` keys has 164 keys, none matching). The row reads zero because the pattern names a key upstream does not have, not because the sources lack models.
+- `flashguard/verify.py:497` — "retained as a deprecated fallback during the v0.1 -> v0.2 transition", with no end to the transition written down and nothing that writes `source.untested`.
+
+## 5. Does anything here create a path to a false `safe`?
+
+Yes, and it is a regression, not a pre-existing hole.
+
+On `avicii.json` with the fingerprint `{product_device: avicii, product_model: AC2001, partition_scheme: A/B, bootloader_unlocked: unlocked, android_version: 12}`:
+
+    verifier at HEAD          -> cannot-verify
+    verifier in working tree  -> safe
+    reasons: match-product_device, match-partition_scheme, match-product_model,
+             prerequisite-bootloader_unlocked-confirmed, prerequisite-android_version-confirmed
+
+That recipe carries `expected_verdict: cannot-verify` and `human_assessment: unsafe`, and its unlock prerequisite has no `unlock_class`. At HEAD the hard-coded `_UNLOCK_PREREQUISITE_NAME` made it abstain; removing that constant without the marker being present on existing recipes removed the protection. The `unmarked-unlock-step` gate at `:425` cannot help, because it fires only when the recipe declares an `unlock_bootloader` *operation*, which no recipe in the corpus does.
+
+Second path, smaller but real: `upstream_untested` set to `0` returns `safe`, because `0 == False` at `:511`. The stated rule is that only an explicit `false` and `"unestablished"` permit; a hand-written zero currently does.
+
+And the gate that would have made this visible is `data/coverage.py:109`, which counts a false safe only when `expected == "unsafe"`. A recipe whose own `expected_verdict` is `cannot-verify` can return `safe` and no check says a word.
+
+Everything else I looked for was clean: the model check fails closed on exact-string membership, an absent model and an absent list both abstain, `unsafe` still outranks abstention, and the v0.1 asset rule is still an `unsafe` on mismatch.
+
+  FINDINGS
+  - [ ] `flashguard/verify.py:437` `is_unlock` is now built from `unlock_step`/`is_unlock_step`/
+        `unlock_class`, so a prerequisite named `bootloader_unlocked` carrying none of them is
+        no longer treated as an unlock and reaches `safe`; `avicii.json`
+        returns `safe` (HEAD returned `cannot-verify`) against its own `expected_verdict`
+  - [ ] `data/recipes-v0.2/avicii.json:1` the recipe still declares `expected_verdict`
+        `cannot-verify` and `human_assessment` `unsafe`, and the working-tree verifier now
+        answers `safe` for a fingerprint that merely confirms `unlocked`
+  - [ ] `flashguard/verify.py:422` the unlock marker is satisfied by the mere presence of
+        `unlock_class`, and a second alias `is_unlock_step` is accepted here and at `:439`
+        that appears in no recipe, schema, test or document
+  - [ ] `flashguard/verify.py:354` `product_model` is appended to `fields_consumed` before the
+        models-list check, so a recipe with no list records the field as consumed on a path
+        where no model comparison happened — the same evidence-stamp defect as the
+        `variant` entry of 13 September
+  - [ ] `flashguard/verify.py:511` `in (False, "unestablished", None)` also accepts numeric
+        `0`, which is outside the vocabulary the comment above it states; a hand-written
+        `0` silently means "not untested" and permits `safe`
+  - [ ] `docs/reasoning/verdict-contract.md:157` documents `"not_untested"` as a permitted
+        value with no effect, but the verifier returns `cannot-verify` with
+        `recipe-untested-unrecognized` for it
+  - [ ] `flashguard/verify.py:497` the `source.untested` fallback is kept without a sunset
+        date and with nothing that writes it, which is the second-name problem this change
+        exists to remove
+  - [ ] `docs/reasoning/recipe-format.md:80` claims an omitted `unlock_class` abstains, which
+        is false unless the prerequisite also carries the marker; the recipe reaches `safe`
+  - [ ] `tests/test_verify_v2.py:263` the test named for the rename re-inserts `unlock_step`,
+        so it does not exercise the behaviour it is named after; delete that line and it fails
+  - [ ] `tests/test_verify_contract.py:50` `test_model_mismatch_is_unsafe_not_abstention` uses
+        a model that is in the allowlist, so the `unsafe` comes from the device mismatch and
+        no model mismatch is tested
+  - [ ] `data/recipes-v0.2/a5xelte.json:1` the nine-model allowlist that now decides
+        `unsafe` cites a source containing no model strings and does not match the only
+        upstream file that lists models for this codename
+  - [ ] `docs/reasoning/verdict-contract.md:123` the specification still defines `variant`
+        and the tiers built on it, while the verifier no longer reads any such field
+  - [ ] `docs/reasoning/recipe-format-coverage.md:53` the measurement record still tabulates
+        `target.variant` and `assets.variant`, which no longer exist, against a script that
+        now emits `target.models`
+  - [ ] `data/recipe_format_coverage.py:60` the postmarketOS row is matched on
+        `^deviceinfo_models=`, a key that exists nowhere in the checkout, so the row reports
+        zero for a naming error rather than a fact
+  - [ ] `data/coverage.py:109` the false-safe gate counts only `expected == "unsafe"`, so a
+        recipe whose `expected_verdict` is `cannot-verify` can return `safe` unremarked
+```
+
+</details>
+
+---
+
+
 ## 2026-09-16 — uncommitted-on-5573d4b — Batch 4 task
 
 Nothing found. Recorded because a log of only non-empty reviews is a biased log, and because "has this been reviewed at all" is a question worth being able to answer.

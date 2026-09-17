@@ -14,15 +14,16 @@
   },
   "target": {
     "product_device": "FP4",
-    "variant": "FP4",
+    "models": [
+      "FP4"
+    ],
     "partition_scheme": "A/B"
   },
   "assets": [
     {
       "asset_id": "temporary-recovery",
       "role": "recovery",
-      "product_device": "FP4",
-      "variant": "FP4"
+      "product_device": "FP4"
     }
   ],
   "operations": [

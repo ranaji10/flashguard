@@ -14,15 +14,24 @@
   },
   "target": {
     "product_device": "a5xelte",
-    "variant": "a5xelte",
+    "models": [
+      "SM-A510F",
+      "SM-A510FD",
+      "SM-A510M",
+      "SM-A510MD",
+      "SM-A510Y",
+      "SM-A510YD",
+      "SM-A510K",
+      "SM-A510L",
+      "SM-A510S"
+    ],
     "partition_scheme": "single"
   },
   "assets": [
     {
       "asset_id": "custom-recovery",
       "role": "recovery",
-      "product_device": "a5xelte",
-      "variant": "a5xelte"
+      "product_device": "a5xelte"
     }
   ],
   "operations": [

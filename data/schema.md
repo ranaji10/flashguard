@@ -297,3 +297,14 @@ Reads `device-matrix.jsonl` and prints what the dataset actually covers: device
 count, classes, chipset families, partition schemes, positives against negatives,
 and verifier agreement. This is the project's real state of validation, and the only
 index worth maintaining.
+
+---
+
+## Prerequisite condition to fingerprint evidence mapping
+
+A recipe may only ask for evidence some capture route produces.
+
+| Prerequisite condition | Fingerprint evidence field |
+|---|---|
+| `bootloader_unlocked` | `bootloader_state` |
+

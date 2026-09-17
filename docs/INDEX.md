@@ -82,6 +82,8 @@ Read before writing the proposal or changing a design.
 | `docs/reference/producer-prompt-2026-09-16-batch3.md` | Batch 3 of 4: `unlock-out-of-band` as a reason code of its own, with data-held guidance naming what a person must do by hand. |
 | `docs/reference/producer-prompt-2026-09-16-batch4.md` | Batch 4 of 4: carry upstream's `untested` flag into the recipe source block and gate `safe` on it. The absent case stays undecided. |
 | `docs/reference/producer-prompt-2026-09-16-batch5.md` | Batch 5: replace `variant` with a `product_model` allowlist, remove the DISPUTED marker, write the Spacewar recipe. Authorised 16 September. |
+| `docs/reference/producer-prompt-2026-09-17-batch6.md` | Batch 6: fix false safe in avicii.json unlock step gating, typed upstream_untested check, bootloader_state recipe prerequisite migration. |
+| `docs/tracker/pending-2026-09-16.md` | Pending tracker notes from 16 September. |
 | `grant/work-log-2026-09-13.md` | What was actually done, 26 Aug to 13 Sep, with commits and numbers. Source material for the proposal, **not** the proposal. |
 | `grant/nlnet-findings-2026-09-03.md` | The open call, verified against the live pages. Programme choice, form, scoring weights, AI rules. |
 | `grant/_drafts/README.md` | Where superseded long-form answers go. Not `library/`. |

@@ -20,15 +20,14 @@ object to `verify(fingerprint, recipe)`.
   "recipe_id": "pixel-system-only",
   "target": {
     "product_device": "oriole",
-    "variant": "global",
+    "models": ["GD1YQ", "G9S9B"],
     "partition_scheme": "A/B"
   },
   "assets": [
     {
       "asset_id": "system",
       "role": "system",
-      "product_device": "oriole",
-      "variant": "global"
+      "product_device": "oriole"
     }
   ],
   "operations": [
@@ -42,8 +41,9 @@ object to `verify(fingerprint, recipe)`.
 ```
 
 `schema_version`, `recipe_id`, `target`, `assets`, and `operations` are required.
-`target` requires `product_device`, `variant`, and `partition_scheme`. Each asset
-requires `asset_id`, `role`, `product_device`, and `variant`; asset IDs are unique.
+`target` requires `product_device` and `partition_scheme`, and contains `models`
+(an explicit allowlist of supported `ro.product.model` strings). Each asset
+requires `asset_id`, `role`, and `product_device` (pinned per codename); asset IDs are unique.
 Each operation requires `kind`, `partition`, and `asset_id`, and its asset ID must
 refer to an entry in `assets`. Operation order is significant.
 

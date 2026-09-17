@@ -154,8 +154,6 @@ even when all fingerprint prerequisites and identity fields match cleanly.
   the reason code `recipe-untested-upstream` with outcome `abstain` and verdict
   `cannot-verify`. The reason message explicitly names upstream's statement about the
   configuration as the limit, distinguishing it from device or fingerprint uncertainty.
-- **Recipe marked not-untested (`upstream_untested: false` / `"not_untested"`):** No effect today.
-  It is not a licence to upgrade anything.
 - **Recipe has not established it (`upstream_untested: "unestablished"` / `null` or omitted):**
   No effect. The verifier abstains only for whatever other reasons apply.
 

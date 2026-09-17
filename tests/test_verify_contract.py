@@ -12,7 +12,7 @@ SAFE_RECIPE = {
     "recipe_id": "oriole-system-only",
     "target": {
         "product_device": "oriole",
-        "variant": "global",
+        "models": ["GD1YQ", "G9S9B"],
         "partition_scheme": "A/B",
     },
     "assets": [
@@ -20,7 +20,6 @@ SAFE_RECIPE = {
             "asset_id": "system",
             "role": "system",
             "product_device": "oriole",
-            "variant": "global",
         }
     ],
     "operations": [
@@ -32,7 +31,7 @@ SAFE_RECIPE = {
 class VerifyContractTest(unittest.TestCase):
     def test_malformed_recipe_abstains_as_invalid_recipe(self):
         result = verify(
-            {"product_device": "oriole", "variant": "global", "partition_scheme": "A/B"},
+            {"product_device": "oriole", "product_model": "GD1YQ", "partition_scheme": "A/B"},
             {"schema_version": "0.1"},
         )
 
@@ -51,7 +50,7 @@ class VerifyContractTest(unittest.TestCase):
     def test_model_mismatch_is_unsafe_not_abstention(self):
         fingerprint = {
             "product_device": "cheetah",
-            "variant": "global",
+            "product_model": "GD1YQ",
             "partition_scheme": "A/B",
         }
 

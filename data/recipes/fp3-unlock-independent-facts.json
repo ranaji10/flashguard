@@ -14,15 +14,16 @@
   },
   "target": {
     "product_device": "FP3",
-    "variant": "FP3",
+    "models": [
+      "FP3"
+    ],
     "partition_scheme": "A/B"
   },
   "assets": [
     {
       "asset_id": "temporary-recovery",
       "role": "recovery",
-      "product_device": "FP3",
-      "variant": "FP3"
+      "product_device": "FP3"
     }
   ],
   "operations": [
