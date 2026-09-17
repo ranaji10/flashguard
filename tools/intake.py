@@ -42,6 +42,12 @@ except ImportError as err:
     sys.exit(f"Failed to import merge module: {err}")
 
 try:
+    import coverage
+    from coverage import load_all_recipes, pair_record_with_recipes, get_android_facts
+except ImportError as err:
+    sys.exit(f"Failed to import coverage module: {err}")
+
+try:
     from flashguard.verify import verify
 except ImportError as err:
     sys.exit(f"Failed to import flashguard.verify: {err}")
@@ -85,18 +91,18 @@ def parse_args():
     return parser.parse_args()
 
 
-def load_recipes(recipe_dirs=RECIPE_DIRS):
-    recipes = []
-    for rdir in recipe_dirs:
-        if not rdir.is_dir():
-            continue
-        for f in sorted(rdir.glob("*.json")):
-            try:
-                data = json.loads(f.read_text(encoding="utf-8"))
-                recipes.append((f.name, data))
-            except Exception:
-                pass
-    return recipes
+def validate_descriptor_filename(fname):
+    if not isinstance(fname, str) or not fname:
+        return False, "missing or empty filename"
+    if "/" in fname or "\\" in fname:
+        return False, f"descriptor filename contains path separators: {fname!r}"
+    if fname in (".", ".."):
+        return False, f"descriptor filename is invalid: {fname!r}"
+    if not fname.endswith(".desc"):
+        return False, f"descriptor filename must end in .desc: {fname!r}"
+    if pathlib.Path(fname).name != fname:
+        return False, f"descriptor filename is not a bare name: {fname!r}"
+    return True, ""
 
 
 def report_android_pairing(records, recipes):
@@ -104,7 +110,7 @@ def report_android_pairing(records, recipes):
     android_count = 0
     for i, rec in enumerate(records, 1):
         detected = rec.get("detected") or {}
-        android = detected.get("android") or {}
+        android = get_android_facts(rec)
         dev_class = detected.get("device_class")
         product_device = android.get("product_device")
         product_model = android.get("product_model")
@@ -122,18 +128,7 @@ def report_android_pairing(records, recipes):
         print(f"  product_model:  {product_model}")
 
         # Match recipes
-        dev_lower = (product_device or "").lower()
-        paired = []
-        for rname, recipe in recipes:
-            target = recipe.get("target") or {}
-            target_device = (target.get("product_device") or "").lower()
-            target_aliases = [
-                code.lower() for code in target.get("supported_device_codes", [])
-            ]
-            if dev_lower and dev_lower != "not_applicable" and (
-                dev_lower == target_device or dev_lower in target_aliases
-            ):
-                paired.append((rname, recipe))
+        paired = pair_record_with_recipes(rec, recipes)
 
         if not paired:
             print("  Paired recipes: none matching this product_device")
@@ -142,7 +137,7 @@ def report_android_pairing(records, recipes):
         print(f"  Paired recipes: {len(paired)}")
         for rname, recipe in paired:
             recipe_id = recipe.get("recipe_id", rname)
-            res = verify(dict(android), recipe)
+            res = verify(android, recipe)
             verdict = res.get("verdict")
             non_pass_reasons = [
                 r.get("code") for r in res.get("reasons", []) if r.get("result") != "pass"
@@ -211,12 +206,24 @@ def run_intake(session_path, write=False, legacy_kit=False, session_number=1,
             sys.exit(f"Record {rec_name}: consent_ack is not true ({rec.get('consent_ack')!r})")
         android_block = rec.get("detected", {}).get("android", {})
         if isinstance(android_block, dict) and android_block.get("android_derivation") == "pending":
-            sys.exit(f"Record {rec_name}: android_derivation is pending -- derivation has not been run")
+            sys.exit(
+                f"Record {rec_name}: android_derivation is pending -- derivation has not been run "
+                f"(run tools/derive-pending.py to recover)"
+            )
 
     # Step 4: No email address in any output/session file
     email_match = EMAIL_PATTERN.search(file_text)
     if email_match:
         sys.exit(f"Email address pattern found in session export: {email_match.group(0)[:50]}")
+
+    # Validate descriptor filenames before writing anything
+    descriptors = data.get("descriptors") or []
+    for desc in descriptors:
+        fname = desc.get("filename")
+        if fname is not None:
+            valid, reason = validate_descriptor_filename(fname)
+            if not valid:
+                sys.exit(f"Invalid descriptor filename {fname!r}: {reason}")
 
     # Determine contribution filename
     date_match = re.search(r"(\d{4}-\d{2}-\d{2})", session_timestamp)
@@ -243,7 +250,6 @@ def run_intake(session_path, write=False, legacy_kit=False, session_number=1,
         )
 
     # Step 6: Check descriptors overwrite
-    descriptors = data.get("descriptors") or []
     for desc in descriptors:
         fname = desc.get("filename")
         if fname:
@@ -257,7 +263,7 @@ def run_intake(session_path, write=False, legacy_kit=False, session_number=1,
         rec["kit_version"] = kit_version
         rec["intake_source"] = "session_export"
 
-    recipes = load_recipes()
+    recipes = load_all_recipes()
 
     if write:
         # Step 5, 6, 7 writing to target repository directories
@@ -278,17 +284,17 @@ def run_intake(session_path, write=False, legacy_kit=False, session_number=1,
                     dpath.write_text(content, encoding="utf-8")
                     created_files.append(dpath)
 
-            # Check descriptor privacy if writing to repo real-descriptors
-            if dest_descriptors_dir == REAL_DESCRIPTORS:
+            # Check descriptor privacy
+            if descriptors:
                 res = subprocess.run(
-                    ["bash", str(ROOT / "tests" / "check-descriptor-privacy.sh")],
+                    ["bash", str(ROOT / "tests" / "check-descriptor-privacy.sh"), str(dest_descriptors_dir)],
                     capture_output=True,
                     text=True,
                 )
                 if res.returncode != 0:
                     print(res.stdout, file=sys.stderr)
                     print(res.stderr, file=sys.stderr)
-                    raise RuntimeError("check-descriptor-privacy failed")
+                    raise RuntimeError(f"check-descriptor-privacy failed on {dest_descriptors_dir}")
 
             # Check merge.py --check
             if dest_contrib_dir == CONTRIB_DIR:
@@ -390,7 +396,19 @@ sys.exit(merge.main())
                 print(res.stderr, file=sys.stderr)
                 sys.exit(f"data/merge.py --check failed in dry run validation")
 
-        print("Report only (no files written). Session export validated successfully.")
+            # Check descriptor privacy on temp descriptors directory
+            if descriptors:
+                res = subprocess.run(
+                    ["bash", str(ROOT / "tests" / "check-descriptor-privacy.sh"), str(tmp_descriptors)],
+                    capture_output=True,
+                    text=True,
+                )
+                if res.returncode != 0:
+                    print(res.stdout, file=sys.stderr)
+                    print(res.stderr, file=sys.stderr)
+                    sys.exit(f"check-descriptor-privacy failed in dry run validation")
+
+        print("Report only (no files written). Session export checked against schema, PII, consent, merge validation, and descriptor privacy.")
         print(f"Target contribution would be: data/contributions/{contrib_filename}")
         if descriptors:
             print(f"Target descriptors count: {len(descriptors)}")

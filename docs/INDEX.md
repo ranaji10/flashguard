@@ -88,6 +88,7 @@ Read before writing the proposal or changing a design.
 | `docs/reference/producer-prompt-2026-09-16-batch5.md` | Batch 5: replace `variant` with a `product_model` allowlist, remove the DISPUTED marker, write the Spacewar recipe. Authorised 16 September. |
 | `docs/reference/producer-prompt-2026-09-17-batch6.md` | Batch 6: fix false safe in avicii.json unlock step gating, typed upstream_untested check, bootloader_state recipe prerequisite migration. |
 | `docs/reference/producer-prompt-2026-09-17-batch7.md` | Batch 7: last build before testing. Verifier final (operations require a declared unlock, declared version comparison, gate on human assessment), tester package build with checksums, session intake, testing runbook and form consent text. |
+| `docs/reference/producer-prompt-2026-09-18-batch7.6.md` | Batch 7.6: intake stops refusing the kit's own descriptors, descriptor filenames treated as untrusted, the dry run actually checks privacy, and the kit stops assuming a Linux session for the 22 September evening. |
 | `docs/tracker/pending-2026-09-16.md` | Pending tracker notes from 16 September. |
 | `grant/work-log-2026-09-13.md` | What was actually done, 26 Aug to 13 Sep, with commits and numbers. Source material for the proposal, **not** the proposal. |
 | `grant/nlnet-findings-2026-09-03.md` | The open call, verified against the live pages. Programme choice, form, scoring weights, AI rules. |

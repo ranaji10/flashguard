@@ -52,6 +52,54 @@ def load_coverage_floor():
     return None
 
 
+def get_android_facts(record):
+    """Extract and return the android facts dictionary from a record."""
+    detected = record.get("detected") or {}
+    android = detected.get("android") or {}
+    return dict(android)
+
+
+def match_recipe_target(product_device, recipe):
+    """Return True if product_device matches target.product_device or supported_device_codes."""
+    target = recipe.get("target") or {}
+    target_device = (target.get("product_device") or "").lower()
+    target_aliases = [code.lower() for code in target.get("supported_device_codes", [])]
+    device_lower = (product_device or "").lower()
+    if not device_lower or device_lower == "not_applicable":
+        return False
+    return device_lower == target_device or device_lower in target_aliases
+
+
+def load_all_recipes(recipe_dirs=RECIPE_DIRS):
+    """Load all recipe JSON files from the provided directories."""
+    recipes = []
+    for rdir in recipe_dirs:
+        if not os.path.isdir(rdir):
+            continue
+        for name in sorted(os.listdir(rdir)):
+            if not name.endswith(".json"):
+                continue
+            path = os.path.join(rdir, name)
+            with open(path, encoding="utf-8") as fh:
+                try:
+                    data = json.load(fh)
+                    recipes.append((name, data))
+                except Exception:
+                    pass
+    return recipes
+
+
+def pair_record_with_recipes(record, recipes):
+    """Return list of (recipe_name, recipe_dict) that pair with this record."""
+    android = get_android_facts(record)
+    product_device = android.get("product_device")
+    paired = []
+    for rname, recipe in recipes:
+        if match_recipe_target(product_device, recipe):
+            paired.append((rname, recipe))
+    return paired
+
+
 def corpus_runs(recipe_dir, records):
     runs = []
     if not os.path.isdir(recipe_dir):
@@ -63,21 +111,17 @@ def corpus_runs(recipe_dir, records):
         with open(path, encoding="utf-8") as fh:
             recipe = json.load(fh)
 
-        target = recipe.get("target") or {}
-        target_device = (target.get("product_device") or "").lower()
-        target_aliases = [code.lower() for code in target.get("supported_device_codes", [])]
-
         matching_records = []
         for r in records:
-            android = (r.get("detected") or {}).get("android") or {}
-            device = (android.get("product_device") or "").lower()
-            if device and device != "not_applicable" and (device == target_device or device in target_aliases):
+            android = get_android_facts(r)
+            device = android.get("product_device")
+            if match_recipe_target(device, recipe):
                 matching_records.append(r)
 
         if matching_records:
             for r in matching_records:
-                android = (r.get("detected") or {}).get("android") or {}
-                result = verify(dict(android), recipe)
+                android = get_android_facts(r)
+                result = verify(android, recipe)
                 runs.append({
                     "recipe_id": recipe.get("recipe_id", name),
                     "human_assessment": recipe.get("human_assessment"),

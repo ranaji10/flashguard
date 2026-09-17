@@ -13,9 +13,18 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 # serial was found in it -- by a reviewer reading a diff, not by this script. A privacy
 # check with a directory blind spot reports clean about the place it happens to look.
 DIRS=""
-for d in "$HERE/real-descriptors" "$HERE/webusb-fixtures"; do
-  [ -d "$d" ] && DIRS="$DIRS $d"
-done
+if [ $# -ge 1 ]; then
+  if [ -d "$1" ]; then
+    DIRS="$1"
+  else
+    echo "  directory not found: $1"
+    exit 1
+  fi
+else
+  for d in "$HERE/real-descriptors" "$HERE/webusb-fixtures" "$HERE/../bench-kit/descriptors"; do
+    [ -d "$d" ] && DIRS="$DIRS $d"
+  done
+fi
 [ -n "$DIRS" ] || { echo "  no captured descriptors yet"; exit 0; }
 D="$DIRS"
 fail=0
@@ -34,7 +43,7 @@ fi
 #
 # A check that only looks where it expects the problem reports clean and means nothing. It
 # was found by a blind reviewer reading a diff, not by this script.
-hits=$(grep -rniE '_?SN[:=]' $D 2>/dev/null || true)
+hits=$(grep -rniE '_?SN[:=]' $D 2>/dev/null | grep -viE '<stripped>|<the serial>|stripped>' || true)
 if [ -n "$hits" ]; then
   echo "  SERIAL EMBEDDED IN A STRING DESCRIPTOR -- do not publish these:"
   printf '%s\n' "$hits" | sed 's/^/      /'

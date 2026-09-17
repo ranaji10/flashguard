@@ -94,9 +94,11 @@ class IntakeTest(unittest.TestCase):
             contrib_dir = tmp_path / "contributions"
             desc_dir = tmp_path / "real-descriptors"
 
+            real_desc_file = sorted((ROOT / "tests" / "real-descriptors").glob("*.desc"))[0]
+            real_content = real_desc_file.read_text(encoding="utf-8")
             desc_entry = {
                 "filename": "18d1-4ee2-20260917-999999.desc",
-                "content": "#!expect=adb\n#!device=Nothing A063\nBus 001 Device 002: ID 18d1:4ee2\n",
+                "content": real_content,
             }
             session_data = self.make_session_export(
                 handle="alice",
@@ -134,7 +136,178 @@ class IntakeTest(unittest.TestCase):
             desc_files = list(desc_dir.glob("*.desc"))
             self.assertEqual(len(desc_files), 1)
             self.assertEqual(desc_files[0].name, "18d1-4ee2-20260917-999999.desc")
-            self.assertIn("Bus 001", desc_files[0].read_text())
+            self.assertEqual(desc_files[0].read_text(encoding="utf-8"), real_content)
+
+    def test_descriptor_with_lsusb_iserial_refused(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = pathlib.Path(tmpdir)
+            session_file = tmp_path / "session-iserial.json"
+            sample_serial = "0123" + "4567" + "89AB"
+            desc_entry = {
+                "filename": "test-device.desc",
+                "content": "Bus 001 Device 002: ID 18d1:4ee2\n  iSerial                 3 " + sample_serial + "\n",
+            }
+            session_data = self.make_session_export(descriptors=[desc_entry])
+            session_file.write_text(json.dumps(session_data, indent=2))
+
+            res = subprocess.run(
+                [sys.executable, str(INTAKE_TOOL), str(session_file)],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(res.returncode, 1)
+            self.assertIn("forbidden field name", res.stderr)
+            self.assertIn("iSerial", res.stderr)
+
+    def test_descriptor_with_unmasked_sn_refused(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = pathlib.Path(tmpdir)
+            session_file = tmp_path / "session-sn-unmasked.json"
+            sample_sn = "YUPIK-QRD _SN:" + "ABC" + "12345"
+            desc_entry = {
+                "filename": "test-device.desc",
+                "content": f"Bus 001 Device 002: ID 18d1:4ee2\n  iProduct                2 {sample_sn}\n",
+            }
+            session_data = self.make_session_export(descriptors=[desc_entry])
+            session_file.write_text(json.dumps(session_data, indent=2))
+
+            res = subprocess.run(
+                [sys.executable, str(INTAKE_TOOL), str(session_file)],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(res.returncode, 1)
+            self.assertIn("embedded serial", res.stderr)
+
+    def test_descriptor_with_masked_sn_accepted(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = pathlib.Path(tmpdir)
+            session_file = tmp_path / "session-sn-masked.json"
+            desc_entry = {
+                "filename": "test-device.desc",
+                "content": "Bus 001 Device 002: ID 18d1:4ee2\n  iProduct                2 YUPIK-QRD _SN:<stripped>\n",
+            }
+            session_data = self.make_session_export(descriptors=[desc_entry])
+            session_file.write_text(json.dumps(session_data, indent=2))
+
+            res = subprocess.run(
+                [sys.executable, str(INTAKE_TOOL), str(session_file)],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(res.returncode, 0, f"Expected 0, got {res.returncode}:\n{res.stderr}")
+
+    def test_descriptor_filename_traversal_refused(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = pathlib.Path(tmpdir)
+            (tmp_path / "repo" / "tests").mkdir(parents=True)
+            session_file = tmp_path / "session-escaped.json"
+            desc_entry = {
+                "filename": "../../ESCAPED.txt",
+                "content": "should never be written here\n",
+            }
+            session_data = self.make_session_export(descriptors=[desc_entry])
+            session_file.write_text(json.dumps(session_data, indent=2))
+
+            res = subprocess.run(
+                [
+                    sys.executable,
+                    str(INTAKE_TOOL),
+                    str(session_file),
+                    "--write",
+                    "--contrib-dir",
+                    str(tmp_path / "contrib"),
+                    "--descriptors-dir",
+                    str(tmp_path / "repo" / "tests" / "real-descriptors"),
+                ],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(res.returncode, 1)
+            self.assertIn("../../ESCAPED.txt", res.stderr)
+            self.assertFalse((tmp_path / "repo" / "ESCAPED.txt").exists())
+
+    def test_descriptor_filename_variations_validation(self):
+        for invalid_name in ["/tmp/abs.desc", "relative/path.desc", "noextension", "wrong.txt", ".", ".."]:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                tmp_path = pathlib.Path(tmpdir)
+                session_file = tmp_path / "session-invalid-desc.json"
+                desc_entry = {
+                    "filename": invalid_name,
+                    "content": "test\n",
+                }
+                session_data = self.make_session_export(descriptors=[desc_entry])
+                session_file.write_text(json.dumps(session_data, indent=2))
+
+                res = subprocess.run(
+                    [sys.executable, str(INTAKE_TOOL), str(session_file)],
+                    capture_output=True,
+                    text=True,
+                )
+                self.assertEqual(res.returncode, 1, f"Expected refusal for {invalid_name!r}")
+
+        # Bare valid name must succeed
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = pathlib.Path(tmpdir)
+            session_file = tmp_path / "session-valid-desc.json"
+            desc_entry = {
+                "filename": "valid-device-123.desc",
+                "content": "Bus 001 Device 002: ID 18d1:4ee2\n",
+            }
+            session_data = self.make_session_export(descriptors=[desc_entry])
+            session_file.write_text(json.dumps(session_data, indent=2))
+
+            res = subprocess.run(
+                [sys.executable, str(INTAKE_TOOL), str(session_file)],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(res.returncode, 0, f"Bare valid name failed: {res.stderr}")
+
+    def test_report_only_runs_descriptor_privacy_check(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = pathlib.Path(tmpdir)
+            session_file = tmp_path / "session-report-privacy.json"
+            desc_entry = {
+                "filename": "planted-serial.desc",
+                "content": "Bus 001 Device 002: ID 18d1:4ee2\n  iSerial                 3 0123456789ABCDEF\n",
+            }
+            session_data = self.make_session_export(descriptors=[desc_entry])
+            session_file.write_text(json.dumps(session_data, indent=2))
+
+            res = subprocess.run(
+                [sys.executable, str(INTAKE_TOOL), str(session_file)],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(res.returncode, 1)
+
+    def test_pairing_agreement_intake_and_coverage(self):
+        """Assert intake and coverage.py produce identical verdict and reasons for Spacewar."""
+        sys.path.insert(0, str(DATA_DIR))
+        import coverage
+        from flashguard.verify import verify
+
+        recipes = coverage.load_all_recipes([DATA_DIR / "recipes-v0.2"])
+        spacewar_recipe = next((r for name, r in recipes if "spacewar" in name.lower()), None)
+        self.assertIsNotNone(spacewar_recipe, "spacewar.json recipe not found")
+
+        # Via coverage helpers used by intake
+        android_facts = coverage.get_android_facts(self.spacewar_record)
+        intake_paired = coverage.pair_record_with_recipes(self.spacewar_record, [(spacewar_recipe.get("recipe_id", "spacewar.json"), spacewar_recipe)])
+        self.assertEqual(len(intake_paired), 1)
+
+        intake_res = verify(android_facts, spacewar_recipe)
+        intake_verdict = intake_res.get("verdict")
+        intake_reasons = [r.get("code") for r in intake_res.get("reasons", []) if r.get("result") != "pass"]
+
+        # Via coverage.corpus_runs
+        corpus_res = coverage.corpus_runs(str(DATA_DIR / "recipes-v0.2"), [self.spacewar_record])
+        spacewar_corpus_run = next((cr for cr in corpus_res if "spacewar" in cr["recipe_id"].lower()), None)
+        self.assertIsNotNone(spacewar_corpus_run, "Spacewar run missing from corpus_runs")
+
+        self.assertEqual(intake_verdict, spacewar_corpus_run["verdict"])
+        self.assertEqual(intake_verdict, "unsafe")
 
     def test_pii_15_digit_number_refused(self):
         with tempfile.TemporaryDirectory() as tmpdir:

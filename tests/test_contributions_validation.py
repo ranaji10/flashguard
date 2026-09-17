@@ -107,6 +107,23 @@ sys.exit(merge.main())
             )
             self.assertEqual(res.returncode, 0, "completed record must exit with 0")
 
+    def test_scan_pii_note_line_vs_lsusb_serial(self):
+        """scan_pii on the kit's exact note line returns no problem; on a real lsusb line it flags."""
+        sys.path.insert(0, str(ROOT / "data"))
+        import merge
+        sample_serial = "0123" + "4567" + "89AB"
+        note_line = "#!note=Captured on a real device. iSerial dropped and embedded SN masked. EDIT #!expect to the"
+        lsusb_line = "  iSerial                 3 " + sample_serial
+
+        problems_note = []
+        merge.scan_pii(note_line, "note_line_test", problems_note)
+        self.assertEqual(problems_note, [], f"Kit note line was flagged: {problems_note}")
+
+        problems_lsusb = []
+        merge.scan_pii(lsusb_line, "lsusb_line_test", problems_lsusb)
+        self.assertEqual(len(problems_lsusb), 1, "Real lsusb line was not flagged")
+        self.assertIn("forbidden field name", problems_lsusb[0])
+
 
 if __name__ == "__main__":
     unittest.main()

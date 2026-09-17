@@ -22,6 +22,13 @@ Why a merge step rather than one shared file: fifteen testers appending to one
 file is a merge conflict every time, and there is no way to withdraw one person's
 data afterwards. One file per submission means a withdrawal is `rm one file` plus
 a rebuild, which is what participation-note.md promises.
+
+NOTE on PII scanners in Flashguard:
+There are three PII scanners with three different patterns across the project:
+1. LEAKS in START-HERE.html runs at paste time in the browser.
+2. scan_pii here runs over records and session files during merge and intake.
+3. check-descriptor-privacy.sh and check-public-safe.sh run over files at rest in the repo.
+They deliberately differ, because they see different text at different moments.
 """
 import json, sys, re, hashlib, collections, pathlib
 
@@ -29,8 +36,23 @@ HERE = pathlib.Path(__file__).parent
 CONTRIB = HERE / "contributions"
 OUT = HERE / "device-matrix.jsonl"
 
+# FORBIDDEN matches field names in JSON records.
+# On 18 September 2026 (defect D1), iSerial was split out of FORBIDDEN into ISERIAL_LINE:
+# 01-detect.sh writes a header note ("#!note=Captured on a real device. iSerial dropped...")
+# into every descriptor it saves. An unanchored word match on iSerial caused intake.py to
+# flag the descriptor header proving stripping as a privacy leak.
 FORBIDDEN = re.compile(
-    r"\b(imei|imsi|iccid|serialno|serial_no|iSerial|android_id)\b", re.I)
+    r"\b(imei|imsi|iccid|serialno|serial_no|android_id)\b", re.I)
+
+# ISERIAL_LINE matches genuine lsusb -v output lines (start of line or after newline/\n,
+# optional whitespace, iSerial, whitespace, value), matching the shape in check-descriptor-privacy.sh.
+ISERIAL_LINE = re.compile(r"(?:^|[\r\n]|\\n)[ \t]*iSerial[ \t]+\S+")
+
+# Embedded serial in descriptor strings (e.g. YUPIK-QRD _SN:<serial>). Found 13 September 2026.
+# Masked serials (<stripped>, <the serial>) are permitted as proof of stripping.
+EMBEDDED_SN = re.compile(r"(?i)_?SN[:=]\s*(\S+)")
+MASKED_SN = re.compile(r"<stripped>|<the serial>|stripped>", re.I)
+
 # 15-digit IMEI, or a MAC address. Cheap tripwires, not a guarantee.
 LOOKS_LIKE_IMEI = re.compile(r"(?<!\d)\d{15}(?!\d)")
 LOOKS_LIKE_MAC = re.compile(r"\b([0-9a-f]{2}:){5}[0-9a-f]{2}\b", re.I)
@@ -58,11 +80,16 @@ def device_key(rec):
 
 def scan_pii(raw, where, problems):
     for pat, what in ((FORBIDDEN, "forbidden field name"),
+                      (ISERIAL_LINE, "forbidden field name"),
                       (LOOKS_LIKE_IMEI, "15-digit number (IMEI?)"),
                       (LOOKS_LIKE_MAC, "MAC address")):
         m = pat.search(raw)
         if m:
-            problems.append(f"{where}: {what}: {m.group(0)[:24]}")
+            problems.append(f"{where}: {what}: {m.group(0).strip()[:24]}")
+    for m in EMBEDDED_SN.finditer(raw):
+        matched = m.group(0)
+        if not MASKED_SN.search(matched):
+            problems.append(f"{where}: embedded serial: {matched.strip()[:24]}")
 
 def main():
     check_only = "--check" in sys.argv
