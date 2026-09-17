@@ -39,10 +39,17 @@ def check_schema_table_agrees_with_vocabulary(vocab):
         if f"`{uc}`" not in content and uc not in content:
             raise AssertionError(f"data/schema.md missing unlock class `{uc}` from vocabulary.json")
 
-    # Check unlock evidence fields
-    for uef in vocab.get("unlock_evidence_fields", {}).keys():
-        if f"`{uef}`" not in content and uef not in content:
-            raise AssertionError(f"data/schema.md missing unlock evidence field `{uef}` from vocabulary.json")
+    # Check unlock evidence fields: assert the table row itself contains unlock_evidence_fields, `bootloader_state` and `unlocked`
+    for uef, uval in vocab.get("unlock_evidence_fields", {}).items():
+        found = False
+        for line in content.splitlines():
+            if "unlock_evidence_fields" in line and f"`{uef}`" in line and f"`{uval}`" in line:
+                found = True
+                break
+        if not found:
+            raise AssertionError(
+                f"data/schema.md missing table row containing `unlock_evidence_fields`, `{uef}` and `{uval}`"
+            )
 
     # Check refused names
     for k, v in vocab.get("refused_prerequisite_names", {}).items():
@@ -75,9 +82,61 @@ def check_recipe(recipe, recipe_name, derive_fields, vocab):
                 raise AssertionError(
                     f"Recipe '{recipe_name}' prerequisite '{prereq_name}' carries unlock_class but is not an unlock evidence field."
                 )
+            expected_val = unlock_evidence_fields[prereq_name]
+            if req.get("required") != expected_val:
+                raise AssertionError(
+                    f"Recipe '{recipe_name}' prerequisite '{prereq_name}' carries unlock_class but requires '{req.get('required')}' instead of '{expected_val}'."
+                )
+
+
+def self_test():
+    derive_fields = get_derive_fields()
+    vocab = get_vocabulary()
+
+    # Plant 1: unlock_class on android_version
+    plant1 = {
+        "prerequisites": {
+            "android_version": {
+                "state": "OPEN",
+                "required": "15",
+                "compare": "exact_major",
+                "unlock_class": "command",
+            }
+        }
+    }
+    p1_failed = False
+    try:
+        check_recipe(plant1, "plant1.json", derive_fields, vocab)
+    except AssertionError:
+        p1_failed = True
+
+    # Plant 2: bootloader_state required locked with unlock_class
+    plant2 = {
+        "prerequisites": {
+            "bootloader_state": {
+                "state": "OPEN",
+                "required": "locked",
+                "unlock_class": "command",
+            }
+        }
+    }
+    p2_failed = False
+    try:
+        check_recipe(plant2, "plant2.json", derive_fields, vocab)
+    except AssertionError:
+        p2_failed = True
+
+    if not (p1_failed and p2_failed):
+        print("  ERROR: check-recipes self-test failed: expected planted defects to raise AssertionError", file=sys.stderr)
+        sys.exit(1)
+    print("  check-recipes self-test passed")
+    sys.exit(0)
 
 
 def main():
+    if "--self-test" in sys.argv:
+        self_test()
+
     derive_fields = get_derive_fields()
     vocab = get_vocabulary()
     check_schema_table_agrees_with_vocabulary(vocab)

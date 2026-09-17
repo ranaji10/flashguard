@@ -1199,5 +1199,64 @@ class UpstreamUntestedGateTest(unittest.TestCase):
             self.assertNotIn("upstream_untested", str(f))
 
 
+class UnlockEvidenceFieldTest(unittest.TestCase):
+    """Prerequisites carrying unlock_class must be on valid unlock evidence fields."""
+
+    def _base(self, bootloader_state="locked"):
+        with open(ROOT / "data" / "recipes-v0.2" / "spacewar.json", encoding="utf-8") as fh:
+            recipe = json.load(fh)
+        fp = {
+            "product_device": "Spacewar",
+            "product_model": "A063",
+            "partition_scheme": "virtual_A/B",
+            "android_version": "15",
+            "sdk": "35",
+            "bootloader_state": bootloader_state,
+        }
+        return recipe, fp
+
+    def test_unlock_class_on_android_version_phone_locked(self):
+        recipe, fp = self._base(bootloader_state="locked")
+        recipe["prerequisites"].pop("bootloader_state")
+        recipe["prerequisites"]["android_version"]["unlock_class"] = "command"
+        res = verify(fp, recipe)
+        self.assertEqual(res["verdict"], "cannot-verify")
+        codes = [r["code"] for r in res["reasons"]]
+        self.assertIn("unlock-class-on-non-unlock-field", codes)
+        self.assertIn("unlock-undeclared-for-operation", codes)
+
+    def test_unlock_class_on_sdk_phone_locked(self):
+        recipe, fp = self._base(bootloader_state="locked")
+        recipe["prerequisites"].pop("bootloader_state")
+        recipe["prerequisites"]["sdk"] = {
+            "state": "OPEN",
+            "required": "35",
+            "compare": "equal",
+            "unlock_class": "command",
+            "declared_by": "test",
+        }
+        res = verify(fp, recipe)
+        self.assertEqual(res["verdict"], "cannot-verify")
+        codes = [r["code"] for r in res["reasons"]]
+        self.assertIn("unlock-class-on-non-unlock-field", codes)
+        self.assertIn("unlock-undeclared-for-operation", codes)
+
+    def test_bootloader_state_required_locked_phone_locked(self):
+        recipe, fp = self._base(bootloader_state="locked")
+        recipe["prerequisites"]["bootloader_state"]["required"] = "locked"
+        res = verify(fp, recipe)
+        self.assertNotEqual(res["verdict"], "safe")
+        codes = [r["code"] for r in res["reasons"]]
+        self.assertIn("unlock-undeclared-for-operation", codes)
+
+    def test_valid_bootloader_state_plus_unlock_class_on_android_version_phone_unlocked(self):
+        recipe, fp = self._base(bootloader_state="unlocked")
+        recipe["prerequisites"]["android_version"]["unlock_class"] = "command"
+        res = verify(fp, recipe)
+        self.assertEqual(res["verdict"], "cannot-verify")
+        codes = [r["code"] for r in res["reasons"]]
+        self.assertIn("unlock-class-on-non-unlock-field", codes)
+
+
 if __name__ == "__main__":
     unittest.main()

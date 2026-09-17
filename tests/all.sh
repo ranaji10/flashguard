@@ -18,6 +18,7 @@ bash "$HERE/run-verify.sh"; rc=$?
 [ "$rc" = 2 ] && { echo "  ^ not build-failing, but verifier implementation is still required"; soft=1; }
 echo "  RECIPES"
 python3 "$HERE/check-recipes.py" || exit 1
+python3 "$HERE/check-recipes.py" --self-test || exit 1
 echo "  PREREQUISITE SURVEY"
 python3 "$HERE/test_prerequisite_survey.py" || exit 1
 echo "  DISPUTED"

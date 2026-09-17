@@ -59,7 +59,37 @@ class VerifyContractTest(unittest.TestCase):
         self.assertEqual(result["verdict"], "unsafe")
         self.assertTrue(any(r["code"] == "model-mismatch" for r in result["reasons"]))
         self.assertIn("coverage", result)
-        self.assertIn("coverage", result)
+
+    def test_vocabulary_missing_or_invalid_raises_refusal(self):
+        import shutil
+        import subprocess
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmproot = pathlib.Path(tmpdir)
+            shutil.copytree(ROOT / "flashguard", tmproot / "flashguard")
+            (tmproot / "data").mkdir()
+
+            # 1. No vocabulary.json
+            proc1 = subprocess.run(
+                [sys.executable, "-c", "import flashguard.verify"],
+                cwd=str(tmproot),
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(proc1.returncode, 0)
+            self.assertIn("refuses to guess", proc1.stderr)
+
+            # 2. Invalid vocabulary.json
+            (tmproot / "data" / "vocabulary.json").write_text("{bad", encoding="utf-8")
+            proc2 = subprocess.run(
+                [sys.executable, "-c", "import flashguard.verify"],
+                cwd=str(tmproot),
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(proc2.returncode, 0)
+            self.assertIn("refuses to guess", proc2.stderr)
 
 
 if __name__ == "__main__":

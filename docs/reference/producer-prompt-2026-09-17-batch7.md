@@ -377,6 +377,57 @@ git --no-optional-locks status --porcelain
 
 Commit Part A7 on its own, after Part A.
 
+## A7.5 The A7 fixes landed without their tests (paste before committing A7)
+
+Checked on 17 September by running the code: every A7 behaviour is correct. But no test in
+`tests/` names `unlock-class-on-non-unlock-field` or the vocabulary `RuntimeError`, so reverting
+either fix would leave the suite green. A fix with no test that fails without it is the
+pattern this project has paid for most. Tests only; change no product code.
+
+In `tests/test_verify_v2.py`, a new class `UnlockEvidenceFieldTest`, each test building from
+`data/recipes-v0.2/spacewar.json` loaded from disk, fingerprint
+`{"product_device": "Spacewar", "product_model": "A063", "partition_scheme": "virtual_A/B", "android_version": "15", "sdk": "35"}`
+plus the `bootloader_state` given:
+
+1. Remove `bootloader_state` prerequisite, add `unlock_class: command` to `android_version`,
+   phone `locked`: `cannot-verify`; codes include `unlock-class-on-non-unlock-field` and
+   `unlock-undeclared-for-operation`.
+2. Remove `bootloader_state` prerequisite, add prerequisite `sdk`
+   `{"state": "OPEN", "required": "35", "compare": "equal", "unlock_class": "command", "declared_by": "test"}`,
+   phone `locked`: `cannot-verify`, both codes.
+3. Keep `bootloader_state` but set its `required` to `"locked"`, phone `locked`:
+   verdict is not `safe`, codes include `unlock-undeclared-for-operation`.
+4. Keep the valid `bootloader_state` and also add `unlock_class: command` to `android_version`,
+   phone `unlocked`: `cannot-verify`, code `unlock-class-on-non-unlock-field`.
+
+In `tests/test_verify_contract.py` (or a new `tests/test_vocabulary_required.py` run from
+`tests/run-verify.sh`): run `python3 -c "import flashguard.verify"` in a subprocess from a temp
+copy of `flashguard/` whose sibling `data/` has **no** `vocabulary.json`, and again with a
+`vocabulary.json` containing `{bad`. Assert non-zero exit and `refuses to guess` in stderr both
+times. Use a subprocess, not `importlib.reload`, so the real module cache is untouched.
+
+In `tests/check-recipes.py`: add the second condition A7.1 asked for, which is missing: a
+prerequisite in `unlock_evidence_fields` carrying `unlock_class` whose `required` differs from
+the declared value fails. And add a `--self-test` flag that runs `check_recipe` against two
+in-memory plants (unlock_class on `android_version`; `bootloader_state` required `locked` with
+`unlock_class`) and exits 1 unless both raise. Call `--self-test` from `tests/all.sh` right
+after the normal run.
+
+Replace the schema agreement check for `unlock_evidence_fields`: `bootloader_state` appears all
+over `data/schema.md`, so "the name occurs somewhere" is always true. Assert the table row
+itself: a line containing `unlock_evidence_fields`, `` `bootloader_state` `` and `` `unlocked` ``.
+
+### Paste-back
+
+```
+bash tests/all.sh; echo "ALL RC=$?"
+python3 tests/check-recipes.py --self-test; echo "SELFTEST RC=$?"
+grep -c "unlock-class-on-non-unlock-field" tests/test_verify_v2.py
+git --no-optional-locks status --porcelain
+```
+
+Then commit A7 and A7.5 together.
+
 ---
 
 # PART B: the tester package, final
