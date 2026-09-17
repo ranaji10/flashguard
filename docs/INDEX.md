@@ -56,6 +56,8 @@ Read before writing the proposal or changing a design.
 | `docs/reference/runs/tester-attrition.md` | Devices that could not be captured, and the schema gap that exposed. |
 | `docs/open-items-snapshot.md` | Copy of `OPEN.md` inside the repo. Generated. |
 | `docs/reference/sync-protocol.md` | The two copies of the tracker, which one wins, and what the word "sync" means to Copilot and to a Claude session. |
+| `docs/reference/testing-runbook.md` | Organiser runbook for tester invitations, the hackerspace evening, remote wave, file intake and withdrawal. |
+| `docs/reference/form-consent-text.md` | Exact consent and privacy text for the Google Form return upload. |
 | `docs/reference/review-log.md` | What each blind review found, and whether it was ever fixed. Ticked by hand only. |
 | `docs/tracker/open-items.html` | **The tracker itself.** Double-click to open. Published copy lives at claude.ai; same source, two copies. |
 
@@ -73,6 +75,8 @@ Read before writing the proposal or changing a design.
 | `docs/Research/variant-danger-findings.md` | Findings for research task 3: upstream model differentiation, verified damage mechanisms across vendors, evaluation of the three variant architectural options. |
 | `docs/Research/reply-to-lineageos-2026-09-15.md` | What to send back to LineageOS after their answer, and the reasoning behind each line of it. |
 | `docs/Research/custom_unlock_cmd-findings.md` | What absence of `custom_unlock_cmd` means in LineageOS, read from the templates. Settles it: the field is a template override, not documentation. |
+| `docs/Research/postmarketos-config-analysis.md` | postmarketOS `deviceinfo`: no unlock field exists anywhere, by design; unlock lives on the wiki. Confirms the 0-of-556 survey number was measuring the right thing. |
+| `docs/Research/cross-distro-upstream-analysis.md` | LineageOS, OpenAndroidInstaller and postmarketOS side by side: codenames match across all three, no shared prerequisite database exists, and no project has a word for browser-invisible. |
 | `docs/reference/producer-prompt-2026-09-14-testfix.md` | Second repair: leading whitespace zeroes every field, and two of three shape tests undo their own perturbation. Test the shipped normaliser in node. |
 | `docs/reference/producer-prompt-2026-09-14-repair.md` | Repair task after the blind review: CRLF corrupting two verifier fields, a test that could not fail, pending records claiming seventeen answers. |
 | `docs/reference/producer-prompt-2026-09-15-package.md` | The build task for the merged WebUSB + bench-kit tester file. Decisions already made, and where a producer will be tempted to go wrong. |
@@ -107,8 +111,10 @@ Read before writing the proposal or changing a design.
 | `data/unlock_guidance.json` | Out-of-band unlock procedures and links keyed by unlock method. |
 | `data/recipes/` | The corpus. Five recipes, all `cannot-verify`, none safe. |
 | `tests/all.sh` | Everything checkable without a device. Run before every commit. |
+| `tests/test_intake.py` | Unit tests for session intake validation, PII blocking, and overwrite prevention. |
 | `tests/promote.py` | Descriptors to fixtures, with the ground-truth and consistency gates. |
 | `tests/webusb-probe.html` | Can a browser read what Tier A needs? **Not yet run.** |
+| `tools/intake.py` | Session export intake: validation, PII scan, contributions and descriptors writer. |
 | `tests/check-index.sh` | Enforces this file: dangling paths, unindexed docs, broken editor instruction files, diverged copies. |
 | `tests/check-tracker.sh` | Enforces the tracker: no dead paths, a banner that is not older than the data, and a "what changed" filter that is not silently empty. |
 | `tests/handoff.sh` | Prints the handoff block. Run it before switching tools. |
