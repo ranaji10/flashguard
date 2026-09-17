@@ -15,19 +15,18 @@ gets published and how to withdraw.
 
 ## What you need
 
-- Any computer you can boot from a USB stick, or a Linux machine you already have
-- The bench kit on a USB stick
+- A computer running macOS, Windows or Linux (or an Ubuntu live USB stick, which reads the most devices and takes the longest)
+- The bench kit unzipped or on a USB stick
 - Whatever old devices are in the drawer, and a USB cable that carries data
 
 ## What you do
 
-1. Boot from the Ubuntu stick, choose **Try Ubuntu**, connect to wifi.
-2. Open `START-HERE.html` from the kit stick. It walks you through the rest.
-3. Run `bash 00-setup.sh` once.
-4. For each device: plug it in, run `bash 01-detect.sh`, fill in the record builder,
-   unplug.
-5. For an Android, also run `bash 02-android.sh`.
-6. Download the records and send them back.
+1. Open `START-HERE.html` in your browser. Select your platform; the page walks you through the rest.
+2. If using an Ubuntu live stick, boot from it first.
+3. On Linux routes: run `bash 00-setup.sh` once.
+4. For each device: plug it in, follow the steps on the page (or on Linux routes run `bash 01-detect.sh`), fill in the record builder, unplug.
+5. For an Android: on Linux routes also run `bash 02-android.sh` (on macOS/Windows the page gives the exact command).
+6. Download the session export JSON and send it back.
 
 ## Before you plug in an Android phone
 
