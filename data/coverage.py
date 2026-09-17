@@ -10,6 +10,7 @@ from collections import Counter
 HERE = os.path.dirname(os.path.abspath(__file__))
 PATH = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "device-matrix.jsonl")
 RECIPE_DIRS = (os.path.join(HERE, "recipes"), os.path.join(HERE, "recipes-v0.2"))
+FLOOR_PATH = os.path.join(HERE, "coverage-floor.json")
 ROOT = os.path.dirname(HERE)
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
@@ -41,7 +42,17 @@ def bar(label, count, total, width=28):
     return "  %-22s %s %d" % (label[:22], "#" * fill + "." * (width - fill), count)
 
 
-def corpus_runs(recipe_dir):
+def load_coverage_floor():
+    if os.path.exists(FLOOR_PATH):
+        try:
+            with open(FLOOR_PATH, encoding="utf-8") as fh:
+                return json.load(fh)
+        except Exception:
+            return None
+    return None
+
+
+def corpus_runs(recipe_dir, records):
     runs = []
     if not os.path.isdir(recipe_dir):
         return runs
@@ -51,72 +62,71 @@ def corpus_runs(recipe_dir):
         path = os.path.join(recipe_dir, name)
         with open(path, encoding="utf-8") as fh:
             recipe = json.load(fh)
-        # The declared target is an explicit format fixture, not a hardware claim.
-        # THE FINGERPRINT COMES FROM THE MATRIX, NEVER FROM THE RECIPE.
-        #
-        # This replay used to pass the recipe's own `target` block as the fingerprint, so
-        # every recipe was checked against itself: device identity matched by construction,
-        # and any required state the recipe happened to name about itself would have counted
-        # as evidence that the device was in it. That is a false safe manufactured by the
-        # harness rather than found by the verifier, and it is the same circularity
-        # promote.py refuses when a descriptor's expected class came from the classifier.
-        #
-        # A recipe with no matching real device gets an EMPTY fingerprint: no evidence, so
-        # the verifier abstains and says which field it wanted. That is the honest answer,
-        # and it makes `decided` bounded by how many devices have actually been captured.
-        fingerprint, source = fingerprint_for(recipe)
-        result = verify(fingerprint, recipe)
-        runs.append({
-            "recipe_id": recipe.get("recipe_id", name),
-            "human_assessment": recipe.get("human_assessment"),
-            "expected": recipe.get("expected_verdict"),
-            "verdict": result.get("verdict"),
-            "paired": source is not None,
-            "fingerprint_source": source,
-        })
+
+        target = recipe.get("target") or {}
+        target_device = (target.get("product_device") or "").lower()
+        target_aliases = [code.lower() for code in target.get("supported_device_codes", [])]
+
+        matching_records = []
+        for r in records:
+            android = (r.get("detected") or {}).get("android") or {}
+            device = (android.get("product_device") or "").lower()
+            if device and device != "not_applicable" and (device == target_device or device in target_aliases):
+                matching_records.append(r)
+
+        if matching_records:
+            for r in matching_records:
+                android = (r.get("detected") or {}).get("android") or {}
+                result = verify(dict(android), recipe)
+                runs.append({
+                    "recipe_id": recipe.get("recipe_id", name),
+                    "human_assessment": recipe.get("human_assessment"),
+                    "expected": recipe.get("expected_verdict"),
+                    "verdict": result.get("verdict"),
+                    "paired": True,
+                    "fingerprint_source": r.get("record_id") or r.get("device_local_id"),
+                })
+        else:
+            result = verify({}, recipe)
+            runs.append({
+                "recipe_id": recipe.get("recipe_id", name),
+                "human_assessment": recipe.get("human_assessment"),
+                "expected": recipe.get("expected_verdict"),
+                "verdict": result.get("verdict"),
+                "paired": False,
+                "fingerprint_source": None,
+            })
     return runs
 
 
-def matrix_fingerprints():
-    """Real device fingerprints from the matrix, keyed by product_device, lowercased."""
-    index = {}
-    records, _ = load(PATH)
-    for r in records:
-        android = (r.get("detected") or {}).get("android") or {}
-        device = android.get("product_device")
-        if not device or device == "not_applicable":
-            continue
-        # first capture wins; later ones are the same device in another mode
-        index.setdefault(device.lower(), (android, r.get("record_id") or r.get("device_key")))
-    return index
-
-
-def fingerprint_for(recipe):
-    """The real fingerprint for this recipe's target device, or an empty one.
-
-    Returns (fingerprint, source). source is None when no device in the matrix matches,
-    which is a statement about the matrix rather than about the verifier.
-    """
-    target = recipe.get("target") or {}
-    device = (target.get("product_device") or "").lower()
-    hit = matrix_fingerprints().get(device)
-    if hit is None:
-        return {}, None
-    return dict(hit[0]), hit[1]
-
-
 def enforce_false_safe_gate(runs):
-    false_safe = sum(1 for run in runs if run["expected"] == "unsafe" and run["verdict"] == "safe")
+    false_safe = sum(
+        1 for run in runs
+        if run.get("verdict") == "safe" and (run.get("human_assessment") != "safe" or run.get("expected") != "safe")
+    )
     if false_safe:
         print("    FALSE SAFE: %d -- BUILD MUST FAIL" % false_safe)
         raise SystemExit(1)
 
 
-def report_corpus_runs():
+def enforce_verifier_gate(runs, floor_data=None):
+    enforce_false_safe_gate(runs)
+    if floor_data is None:
+        floor_data = load_coverage_floor()
+    floor = floor_data.get("decided_over_paired") if floor_data else None
+    paired_runs = [v for v in runs if v.get("paired")]
+    decided = sum(1 for v in paired_runs if v.get("verdict") in ("safe", "unsafe"))
+    share = (decided / len(paired_runs)) if paired_runs else 0.0
+    if floor is not None and share < floor:
+        print("    DECIDED SHARE BELOW FLOOR: %.2f < %.2f -- BUILD MUST FAIL" % (share, floor))
+        raise SystemExit(1)
+
+
+def report_corpus_runs(records):
     print("  CORPUS REPLAY")
     all_runs = []
     for label, recipe_dir in (("v0.1", RECIPE_DIRS[0]), ("v0.2", RECIPE_DIRS[1])):
-        runs = corpus_runs(recipe_dir)
+        runs = corpus_runs(recipe_dir, records)
         all_runs.extend(runs)
         print("    %s" % label)
         if not runs:
@@ -126,12 +136,15 @@ def report_corpus_runs():
     enforce_false_safe_gate(all_runs)
     print("    These are format fixtures, not hardware validation.")
     print()
+    return all_runs
 
 
 def report_corpus_group(runs):
     counts = Counter(run["verdict"] for run in runs)
-    false_safe = sum(1 for run in runs
-                     if run["expected"] == "unsafe" and run["verdict"] == "safe")
+    false_safe = sum(
+        1 for run in runs
+        if run.get("verdict") == "safe" and (run.get("human_assessment") != "safe" or run.get("expected") != "safe")
+    )
     decided = sum(1 for run in runs if run["verdict"] in ("safe", "unsafe"))
     definite_human = sum(1 for run in runs
                          if run["human_assessment"] in ("safe", "unsafe"))
@@ -156,6 +169,100 @@ def report_corpus_group(runs):
         print("      not in the verifier, and it closes by capturing devices.")
 
 
+SEVEN = ["manufacturer", "product_model", "chipset_family", "android_version",
+         "partition_scheme", "bootloader_state", "verified_boot_state"]
+EMPTY = ("", None, "unknown", "not_applicable", "not_recorded", "not_saved")
+
+
+def tier_a_gate(records, androids, all_runs):
+    """Score the dataset against the Tier A exit criterion, field by field.
+
+    Tier A is done when TEN records across at least THREE chipset families
+    carry all seven verifier fields, every non-Android device is classified
+    correctly against an independently established identity, and no verifier
+    run has produced a false safe.
+    """
+    def fields_present(a):
+        return [f for f in SEVEN if str(a.get(f, "")) not in EMPTY]
+
+    complete = [r for r in androids
+                if len(fields_present(r.get("detected", {}).get("android", {}))) == len(SEVEN)]
+    chips = {r["detected"]["android"].get("chipset_family")
+             for r in complete} - set(EMPTY)
+
+    non_android = [r for r in records if r not in androids]
+    ground_truth = [r for r in non_android if r.get("identity_source") == "tester_identified"]
+    wrong = [r for r in ground_truth if not r.get("classification_correct", False)]
+    unverifiable = len(non_android) - len(ground_truth)
+
+    false_safe = sum(
+        1 for v in all_runs
+        if v.get("verdict") == "safe" and (v.get("human_assessment") != "safe" or v.get("expected") != "safe")
+    )
+
+    print("\n  TIER A EXIT CRITERION")
+    def row(ok, label, got, want):
+        print("    [%s] %-38s %s" % ("x" if ok else " ", label, "%s of %s" % (got, want)))
+    row(len(complete) >= 10, "android records with all seven fields", len(complete), 10)
+    row(len(chips) >= 3, "distinct chipset families among them", len(chips), 3)
+    row(not wrong, "non-android classified correctly", len(ground_truth) - len(wrong), len(ground_truth))
+    row(false_safe == 0, "false safes (must be zero)", false_safe, 0)
+
+    if unverifiable:
+        print("\n    %d non-android record(s) carry no independent identity, so they" % unverifiable)
+        print("    cannot count either way. A record whose identity came from agreeing")
+        print("    with the scan cannot be used to validate the scan.")
+
+    if androids and len(complete) < len(androids):
+        print("\n  WHICH FIELDS ARE MISSING, ACROSS %d ANDROID RECORD(S)" % len(androids))
+        for f in SEVEN:
+            n = sum(1 for r in androids
+                    if str(r["detected"]["android"].get(f, "")) in EMPTY)
+            if n:
+                print("    %-22s missing on %d" % (f, n))
+        print("\n    A field that is genuinely not exposed by the device is a finding,")
+        print("    not a defect. Older hardware often exposes no partition or bootloader")
+        print("    property at all, and the verifier has to abstain on exactly those.")
+    print()
+
+
+def verifier_gate(runs):
+    """The paired gate: zero false safes AND a minimum share actually decided.
+
+    Reported together, always, so 'zero false safes' can never be read as
+    'it refuses everything'. See docs/reasoning/verifier-plan.md.
+    """
+    print("  VERIFIER GATE")
+    false_safe = sum(
+        1 for v in runs
+        if v.get("verdict") == "safe" and (v.get("human_assessment") != "safe" or v.get("expected") != "safe")
+    )
+    paired_runs = [v for v in runs if v.get("paired")]
+    decided = sum(1 for v in paired_runs if v.get("verdict") in ("safe", "unsafe"))
+    share = (decided / len(paired_runs)) if paired_runs else 0.0
+
+    floor_data = load_coverage_floor()
+    floor = floor_data.get("decided_over_paired") if floor_data else None
+
+    ok_fs = false_safe == 0
+    print("    [%s] false safes == 0                     %d of %d runs"
+          % ("x" if ok_fs else " ", false_safe, len(runs)))
+    if floor is None:
+        print("    [ ] decided share over paired >= floor    %.0f%% decided, NO FLOOR SET" %
+              (100 * share))
+    else:
+        ok_ds = share >= floor
+        print("    [%s] decided share over paired >= %.0f%%       %.0f%% decided (%d of %d paired runs)"
+              % ("x" if ok_ds else " ", 100 * floor, 100 * share, decided, len(paired_runs)))
+        if not ok_ds:
+            print("    DECIDED SHARE BELOW FLOOR: %.2f < %.2f -- BUILD MUST FAIL" % (share, floor))
+            raise SystemExit(1)
+    if not ok_fs:
+        print("\n    A FALSE SAFE FAILS THE BUILD. It is the one unacceptable error.")
+        raise SystemExit(1)
+    print()
+
+
 def main():
     records, bad = load(PATH)
     total = len(records)
@@ -174,11 +281,6 @@ def main():
     locks = Counter(android_field(r, "bootloader_state") for r in androids)
     routes = Counter(r.get("capture_route", "linux_live") for r in records)
     testers = Counter(r.get("tester", "?") for r in records)
-
-    runs = [v for r in records for v in r.get("verifier_runs", [])]
-    matched = sum(1 for v in runs if v.get("match") is True)
-    false_safe = sum(1 for v in runs if v.get("expected") == "unsafe" and v.get("verdict") == "safe")
-    abstained = sum(1 for v in runs if v.get("verdict") == "cannot-verify")
 
     durations = [r.get("duration_minutes") for r in records]
     durations = [d for d in durations if isinstance(d, (int, float))]
@@ -210,121 +312,12 @@ def main():
         for name, count in locks.most_common():
             print(bar(str(name), count, len(androids)))
 
-    print("\n  verifier runs          %d" % len(runs))
-    if runs:
-        print("  matched expectation    %d / %d" % (matched, len(runs)))
-        print("  abstain rate           %.0f%%" % (100.0 * abstained / len(runs)))
-        flag = "  <-- BUILD MUST FAIL" if false_safe else ""
-        print("  FALSE SAFE             %d%s" % (false_safe, flag))
-
     if durations:
         print("\n  median minutes/device  %.0f" % sorted(durations)[len(durations) // 2])
 
-    tier_a_gate(records, androids)
-    verifier_gate(records)
-
-
-SEVEN = ["manufacturer", "product_model", "chipset_family", "android_version",
-         "partition_scheme", "bootloader_state", "verified_boot_state"]
-EMPTY = ("", None, "unknown", "not_applicable", "not_recorded", "not_saved")
-
-
-def tier_a_gate(records, androids):
-    """Score the dataset against the Tier A exit criterion, field by field.
-
-    Tier A is done when TEN records across at least THREE chipset families
-    carry all seven verifier fields, every non-Android device is classified
-    correctly against an independently established identity, and no verifier
-    run has produced a false safe.
-    """
-    def fields_present(a):
-        return [f for f in SEVEN if str(a.get(f, "")) not in EMPTY]
-
-    complete = [r for r in androids
-                if len(fields_present(r.get("detected", {}).get("android", {}))) == len(SEVEN)]
-    chips = {r["detected"]["android"].get("chipset_family")
-             for r in complete} - set(EMPTY)
-
-    non_android = [r for r in records if r not in androids]
-    ground_truth = [r for r in non_android if r.get("identity_source") == "tester_identified"]
-    wrong = [r for r in ground_truth if not r.get("classification_correct", False)]
-    unverifiable = len(non_android) - len(ground_truth)
-
-    false_safe = sum(1 for r in records for v in r.get("verifier_runs", [])
-                     if v.get("expected") == "unsafe" and v.get("verdict") == "safe")
-
-    print("\n  TIER A EXIT CRITERION")
-    def row(ok, label, got, want):
-        print("    [%s] %-38s %s" % ("x" if ok else " ", label, "%s of %s" % (got, want)))
-    row(len(complete) >= 10, "android records with all seven fields", len(complete), 10)
-    row(len(chips) >= 3, "distinct chipset families among them", len(chips), 3)
-    row(not wrong, "non-android classified correctly", len(ground_truth) - len(wrong), len(ground_truth))
-    row(false_safe == 0, "false safes (must be zero)", false_safe, 0)
-
-    if unverifiable:
-        print("\n    %d non-android record(s) carry no independent identity, so they" % unverifiable)
-        print("    cannot count either way. A record whose identity came from agreeing")
-        print("    with the scan cannot be used to validate the scan.")
-
-    if androids and len(complete) < len(androids):
-        print("\n  WHICH FIELDS ARE MISSING, ACROSS %d ANDROID RECORD(S)" % len(androids))
-        for f in SEVEN:
-            n = sum(1 for r in androids
-                    if str(r["detected"]["android"].get(f, "")) in EMPTY)
-            if n:
-                print("    %-22s missing on %d" % (f, n))
-        print("\n    A field that is genuinely not exposed by the device is a finding,")
-        print("    not a defect. Older hardware often exposes no partition or bootloader")
-        print("    property at all, and the verifier has to abstain on exactly those.")
-    print()
-
-
-
-
-# The floor is deliberately None until the corpus exists. A verifier that answers
-# cannot-verify for everything has a false-safe rate of exactly zero, so the gate is
-# meaningless on its own -- but naming a number before there is anything to measure would
-# be a guess dressed as a target. Set it from the first real corpus run, then never lower
-# it without saying why in docs/reasoning/verifier-plan.md.
-DECIDED_SHARE_FLOOR = None
-
-
-def verifier_gate(records):
-    """The paired gate: zero false safes AND a minimum share actually decided.
-
-    Reported together, always, so 'zero false safes' can never be read as
-    'it refuses everything'. See docs/reasoning/verifier-plan.md.
-    """
-    report_corpus_runs()
-    runs = [v for r in records for v in r.get("verifier_runs", [])]
-    print("  VERIFIER GATE")
-    if not runs:
-        print("    no matrix verifier runs yet -- corpus replay is reported above")
-        print("    matrix-backed rates remain unmeasurable until verifier_runs are recorded\n")
-        print("    [ ] false safes == 0                     no matrix runs")
-        print("    [ ] decided share >= floor               no matrix runs, and no floor set")
-        print()
-        return
-
-    false_safe = sum(1 for v in runs
-                     if v.get("expected") == "unsafe" and v.get("verdict") == "safe")
-    decided = sum(1 for v in runs if v.get("verdict") in ("safe", "unsafe"))
-    share = decided / len(runs)
-
-    ok_fs = false_safe == 0
-    print("    [%s] false safes == 0                     %d of %d runs"
-          % ("x" if ok_fs else " ", false_safe, len(runs)))
-    if DECIDED_SHARE_FLOOR is None:
-        print("    [ ] decided share >= floor               %.0f%% decided, NO FLOOR SET" %
-              (100 * share))
-        print("\n    Set DECIDED_SHARE_FLOOR now that there is something to measure.")
-    else:
-        ok_ds = share >= DECIDED_SHARE_FLOOR
-        print("    [%s] decided share >= %.0f%%                  %.0f%% decided"
-              % ("x" if ok_ds else " ", 100 * DECIDED_SHARE_FLOOR, 100 * share))
-    if not ok_fs:
-        print("\n    A FALSE SAFE FAILS THE BUILD. It is the one unacceptable error.")
-    print()
+    all_runs = report_corpus_runs(records)
+    tier_a_gate(records, androids, all_runs)
+    verifier_gate(all_runs)
 
 
 if __name__ == "__main__":

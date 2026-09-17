@@ -57,7 +57,8 @@ def facts(text, source):
         operations = has(text, r"^steps:")
         partitions = has(text, r"^\s*additional_steps:")
     elif source == "postmarketos":
-        models = has(text, r"^deviceinfo_models=")
+        # pmaports deviceinfo has no model key; the zero is a fact about the format, not a search
+        models = False
         assets = False
         operations = has(text, r"^deviceinfo_flash_method=|^deviceinfo_.*partition=")
         partitions = has(text, r"^deviceinfo_(partition_type|super_partitions)=")

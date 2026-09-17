@@ -50,13 +50,12 @@ the structured count because the recipe schema needs machine-readable input.
 | `expected_verdict_reason` | 0 / 90 | 0 / 90 | 90 / 90 |
 | `verdict_gap_reason` | 0 / 90 | 0 / 90 | 90 / 90 |
 | `target.product_device` | 90 / 90 | 0 / 90 | 0 / 90 |
-| `target.variant` | 90 / 90 | 0 / 90 | 0 / 90 |
+| `target.models` | 90 / 90 | 0 / 90 | 0 / 90 |
 | `target.partition_scheme` | 90 / 90 | 0 / 90 | 0 / 90 |
 | `assets` | 0 / 90 | 0 / 90 | 90 / 90 |
 | `assets.asset_id` | 0 / 90 | 0 / 90 | 90 / 90 |
 | `assets.role` | 0 / 90 | 0 / 90 | 90 / 90 |
 | `assets.product_device` | 0 / 90 | 0 / 90 | 90 / 90 |
-| `assets.variant` | 0 / 90 | 0 / 90 | 90 / 90 |
 | `operations` / `operations.kind` | 90 / 90 | 0 / 90 | 0 / 90 |
 | `operations.partition` | 15 / 90 | 0 / 90 | 75 / 90 |
 | `operations.asset_id` | 0 / 90 | 0 / 90 | 90 / 90 |
@@ -76,13 +75,12 @@ the structured count because the recipe schema needs machine-readable input.
 | `expected_verdict_reason` | 0 / 556 | 0 / 556 | 556 / 556 |
 | `verdict_gap_reason` | 0 / 556 | 0 / 556 | 556 / 556 |
 | `target.product_device` | 556 / 556 | 0 / 556 | 0 / 556 |
-| `target.variant` | 0 / 556 | 0 / 556 | 556 / 556 |
+| `target.models` | 0 / 556 | 0 / 556 | 556 / 556 |
 | `target.partition_scheme` | 26 / 556 | 0 / 556 | 530 / 556 |
 | `assets` | 0 / 556 | 0 / 556 | 556 / 556 |
 | `assets.asset_id` | 0 / 556 | 0 / 556 | 556 / 556 |
 | `assets.role` | 0 / 556 | 0 / 556 | 556 / 556 |
 | `assets.product_device` | 0 / 556 | 0 / 556 | 556 / 556 |
-| `assets.variant` | 0 / 556 | 0 / 556 | 556 / 556 |
 | `operations` / `operations.kind` | 552 / 556 | 0 / 556 | 4 / 556 |
 | `operations.partition` | 26 / 556 | 0 / 556 | 530 / 556 |
 | `operations.asset_id` | 0 / 556 | 0 / 556 | 556 / 556 |
@@ -102,13 +100,12 @@ the structured count because the recipe schema needs machine-readable input.
 | `expected_verdict_reason` | 0 / 737 | 0 / 737 | 737 / 737 |
 | `verdict_gap_reason` | 0 / 737 | 0 / 737 | 737 / 737 |
 | `target.product_device` | 737 / 737 | 0 / 737 | 0 / 737 |
-| `target.variant` | 220 / 737 | 0 / 737 | 517 / 737 |
+| `target.models` | 495 / 737 | 0 / 737 | 242 / 737 |
 | `target.partition_scheme` | 281 / 737 | 0 / 737 | 456 / 737 |
 | `assets` | 0 / 737 | 0 / 737 | 737 / 737 |
 | `assets.asset_id` | 0 / 737 | 0 / 737 | 737 / 737 |
 | `assets.role` | 0 / 737 | 0 / 737 | 737 / 737 |
 | `assets.product_device` | 0 / 737 | 0 / 737 | 737 / 737 |
-| `assets.variant` | 0 / 737 | 0 / 737 | 737 / 737 |
 | `operations` / `operations.kind` | 737 / 737 | 0 / 737 | 0 / 737 |
 | `operations.partition` | 271 / 737 | 0 / 737 | 466 / 737 |
 | `operations.asset_id` | 0 / 737 | 0 / 737 | 737 / 737 |

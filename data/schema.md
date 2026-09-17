@@ -111,10 +111,6 @@ This is uncomputed state, not `"unknown"` (which is a final assertion that a fie
   "classification_correct": true,
   "classifier_confidence": null,
 
-  "verifier_runs": [
-    { "recipe_id": "good-01", "expected": "safe", "verdict": "safe", "match": true }
-  ],
-
   "related_records": [],
   "duration_minutes": null,
   "notes": ""
@@ -300,11 +296,25 @@ index worth maintaining.
 
 ---
 
-## Prerequisite condition to fingerprint evidence mapping
+## Vocabulary declaration
 
-A recipe may only ask for evidence some capture route produces.
+`data/vocabulary.json` is the single source of truth for declared operations, unlock classes, refused prerequisite names, and comparison modes.
 
-| Prerequisite condition | Fingerprint evidence field |
-|---|---|
-| `bootloader_unlocked` | `bootloader_state` |
+| Category | Values / Entries | Requires Unlock | Replacement / Notes |
+|---|---|---|---|
+| `operation_kinds` | `write-image` | true | |
+| `operation_kinds` | `boot-recovery` | true | |
+| `operation_kinds` | `unlock_bootloader` | true | |
+| `operation_kinds` | `unlock` | true | |
+| `unlock_classes` | `command`, `out_of_band` | | |
+| `refused_prerequisite_names` | `bootloader_unlocked` | | Use `bootloader_state` |
+| `prerequisite_comparisons` | `equal`, `exact_major`, `minimum` | | |
+
+## Version comparison (`compare`)
+
+Every prerequisite whose `required` is numeric, or a string that parses as a version, must explicitly declare `"compare"`, one of `equal`, `exact_major`, or `minimum`. Comparison rules must be explicit rather than assumed because upstream sources enforce exact constraints:
+- OpenAndroidInstaller (`requirements_view.py` for `requirements.android`): *"If your current installation is newer or older than Android 12, please upgrade or downgrade to the required version before proceeding."*
+- LineageOS (`spacewar.yml` `before_install`): *"LineageOS builds for this device require an Android 15 version of the stock OS"*.
+
+Treating version requirements as implicit minimums would permit a recipe to return `safe` when an upstream installer requires a downgrade or exact version match. Numeric or version prerequisites lacking an explicit `compare` declaration abstain with `prerequisite-<name>-comparison-undeclared`.
 

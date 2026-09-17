@@ -1,1 +1,36 @@
-{"schema_version":"0.2","recipe_id":"a5xelte-recovery-v2","human_assessment":"cannot-verify","expected_verdict":"cannot-verify","expected_verdict_reason":"The source identifies a recovery flash but does not provide enough state evidence for a safe verdict.","source_fields_unused":[],"source":{"device_facts_from":"https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/a5xelte.yaml","consulted":"2026-09-08","authored":"independent","upstream_untested":"unestablished"},"target":{"product_device":"a5xelte","models":["SM-A510F","SM-A510FD","SM-A510M","SM-A510MD","SM-A510Y","SM-A510YD","SM-A510K","SM-A510L","SM-A510S"],"partition_scheme":"single"},"install_method":"heimdall_flash_recovery","prerequisites":{},"operations":[{"kind":"write-image","partition":"recovery"}]}
+{
+  "expected_verdict": "cannot-verify",
+  "expected_verdict_reason": "The source identifies a recovery flash but does not provide enough state evidence for a safe verdict.",
+  "human_assessment": "cannot-verify",
+  "install_method": "heimdall_flash_recovery",
+  "operations": [
+    {
+      "kind": "write-image",
+      "partition": "recovery"
+    }
+  ],
+  "prerequisites": {},
+  "recipe_id": "a5xelte-recovery-v2",
+  "schema_version": "0.2",
+  "source": {
+    "authored": "independent",
+    "consulted": "2026-09-08",
+    "device_facts_from": "https://wiki.lineageos.org/devices/a5xelte/",
+    "upstream_untested": "unestablished"
+  },
+  "source_fields_unused": [],
+  "target": {
+    "models": [
+      "SM-A510F",
+      "SM-A510F/DS",
+      "SM-A510M",
+      "SM-A510Y",
+      "SM-A510K",
+      "SM-A510L",
+      "SM-A510S",
+      "SM-A5108"
+    ],
+    "partition_scheme": "single",
+    "product_device": "a5xelte"
+  }
+}

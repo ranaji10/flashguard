@@ -21,7 +21,7 @@ class VerdictGapTest(unittest.TestCase):
             self.assertIn("expected_verdict", recipe, path)
             self.assertIn(recipe["human_assessment"], {"safe", "unsafe", "cannot-verify"}, path)
             self.assertIn(recipe["expected_verdict"], {"safe", "unsafe", "cannot-verify"}, path)
-            if recipe["human_assessment"] == recipe["expected_verdict"]:
+            if recipe["human_assessment"] != recipe["expected_verdict"]:
                 self.assertTrue(recipe.get("verdict_gap_reason"), path)
 
 

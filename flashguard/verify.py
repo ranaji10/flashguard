@@ -1,6 +1,62 @@
 """Pure v0.1 and v0.2 recipe verification."""
 
+import json
+import pathlib
+import re
+
 from flashguard.guidance import get_guidance
+
+_VOCABULARY_PATH = pathlib.Path(__file__).resolve().parents[1] / "data" / "vocabulary.json"
+
+
+def _load_vocabulary():
+    if _VOCABULARY_PATH.is_file():
+        with open(_VOCABULARY_PATH, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+    return {
+        "operation_kinds": {
+            "write-image": {"requires_unlock": True},
+            "boot-recovery": {"requires_unlock": True},
+            "unlock_bootloader": {"requires_unlock": True},
+            "unlock": {"requires_unlock": True},
+        },
+        "unlock_classes": ["command", "out_of_band"],
+        "refused_prerequisite_names": {"bootloader_unlocked": "bootloader_state"},
+        "prerequisite_comparisons": ["equal", "exact_major", "minimum"],
+    }
+
+
+_VOCABULARY = _load_vocabulary()
+
+
+def _is_numeric_or_version(val):
+    if isinstance(val, bool):
+        return False
+    if isinstance(val, (int, float)):
+        return True
+    if isinstance(val, str):
+        val = val.strip()
+        if re.match(r"^\d+(\.\d+)*$", val):
+            return True
+    return False
+
+
+def _parse_version(val):
+    """Parse integer, float, or version string into a tuple of ints, or None if unparseable."""
+    if isinstance(val, bool):
+        return None
+    if isinstance(val, int):
+        return (val,)
+    if isinstance(val, float):
+        val = str(val)
+    if isinstance(val, str):
+        val = val.strip()
+        parts = val.split(".")
+        try:
+            return tuple(int(p) for p in parts if p)
+        except ValueError:
+            return None
+    return None
 
 
 def _reason(code, result, fields, message):
@@ -187,7 +243,6 @@ def verify(fingerprint, recipe):
 
     # Check models
     observed_model = fingerprint.get("product_model")
-    fields_consumed.append("product_model")
     target_models = target.get("models")
     if "models" not in target or target_models is None or not isinstance(target_models, list) or len(target_models) == 0:
         abstained = True
@@ -200,6 +255,7 @@ def verify(fingerprint, recipe):
             )
         )
     elif observed_model in (None, "", "unknown", "not_applicable"):
+        fields_consumed.append("product_model")
         abstained = True
         reasons.append(
             _reason(
@@ -210,6 +266,7 @@ def verify(fingerprint, recipe):
             )
         )
     elif observed_model not in target_models:
+        fields_consumed.append("product_model")
         unsafe = True
         reasons.append(
             _reason(
@@ -220,6 +277,7 @@ def verify(fingerprint, recipe):
             )
         )
     else:
+        fields_consumed.append("product_model")
         reasons.append(
             _reason(
                 "match-product_model",
@@ -306,8 +364,6 @@ def _is_unlock_prerequisite(name, req):
     declared_by = req.get("declared_by")
     if isinstance(declared_by, str) and "unlock" in declared_by.lower():
         return True
-    if name in ("bootloader_unlocked", "bootloader_state"):
-        return True
     return False
 
 
@@ -366,7 +422,6 @@ def _verify_v2(fingerprint, recipe):
     # directly by checking product_model against target.models. Ruled by Ranaji on 16 September
     # on the evidence in docs/Research/variant-danger-findings.md.
     observed_model = fingerprint.get("product_model")
-    fields_consumed.append("product_model")
     target_models = target.get("models")
 
     if "models" not in target or target_models is None or not isinstance(target_models, list) or len(target_models) == 0:
@@ -374,15 +429,18 @@ def _verify_v2(fingerprint, recipe):
             _reason("models-unestablished", "abstain", ["target.models"], "Recipe model coverage is unestablished.")
         )
     elif observed_model in (None, "", "unknown", "not_applicable"):
+        fields_consumed.append("product_model")
         reasons.append(
             _reason("missing-product_model", "abstain", ["product_model", "target.models"], "Target product_model is unconfirmed from fingerprint.")
         )
     elif observed_model not in target_models:
+        fields_consumed.append("product_model")
         reasons.append(
             _reason("model-mismatch", "fail", ["product_model", "target.models"], f"Fingerprint model '{observed_model}' contradicts the recipe target models.")
         )
         identity_mismatch = True
     else:
+        fields_consumed.append("product_model")
         reasons.append(
             _reason("match-product_model", "pass", ["product_model", "target.models"], f"Fingerprint model '{observed_model}' matches recipe target models.")
         )
@@ -428,27 +486,68 @@ def _verify_v2(fingerprint, recipe):
             "evidence": _build_evidence(fingerprint, fields_consumed),
         }
 
-    # Check for declared unlock operations requiring an explicit unlock prerequisite step
-    has_unlock_operation = any(
-        isinstance(op, dict) and op.get("kind") in ("unlock_bootloader", "unlock")
-        for op in recipe.get("operations", [])
-    )
-    has_marked_unlock_step = any(
-        _is_unlock_prerequisite(name, req)
-        for name, req in recipe["prerequisites"].items()
-    )
-    if has_unlock_operation and not has_marked_unlock_step:
+    operations = recipe.get("operations")
+    if operations is None or len(operations) == 0:
         reasons.append(
             _reason(
-                "unmarked-unlock-step",
+                "operations-none-declared",
                 "abstain",
-                ["operations", "prerequisites"],
-                "The recipe declares an unlock operation but no prerequisite is marked as an unlock step.",
+                ["operations"],
+                "The recipe declares no operations, but v0.2 has no proof that the procedure does nothing.",
             )
         )
+        return {
+            "verdict": "cannot-verify",
+            "reasons": reasons,
+            "coverage": {"schema_version": "0.2"},
+            "evidence": _build_evidence(fingerprint, fields_consumed),
+        }
+
+    known_op_kinds = _VOCABULARY.get("operation_kinds", {})
+    unlock_classes = _VOCABULARY.get("unlock_classes", [])
+    has_unlock_class_prereq = any(
+        isinstance(req, dict) and req.get("unlock_class") in unlock_classes
+        for req in (recipe["prerequisites"] or {}).values()
+    )
+
+    for op in operations:
+        kind = op.get("kind") if isinstance(op, dict) else None
+        if kind not in known_op_kinds:
+            reasons.append(
+                _reason(
+                    "operation-kind-unrecognized",
+                    "abstain",
+                    ["operations"],
+                    f"Operation kind '{kind}' is not recognized in vocabulary.",
+                )
+            )
+        elif known_op_kinds[kind].get("requires_unlock") is True and not has_unlock_class_prereq:
+            reasons.append(
+                _reason(
+                    "unlock-undeclared-for-operation",
+                    "abstain",
+                    ["operations", "prerequisites"],
+                    f"Operation '{kind}' requires unlock, but no prerequisite declares an unlock_class.",
+                )
+            )
 
     guidance = None
+    refused_names = _VOCABULARY.get("refused_prerequisite_names", {})
+    allowed_comparisons = _VOCABULARY.get("prerequisite_comparisons", ["equal", "exact_major", "minimum"])
+
     for name, requirement in recipe["prerequisites"].items():
+        if name in refused_names:
+            replacement = refused_names[name]
+            reasons.append(
+                _reason(
+                    "prerequisite-name-refused",
+                    "abstain",
+                    ["prerequisites." + name],
+                    f"Prerequisite '{name}' is refused; use '{replacement}' instead.",
+                )
+            )
+            continue
+
         is_unlock = _is_unlock_prerequisite(name, requirement)
         unlock_class = requirement.get("unlock_class") if isinstance(requirement, dict) else None
 
@@ -489,66 +588,244 @@ def _verify_v2(fingerprint, recipe):
             )
             continue
 
+        required = requirement.get("required") if isinstance(requirement, dict) else None
+        compare = requirement.get("compare") if isinstance(requirement, dict) else None
+        is_numeric_or_version_req = _is_numeric_or_version(required)
+
+        if is_numeric_or_version_req and not compare:
+            reasons.append(
+                _reason(
+                    f"prerequisite-{name}-comparison-undeclared",
+                    "abstain",
+                    [name, "prerequisites." + name],
+                    f"Prerequisite '{name}' required value is numeric or version string, but 'compare' is not declared.",
+                )
+            )
+            continue
+
+        if compare and compare not in allowed_comparisons:
+            reasons.append(
+                _reason(
+                    f"prerequisite-{name}-comparison-unrecognized",
+                    "abstain",
+                    ["prerequisites." + name],
+                    f"Prerequisite '{name}' has unrecognized comparison mode: {compare!r}.",
+                )
+            )
+            continue
+
+        if not compare:
+            compare = "equal"
+
         observed = fingerprint.get(name)
         fields_consumed.append(name)
-        required = requirement.get("required") if isinstance(requirement, dict) else None
+
         if observed in (None, "", "unknown", "not_applicable"):
-            reasons.append(_reason("missing-" + name, "abstain", [name, "prerequisites." + name], "Required prerequisite fingerprint evidence is missing."))
-        elif isinstance(required, (int, float)) and isinstance(observed, (int, float)) and observed < required:
-            reasons.append(_reason("prerequisite-" + name + "-below-minimum", "fail", [name], "Fingerprint version is below the required minimum."))
-            return {
-                "verdict": "unsafe",
-                "reasons": reasons,
-                "coverage": {"schema_version": "0.2"},
-                "evidence": _build_evidence(fingerprint, fields_consumed),
-            }
-        elif observed != required:
-            reasons.append(_reason("prerequisite-" + name + "-mismatch", "fail", [name], "Fingerprint prerequisite state contradicts the recipe."))
-            return {
-                "verdict": "unsafe",
-                "reasons": reasons,
-                "coverage": {"schema_version": "0.2"},
-                "evidence": _build_evidence(fingerprint, fields_consumed),
-            }
-        else:
-            reasons.append(_reason("prerequisite-" + name + "-confirmed", "pass", [name], "Fingerprint confirms the required prerequisite state."))
+            reasons.append(
+                _reason(
+                    "missing-" + name,
+                    "abstain",
+                    [name, "prerequisites." + name],
+                    "Required prerequisite fingerprint evidence is missing.",
+                )
+            )
+            continue
+
+        if compare == "exact_major":
+            req_ver = _parse_version(required)
+            obs_ver = _parse_version(observed)
+            if obs_ver is None:
+                reasons.append(
+                    _reason(
+                        f"prerequisite-{name}-unparseable",
+                        "abstain",
+                        [name],
+                        f"Observed value '{observed}' for prerequisite '{name}' cannot be parsed as a version.",
+                    )
+                )
+            elif req_ver is None:
+                reasons.append(
+                    _reason(
+                        f"prerequisite-{name}-unparseable",
+                        "abstain",
+                        ["prerequisites." + name],
+                        f"Required value '{required}' for prerequisite '{name}' cannot be parsed as a version.",
+                    )
+                )
+            elif obs_ver[0] == req_ver[0]:
+                reasons.append(
+                    _reason(
+                        f"prerequisite-{name}-confirmed",
+                        "pass",
+                        [name],
+                        "Fingerprint confirms the required prerequisite state.",
+                    )
+                )
+            else:
+                reasons.append(
+                    _reason(
+                        f"prerequisite-{name}-mismatch",
+                        "fail",
+                        [name],
+                        "Fingerprint prerequisite state contradicts the recipe.",
+                    )
+                )
+                return {
+                    "verdict": "unsafe",
+                    "reasons": reasons,
+                    "coverage": {"schema_version": "0.2"},
+                    "evidence": _build_evidence(fingerprint, fields_consumed),
+                }
+        elif compare == "minimum":
+            req_ver = _parse_version(required)
+            obs_ver = _parse_version(observed)
+            if obs_ver is None:
+                reasons.append(
+                    _reason(
+                        f"prerequisite-{name}-unparseable",
+                        "abstain",
+                        [name],
+                        f"Observed value '{observed}' for prerequisite '{name}' cannot be parsed as a version.",
+                    )
+                )
+            elif req_ver is None:
+                reasons.append(
+                    _reason(
+                        f"prerequisite-{name}-unparseable",
+                        "abstain",
+                        ["prerequisites." + name],
+                        f"Required value '{required}' for prerequisite '{name}' cannot be parsed as a version.",
+                    )
+                )
+            elif obs_ver >= req_ver:
+                reasons.append(
+                    _reason(
+                        f"prerequisite-{name}-confirmed",
+                        "pass",
+                        [name],
+                        "Fingerprint confirms the required prerequisite state.",
+                    )
+                )
+            else:
+                reasons.append(
+                    _reason(
+                        f"prerequisite-{name}-below-minimum",
+                        "fail",
+                        [name],
+                        "Fingerprint version is below the required minimum.",
+                    )
+                )
+                return {
+                    "verdict": "unsafe",
+                    "reasons": reasons,
+                    "coverage": {"schema_version": "0.2"},
+                    "evidence": _build_evidence(fingerprint, fields_consumed),
+                }
+        else:  # compare == "equal"
+            if is_numeric_or_version_req:
+                req_ver = _parse_version(required)
+                obs_ver = _parse_version(observed)
+                if obs_ver is None:
+                    reasons.append(
+                        _reason(
+                            f"prerequisite-{name}-unparseable",
+                            "abstain",
+                            [name],
+                            f"Observed value '{observed}' for prerequisite '{name}' cannot be parsed as a version.",
+                        )
+                    )
+                elif req_ver is None:
+                    reasons.append(
+                        _reason(
+                            f"prerequisite-{name}-unparseable",
+                            "abstain",
+                            ["prerequisites." + name],
+                            f"Required value '{required}' for prerequisite '{name}' cannot be parsed as a version.",
+                        )
+                    )
+                elif obs_ver == req_ver:
+                    reasons.append(
+                        _reason(
+                            f"prerequisite-{name}-confirmed",
+                            "pass",
+                            [name],
+                            "Fingerprint confirms the required prerequisite state.",
+                        )
+                    )
+                else:
+                    reasons.append(
+                        _reason(
+                            f"prerequisite-{name}-mismatch",
+                            "fail",
+                            [name],
+                            "Fingerprint prerequisite state contradicts the recipe.",
+                        )
+                    )
+                    return {
+                        "verdict": "unsafe",
+                        "reasons": reasons,
+                        "coverage": {"schema_version": "0.2"},
+                        "evidence": _build_evidence(fingerprint, fields_consumed),
+                    }
+            else:
+                if str(observed) == str(required):
+                    reasons.append(
+                        _reason(
+                            f"prerequisite-{name}-confirmed",
+                            "pass",
+                            [name],
+                            "Fingerprint confirms the required prerequisite state.",
+                        )
+                    )
+                else:
+                    reasons.append(
+                        _reason(
+                            f"prerequisite-{name}-mismatch",
+                            "fail",
+                            [name],
+                            "Fingerprint prerequisite state contradicts the recipe.",
+                        )
+                    )
+                    return {
+                        "verdict": "unsafe",
+                        "reasons": reasons,
+                        "coverage": {"schema_version": "0.2"},
+                        "evidence": _build_evidence(fingerprint, fields_consumed),
+                    }
 
     source = recipe.get("source", {})
-    # source.upstream_untested is the canonical field name.
-    # source.untested is retained as a deprecated fallback during the v0.1 -> v0.2 transition.
-    if "upstream_untested" in source:
+    if "untested" in source:
+        reasons.append(
+            _reason(
+                "recipe-untested-legacy-field",
+                "abstain",
+                ["source.untested"],
+                "Recipe carries deprecated source.untested field.",
+            )
+        )
+    elif "upstream_untested" in source:
         upstream_untested = source.get("upstream_untested")
         source_field = "source.upstream_untested"
-    elif "untested" in source:
-        upstream_untested = source.get("untested")
-        source_field = "source.untested"
-    else:
-        upstream_untested = None
-        source_field = "source.upstream_untested"
-
-    # Only an explicit False, "unestablished", or None (absent) may permit safe.
-    # True, "untested" (and legacy aliases "true", "marked_untested") indicate unverified hardware.
-    # Anything else is an unrecognized value and treated as a recipe defect.
-    if upstream_untested is False or upstream_untested is None or upstream_untested == "unestablished":
-        pass
-    elif upstream_untested is True or upstream_untested in ("untested", "true", "marked_untested"):
-        reasons.append(
-            _reason(
-                "recipe-untested-upstream",
-                "abstain",
-                [source_field],
-                "Upstream marked this configuration as untested on physical hardware.",
+        if upstream_untested is False or upstream_untested is None or upstream_untested == "unestablished":
+            pass
+        elif upstream_untested is True or upstream_untested in ("untested", "true", "marked_untested"):
+            reasons.append(
+                _reason(
+                    "recipe-untested-upstream",
+                    "abstain",
+                    [source_field],
+                    "Upstream marked this configuration as untested on physical hardware.",
+                )
             )
-        )
-    else:
-        reasons.append(
-            _reason(
-                "recipe-untested-unrecognized",
-                "abstain",
-                [source_field],
-                f"Recipe specifies unrecognized upstream_untested value: {upstream_untested!r}.",
+        else:
+            reasons.append(
+                _reason(
+                    "recipe-untested-unrecognized",
+                    "abstain",
+                    [source_field],
+                    f"Recipe specifies unrecognized upstream_untested value: {upstream_untested!r}.",
+                )
             )
-        )
 
     verdict = "cannot-verify" if any(reason["result"] == "abstain" for reason in reasons) else "safe"
     evidence = _build_evidence(fingerprint, fields_consumed)

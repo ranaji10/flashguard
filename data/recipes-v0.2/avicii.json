@@ -1,1 +1,54 @@
-{"schema_version":"0.2","recipe_id":"avicii-v2","human_assessment":"unsafe","expected_verdict":"cannot-verify","expected_verdict_reason":"The source requires unlock before additional partitions and recovery; the fingerprint is not part of the recipe.","source_fields_unused":["additional_steps"],"source":{"device_facts_from":"https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/avicii.yaml","consulted":"2026-09-08","authored":"independent","upstream_untested":"unestablished"},"target":{"product_device":"avicii","models":["AC2001","AC2003"],"partition_scheme":"A/B"},"install_method":"fastboot_boot_recovery","prerequisites":{"bootloader_state":{"state":"OPEN","required":"unlocked","declared_by":"unlock_bootloader","source_evidence":"source config unlock_bootloader steps"},"android_version":{"state":"OPEN","required":12,"declared_by":"requirements.android","source_evidence":"source config requirements.android"}},"operations":[{"kind":"write-image","partition":"dtbo"},{"kind":"write-image","partition":"vbmeta"},{"kind":"boot-recovery","partition":"boot"}]}
+{
+  "expected_verdict": "cannot-verify",
+  "expected_verdict_reason": "The source requires unlock before additional partitions and recovery; the fingerprint is not part of the recipe.",
+  "human_assessment": "unsafe",
+  "install_method": "fastboot_boot_recovery",
+  "operations": [
+    {
+      "kind": "write-image",
+      "partition": "dtbo"
+    },
+    {
+      "kind": "write-image",
+      "partition": "vbmeta"
+    },
+    {
+      "kind": "boot-recovery",
+      "partition": "boot"
+    }
+  ],
+  "prerequisites": {
+    "android_version": {
+      "compare": "exact_major",
+      "declared_by": "requirements.android",
+      "required": 12,
+      "source_evidence": "If your current installation is newer or older than Android 12, please upgrade or downgrade to the required version before proceeding.",
+      "state": "OPEN"
+    },
+    "bootloader_state": {
+      "declared_by": "unlock_bootloader",
+      "required": "unlocked",
+      "source_evidence": "source config unlock_bootloader steps",
+      "state": "OPEN"
+    }
+  },
+  "recipe_id": "avicii-v2",
+  "schema_version": "0.2",
+  "source": {
+    "authored": "independent",
+    "consulted": "2026-09-08",
+    "device_facts_from": "https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/avicii.yaml",
+    "upstream_untested": "unestablished"
+  },
+  "source_fields_unused": [
+    "additional_steps"
+  ],
+  "target": {
+    "models": [
+      "AC2001",
+      "AC2003"
+    ],
+    "partition_scheme": "A/B",
+    "product_device": "avicii"
+  }
+}

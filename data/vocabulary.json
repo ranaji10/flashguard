@@ -1,0 +1,11 @@
+{
+  "operation_kinds": {
+    "write-image":       {"requires_unlock": true},
+    "boot-recovery":     {"requires_unlock": true},
+    "unlock_bootloader": {"requires_unlock": true},
+    "unlock":            {"requires_unlock": true}
+  },
+  "unlock_classes": ["command", "out_of_band"],
+  "refused_prerequisite_names": {"bootloader_unlocked": "bootloader_state"},
+  "prerequisite_comparisons": ["equal", "exact_major", "minimum"]
+}

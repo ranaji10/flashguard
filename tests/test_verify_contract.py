@@ -49,15 +49,16 @@ class VerifyContractTest(unittest.TestCase):
 
     def test_model_mismatch_is_unsafe_not_abstention(self):
         fingerprint = {
-            "product_device": "cheetah",
-            "product_model": "GD1YQ",
+            "product_device": "oriole",
+            "product_model": "NOT-A-REAL-MODEL",
             "partition_scheme": "A/B",
         }
 
         result = verify(fingerprint, SAFE_RECIPE)
 
         self.assertEqual(result["verdict"], "unsafe")
-        self.assertTrue(result["reasons"])
+        self.assertTrue(any(r["code"] == "model-mismatch" for r in result["reasons"]))
+        self.assertIn("coverage", result)
         self.assertIn("coverage", result)
 
 

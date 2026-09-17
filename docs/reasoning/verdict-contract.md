@@ -31,7 +31,7 @@ At least one condition has been **identified** under which executing this recipe
 this device would leave it unbootable or unrecoverable, or the recipe contains an
 operation whose preconditions are provably unmet by this fingerprint.
 
-Examples: an image built for a different model or variant; a bootloader written
+Examples: an image built for a different model; a bootloader written
 before the sequence can complete; a slot assumption contradicted by the device's
 actual partition scheme; an operation requiring an unlocked bootloader on a device
 reporting locked.
@@ -45,15 +45,15 @@ nothing specific has been found wrong. It is a first-class answer, not a failure
 and the reasons array must say which check abstained and why.
 
 Reached when a required fingerprint field is absent or was inferred rather than
-observed; the device is absent from the matrix; an asset cannot be tied to a model
-or variant; the recipe uses an operation the state model does not cover; model
+observed; the device is absent from the matrix; an asset cannot be tied to a model;
+the recipe uses an operation the state model does not cover; model
 coverage for this chipset family or partition scheme is insufficient; or required
-variant or prerequisite evidence is unconfirmed.
+prerequisite evidence is unconfirmed.
 
 ### `safe`
 
 Every operation's preconditions are met by the fingerprint, every asset or target is
-established as matching this device's model and variant, and the modelled end state
+established as matching this device's model, and the modelled end state
 is bootable.
 
 **`safe` requires unanimity and confirming evidence.** It is emitted only when no
@@ -120,23 +120,9 @@ must do out-of-band, and optionally a link to the authoritative upstream documen
 
 ---
 
-## Graded variant matching
+## Hardware model matching
 
-Variant matching is graded, and the verdict follows the evidence:
-
-- **Exact variant match** -> `safe` or `unsafe` reachable.
-- **Alias in `supported_device_codes`** -> `safe` or `unsafe` reachable, because upstream
-  explicitly asserted the equivalence.
-- **Partition and bootloader agree, variant unconfirmed** -> `cannot-verify`, naming
-  `variant` as the missing evidence. **NEVER `safe`.**
-
-This is not a fallback to a looser match on failure. That would make less evidence
-produce a more permissive verdict, which is the false-safe pathway. It is a weaker
-verdict for weaker evidence.
-
-A human confirming the variant is **NEW EVIDENCE**, not inference. It moves a recipe to
-the exact-match tier and must be recorded with its own provenance, the way the bench
-kit records `identity_source`.
+Hardware model matching is performed directly against `target.models` (an explicit allowlist of supported `ro.product.model` strings), as ruled on 16 September on the evidence in `docs/Research/variant-danger-findings.md`.
 
 ---
 

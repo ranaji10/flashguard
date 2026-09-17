@@ -133,3 +133,11 @@ wrote is a recipe you understood, and a recipe you transformed is one you assume
 
 Anything marked `derived` must not enter `data/recipes/` until the licence question in
 `OPEN.md` is settled.
+
+## Version comparison (`compare`)
+
+Every prerequisite whose `required` is numeric or parses as a version must explicitly declare `"compare"` as one of `equal`, `exact_major`, or `minimum`. Comparison is never assumed to be a minimum because upstream sources require exact versions in their own words:
+- OpenAndroidInstaller (`requirements.android`): *"If your current installation is newer or older than Android 12, please upgrade or downgrade to the required version before proceeding."*
+- LineageOS (`spacewar.yml` `before_install`): *"LineageOS builds for this device require an Android 15 version of the stock OS"*.
+
+Treating these as minimums would risk a false safe where a device on a newer version must downgrade before flashing. An undeclared comparison on a version or numeric requirement abstains with `prerequisite-<name>-comparison-undeclared`.

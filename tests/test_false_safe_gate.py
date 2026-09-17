@@ -19,6 +19,21 @@ class FalseSafeGateTest(unittest.TestCase):
             COVERAGE.enforce_false_safe_gate([{"expected": "unsafe", "verdict": "safe"}])
         self.assertEqual(raised.exception.code, 1)
 
+    def test_avicii_shape_false_safe_exits_one(self):
+        """A run with expected cannot-verify, human_assessment unsafe, verdict safe fails the gate."""
+        with self.assertRaises(SystemExit) as raised:
+            COVERAGE.enforce_false_safe_gate([{"expected": "cannot-verify", "human_assessment": "unsafe", "verdict": "safe"}])
+        self.assertEqual(raised.exception.code, 1)
+
+    def test_decided_share_below_floor_exits_one(self):
+        """A decided share below the floor fails the build."""
+        runs = [
+            {"paired": True, "verdict": "cannot-verify", "expected": "cannot-verify", "human_assessment": "cannot-verify"}
+        ]
+        with self.assertRaises(SystemExit) as raised:
+            COVERAGE.enforce_verifier_gate(runs, floor_data={"decided_over_paired": 0.5})
+        self.assertEqual(raised.exception.code, 1)
+
     def test_avicii_recipe_on_disk_is_not_safe(self):
         recipe_path = ROOT / "data" / "recipes-v0.2" / "avicii.json"
         with open(recipe_path, encoding="utf-8") as fh:
@@ -30,7 +45,6 @@ class FalseSafeGateTest(unittest.TestCase):
             "product_model": target["models"][0],
             "partition_scheme": target.get("partition_scheme"),
             "bootloader_state": "unlocked",
-            "bootloader_unlocked": "unlocked",
             "android_version": 12,
         }
         result = verify(fp, recipe)
