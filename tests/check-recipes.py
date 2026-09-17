@@ -39,6 +39,11 @@ def check_schema_table_agrees_with_vocabulary(vocab):
         if f"`{uc}`" not in content and uc not in content:
             raise AssertionError(f"data/schema.md missing unlock class `{uc}` from vocabulary.json")
 
+    # Check unlock evidence fields
+    for uef in vocab.get("unlock_evidence_fields", {}).keys():
+        if f"`{uef}`" not in content and uef not in content:
+            raise AssertionError(f"data/schema.md missing unlock evidence field `{uef}` from vocabulary.json")
+
     # Check refused names
     for k, v in vocab.get("refused_prerequisite_names", {}).items():
         if f"`{k}`" not in content or f"`{v}`" not in content:
@@ -52,6 +57,7 @@ def check_schema_table_agrees_with_vocabulary(vocab):
 
 def check_recipe(recipe, recipe_name, derive_fields, vocab):
     refused = vocab.get("refused_prerequisite_names", {})
+    unlock_evidence_fields = vocab.get("unlock_evidence_fields", {})
     prerequisites = recipe.get("prerequisites") or {}
     for prereq_name, req in prerequisites.items():
         if prereq_name in refused:
@@ -64,6 +70,11 @@ def check_recipe(recipe, recipe_name, derive_fields, vocab):
                 f"Recipe '{recipe_name}' prerequisite '{prereq_name}' requires evidence field "
                 f"'{prereq_name}' which is produced by no capture route."
             )
+        if isinstance(req, dict) and req.get("unlock_class"):
+            if prereq_name not in unlock_evidence_fields:
+                raise AssertionError(
+                    f"Recipe '{recipe_name}' prerequisite '{prereq_name}' carries unlock_class but is not an unlock evidence field."
+                )
 
 
 def main():

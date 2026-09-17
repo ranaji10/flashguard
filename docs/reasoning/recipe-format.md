@@ -111,6 +111,8 @@ Every recipe carries a `source` block. It is not decoration:
 `true` (marked untested upstream), `false` (not marked untested), or `"unestablished"`
 (default, uninspected/unknown).
 
+`target_models_from` is present only when the model list comes from a different source than the other device facts.
+
 `authored` is one of:
 
 - **`independent`** — a human read the device facts (codename, partition scheme, which

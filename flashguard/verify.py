@@ -10,20 +10,13 @@ _VOCABULARY_PATH = pathlib.Path(__file__).resolve().parents[1] / "data" / "vocab
 
 
 def _load_vocabulary():
-    if _VOCABULARY_PATH.is_file():
+    if not _VOCABULARY_PATH.is_file():
+        raise RuntimeError("data/vocabulary.json is missing or invalid: the verifier refuses to guess its vocabulary")
+    try:
         with open(_VOCABULARY_PATH, "r", encoding="utf-8") as handle:
             return json.load(handle)
-    return {
-        "operation_kinds": {
-            "write-image": {"requires_unlock": True},
-            "boot-recovery": {"requires_unlock": True},
-            "unlock_bootloader": {"requires_unlock": True},
-            "unlock": {"requires_unlock": True},
-        },
-        "unlock_classes": ["command", "out_of_band"],
-        "refused_prerequisite_names": {"bootloader_unlocked": "bootloader_state"},
-        "prerequisite_comparisons": ["equal", "exact_major", "minimum"],
-    }
+    except Exception as exc:
+        raise RuntimeError("data/vocabulary.json is missing or invalid: the verifier refuses to guess its vocabulary") from exc
 
 
 _VOCABULARY = _load_vocabulary()
@@ -505,9 +498,13 @@ def _verify_v2(fingerprint, recipe):
 
     known_op_kinds = _VOCABULARY.get("operation_kinds", {})
     unlock_classes = _VOCABULARY.get("unlock_classes", [])
-    has_unlock_class_prereq = any(
-        isinstance(req, dict) and req.get("unlock_class") in unlock_classes
-        for req in (recipe["prerequisites"] or {}).values()
+    unlock_evidence_fields = _VOCABULARY.get("unlock_evidence_fields", {})
+    has_unlock_evidence_prereq = any(
+        isinstance(req, dict)
+        and name in unlock_evidence_fields
+        and req.get("required") == unlock_evidence_fields[name]
+        and req.get("unlock_class") in unlock_classes
+        for name, req in (recipe["prerequisites"] or {}).items()
     )
 
     for op in operations:
@@ -521,7 +518,7 @@ def _verify_v2(fingerprint, recipe):
                     f"Operation kind '{kind}' is not recognized in vocabulary.",
                 )
             )
-        elif known_op_kinds[kind].get("requires_unlock") is True and not has_unlock_class_prereq:
+        elif known_op_kinds[kind].get("requires_unlock") is True and not has_unlock_evidence_prereq:
             reasons.append(
                 _reason(
                     "unlock-undeclared-for-operation",
@@ -548,8 +545,20 @@ def _verify_v2(fingerprint, recipe):
             )
             continue
 
-        is_unlock = _is_unlock_prerequisite(name, requirement)
         unlock_class = requirement.get("unlock_class") if isinstance(requirement, dict) else None
+
+        if unlock_class and name not in unlock_evidence_fields:
+            reasons.append(
+                _reason(
+                    "unlock-class-on-non-unlock-field",
+                    "abstain",
+                    ["prerequisites." + name],
+                    f"Prerequisite '{name}' carries unlock_class, but '{name}' is not an unlock evidence field.",
+                )
+            )
+            continue
+
+        is_unlock = _is_unlock_prerequisite(name, requirement)
 
         if is_unlock and not unlock_class:
             reasons.append(

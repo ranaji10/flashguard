@@ -151,19 +151,22 @@ def report_corpus_group(runs):
     information_loss = sum(1 for run in runs
                            if run["human_assessment"] in ("safe", "unsafe")
                            and run["expected"] not in ("safe", "unsafe"))
-    print("      recipes                 %d" % len(runs))
+    distinct_recipes = len(set(run["recipe_id"] for run in runs))
+    total_runs = len(runs)
+    print("      recipes                 %d" % distinct_recipes)
+    print("      runs                    %d" % total_runs)
     print("      safe                    %d" % counts.get("safe", 0))
     print("      unsafe                  %d" % counts.get("unsafe", 0))
     print("      cannot-verify           %d" % counts.get("cannot-verify", 0))
     print("      false safes             %d" % false_safe)
-    print("      decided                 %d / %d (%.0f%%)" %
-      (decided, len(runs), 100.0 * decided / len(runs)))
+    print("      decided runs            %d / %d (%.0f%%)" %
+      (decided, total_runs, 100.0 * decided / total_runs))
     print("      information loss        %d / %d definite human assessments (%.0f%%)" %
       (information_loss, definite_human,
        100.0 * information_loss / definite_human if definite_human else 0))
     paired = sum(1 for run in runs if run.get("paired"))
-    print("      paired with a real device %d / %d" % (paired, len(runs)))
-    if paired < len(runs):
+    print("      paired runs             %d / %d" % (paired, total_runs))
+    if paired < total_runs:
         print("      decided cannot exceed paired: a recipe with no captured device has no")
         print("      evidence to check against, so it abstains. That is a gap in the matrix,")
         print("      not in the verifier, and it closes by capturing devices.")

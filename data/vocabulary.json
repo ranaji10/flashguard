@@ -6,6 +6,7 @@
     "unlock":            {"requires_unlock": true}
   },
   "unlock_classes": ["command", "out_of_band"],
+  "unlock_evidence_fields": {"bootloader_state": "unlocked"},
   "refused_prerequisite_names": {"bootloader_unlocked": "bootloader_state"},
   "prerequisite_comparisons": ["equal", "exact_major", "minimum"]
 }

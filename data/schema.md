@@ -307,6 +307,7 @@ index worth maintaining.
 | `operation_kinds` | `unlock_bootloader` | true | |
 | `operation_kinds` | `unlock` | true | |
 | `unlock_classes` | `command`, `out_of_band` | | |
+| `unlock_evidence_fields` | `bootloader_state` (`unlocked`) | | |
 | `refused_prerequisite_names` | `bootloader_unlocked` | | Use `bootloader_state` |
 | `prerequisite_comparisons` | `equal`, `exact_major`, `minimum` | | |
 

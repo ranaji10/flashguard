@@ -15,7 +15,8 @@
   "source": {
     "authored": "independent",
     "consulted": "2026-09-08",
-    "device_facts_from": "https://wiki.lineageos.org/devices/a5xelte/",
+    "device_facts_from": "https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/a5xelte.yaml",
+    "target_models_from": "https://wiki.lineageos.org/devices/a5xelte/",
     "upstream_untested": "unestablished"
   },
   "source_fields_unused": [],
