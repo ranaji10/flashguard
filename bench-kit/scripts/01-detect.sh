@@ -25,6 +25,10 @@ if [ -z "$NEW" ]; then
 
   NOTHING NEW DETECTED.
 
+  Nothing new since setup. If the device was plugged in when you ran
+  setup, it is in the baseline: unplug it, run bash 00-setup.sh, plug it back in, run this
+  again.
+
   Before concluding the device is invisible, try in this order:
     1. a different cable. Charge-only cables are the most common cause.
     2. a different USB port, directly on the machine, not through a hub.
@@ -41,10 +45,20 @@ NONE
 fi
 
 if [ "$COUNT" -gt 1 ]; then
-  echo; echo "  MORE THAN ONE new device appeared:"
-  echo "$NEW" | sed 's/^/    /'
-  echo; echo "  Unplug all but one and run this again."
-  exit 1
+  echo
+  echo "  More than one new device appeared:"
+  echo "$NEW" | awk '{print "    " NR ") " $0}'
+  echo
+  while true; do
+    printf '  Which one is the device you are testing? (1-%d): ' "$COUNT"
+    read -r choice
+    if [ "$choice" -ge 1 ] 2>/dev/null && [ "$choice" -le "$COUNT" ] 2>/dev/null; then
+      NEW=$(printf '%s\n' "$NEW" | sed -n "${choice}p")
+      break
+    else
+      echo "  Please enter a number between 1 and $COUNT."
+    fi
+  done
 fi
 
 ID=$(printf '%s' "$NEW" | grep -oE 'ID [0-9a-f]{4}:[0-9a-f]{4}' | head -1 | awk '{print $2}')

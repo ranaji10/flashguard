@@ -1,0 +1,17 @@
+START-HERE.html
+STOP-LIST.txt
+participation-note.md
+protocol.md
+example-record.json
+README.md
+scripts/00-setup.sh
+scripts/01-detect.sh
+scripts/02-android.sh
+scripts/03-fastboot.sh
+scripts/_lib.sh
+scripts/classify.sh
+scripts/derive.sh
+
+# excluded:
+# MANIFEST.txt
+# descriptors

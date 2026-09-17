@@ -50,6 +50,109 @@ for f in "$HERE"/fixtures/*.desc "$HERE"/real-descriptors/*.desc; do
   fi
 done
 
+if [ -z "$FILTER" ]; then
+  TMP_TEST="$(mktemp -d /tmp/bench-test.XXXXXX)"
+  mkdir -p "$TMP_TEST/bin" "$TMP_TEST/bench"
+
+  cat <<'EOF' > "$TMP_TEST/bin/sudo"
+#!/usr/bin/env bash
+shift
+"$@"
+EOF
+  chmod +x "$TMP_TEST/bin/sudo"
+
+  cat <<'EOF' > "$TMP_TEST/bin/apt"
+#!/usr/bin/env bash
+exit 0
+EOF
+  chmod +x "$TMP_TEST/bin/apt"
+
+  cat <<'EOF' > "$TMP_TEST/bin/adb"
+#!/usr/bin/env bash
+exit 0
+EOF
+  chmod +x "$TMP_TEST/bin/adb"
+
+  cat <<'EOF' > "$TMP_TEST/bin/fastboot"
+#!/usr/bin/env bash
+exit 0
+EOF
+  chmod +x "$TMP_TEST/bin/fastboot"
+
+  # Fake lsusb: outputs mouse + USB stick
+  cat <<'EOF' > "$TMP_TEST/bin/lsusb"
+#!/usr/bin/env bash
+if [ "${1:-}" = "-v" ]; then
+  echo "Bus 001 Device 003: ID 0781:5583 SanDisk Corp. Ultra Fit"
+  echo "      bInterfaceClass         8 Mass Storage"
+  exit 0
+fi
+echo "Bus 001 Device 002: ID 046d:c52b Logitech, Inc. Unifying Receiver"
+echo "Bus 001 Device 003: ID 0781:5583 SanDisk Corp. Ultra Fit"
+EOF
+  chmod +x "$TMP_TEST/bin/lsusb"
+
+  # 1. 00-setup.sh baseline check: answering 'y' deletes baseline and exits 1
+  SETUP_RC=0
+  SETUP_OUT=$(printf '\ny\n' | HOME="$TMP_TEST" PATH="$TMP_TEST/bin:$PATH" bash "$HERE/../bench-kit/scripts/00-setup.sh" 2>&1) || SETUP_RC=$?
+  if [ "$SETUP_RC" -eq 1 ] && \
+     printf '%s' "$SETUP_OUT" | grep -q "Is the phone or tablet you are about to test in this list?" && \
+     printf '%s' "$SETUP_OUT" | grep -q "Unplug it, then run bash 00-setup.sh again" && \
+     [ ! -f "$TMP_TEST/bench/baseline.txt" ]; then
+    printf '  %-46s %-14s %-14s %s\n' "00-setup.sh baseline prompt [y]" "exit 1, del" "exit 1, del" "ok"
+    pass=$((pass+1))
+  else
+    printf '  %-46s %-14s %-14s %s\n' "00-setup.sh baseline prompt [y]" "exit 1, del" "failed" "FAIL"
+    fail=$((fail+1))
+  fi
+
+  # 2. 01-detect.sh: multi-device prompt when diff > 1
+  echo "Bus 001 Device 002: ID 046d:c52b Logitech, Inc. Unifying Receiver" > "$TMP_TEST/bench/baseline.txt"
+  cat <<'EOF' > "$TMP_TEST/bin/lsusb"
+#!/usr/bin/env bash
+if [ "${1:-}" = "-v" ]; then
+  echo "Bus 001 Device 003: ID 0781:5583 SanDisk Corp. Ultra Fit"
+  echo "      bInterfaceClass         8 Mass Storage"
+  exit 0
+fi
+echo "Bus 001 Device 002: ID 046d:c52b Logitech, Inc. Unifying Receiver"
+echo "Bus 001 Device 003: ID 0781:5583 SanDisk Corp. Ultra Fit"
+echo "Bus 001 Device 004: ID 18d1:4ee2 Google Inc. Nexus/Pixel Device"
+EOF
+  chmod +x "$TMP_TEST/bin/lsusb"
+
+  DETECT_RC=0
+  DETECT_OUT=$(printf '1\n' | HOME="$TMP_TEST" PATH="$TMP_TEST/bin:$PATH" bash "$HERE/../bench-kit/scripts/01-detect.sh" 2>&1) || DETECT_RC=$?
+  if [ "$DETECT_RC" -eq 0 ] && \
+     printf '%s' "$DETECT_OUT" | grep -q "More than one new device appeared:" && \
+     printf '%s' "$DETECT_OUT" | grep -q "Which one is the device you are testing?"; then
+    printf '  %-46s %-14s %-14s %s\n' "01-detect.sh multi-device prompt" "prompt & select" "prompt & select" "ok"
+    pass=$((pass+1))
+  else
+    printf '  %-46s %-14s %-14s %s\n' "01-detect.sh multi-device prompt" "prompt & select" "failed" "FAIL"
+    fail=$((fail+1))
+  fi
+
+  # 3. 01-detect.sh: empty diff message
+  cat <<'EOF' > "$TMP_TEST/bin/lsusb"
+#!/usr/bin/env bash
+echo "Bus 001 Device 002: ID 046d:c52b Logitech, Inc. Unifying Receiver"
+EOF
+  chmod +x "$TMP_TEST/bin/lsusb"
+
+  EMPTY_OUT=$(HOME="$TMP_TEST" PATH="$TMP_TEST/bin:$PATH" bash "$HERE/../bench-kit/scripts/01-detect.sh" 2>&1) || true
+  if printf '%s' "$EMPTY_OUT" | grep -q "Nothing new since setup"; then
+    printf '  %-46s %-14s %-14s %s\n' "01-detect.sh empty diff message" "helpful advice" "helpful advice" "ok"
+    pass=$((pass+1))
+  else
+    printf '  %-46s %-14s %-14s %s\n' "01-detect.sh empty diff message" "helpful advice" "failed" "FAIL"
+    fail=$((fail+1))
+  fi
+
+  rm -rf "$TMP_TEST"
+  rm -rf "$HERE/../bench-kit/descriptors"
+fi
+
 echo
 echo "  $pass passed, $fail failed, $skip skipped"
 if [ "$skip" -gt 0 ]; then

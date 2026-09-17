@@ -19,6 +19,7 @@ node_modules/
 
 # Captures land here during a run; they are merged into data/ afterwards
 bench-kit/device-matrix.jsonl
+dist/
 
 # The open-items tracker and its export. PRIVATE, deliberately untracked.
 # They carry names and contract details belonging to people who did not sign up for this

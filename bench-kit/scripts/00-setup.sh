@@ -38,6 +38,20 @@ read -r -p "  Press Enter when nothing under test is connected... " _
 
 lsusb > "$BENCH/baseline.txt"
 echo
+echo "  baseline devices:"
+awk '{print "    " NR ") " $0}' "$BENCH/baseline.txt"
+echo
+printf '  Is the phone or tablet you are about to test in this list? [y/N] '
+read -r ans
+case "$ans" in
+  [yY]|[yY][eE][sS])
+    rm -f "$BENCH/baseline.txt"
+    echo
+    echo "  Unplug it, then run bash 00-setup.sh again"
+    exit 1
+    ;;
+esac
+echo
 echo "  baseline written: $BENCH/baseline.txt"
 echo "  $(wc -l < "$BENCH/baseline.txt") devices are part of the machine itself"
 echo

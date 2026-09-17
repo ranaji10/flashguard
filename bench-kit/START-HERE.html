@@ -298,6 +298,7 @@
 (function(){
 "use strict";
 
+var KIT_VERSION = "2026-09-17";
 var KEY="bench.v4", S={ host_platform:"not_stated", host_shell:"not_applicable", tester:"", consent:false, setup:0, records:[], descriptors:[], seen:{}, devices:{}, wrapup:"" };
 try{ var raw=localStorage.getItem(KEY); if(raw){ S=Object.assign(S,JSON.parse(raw)||{}); } }catch(e){}
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
@@ -598,8 +599,8 @@ function scrWebUSB(){
       '<p style="margin:0 0 12px;font-size:14px;color:var(--ink-soft)">'+
       'Browsers refuse whole device classes (mass storage, HID, audio, video) by design. A device the OS mounts happily can still be invisible in WebUSB.</p>'+
       '<div class="btns">'+
-        '<button class="b choice" id="ansNotListed" type="button">No — not listed in chooser</button>'+
-        '<button class="b choice" id="ansCancelled" type="button">Yes — I cancelled</button>'+
+        '<button class="b choice" id="ansNotListed" type="button">My device was not in the list</button>'+
+        '<button class="b choice" id="ansCancelled" type="button">I closed the window</button>'+
       '</div>'+
     '</div>'+
     '<div class="alert bad" id="err" style="margin-top:16px"></div>'+
@@ -621,7 +622,7 @@ function scrWebUSB(){
     err.className="alert bad";
     qcard.style.display="none";
     if(!("usb" in navigator)){
-      err.textContent="This browser does not support WebUSB (navigator.usb absent). Use Chrome, Edge, or Brave.";
+      err.textContent="This browser does not support WebUSB (navigator.usb absent). Open this file in Chrome, Edge or Brave. If you already are, tell the organiser what browser and version this is.";
       err.className="alert bad on";
       return;
     }
@@ -1118,6 +1119,8 @@ function saveRecord(correct,cls,name,mode,note){
 }
 
 /* ---------- finish & export ---------- */
+var sessionDownloaded = false;
+
 function scrFinish(){
   var andr=S.records.filter(function(r){var c=r.detected.device_class;return c==="adb"||c==="fastboot";}).length;
   var mism=S.records.filter(function(r){return !r.classification_correct;}).length;
@@ -1127,11 +1130,6 @@ function scrFinish(){
     '<h1>'+S.records.length+' record'+(S.records.length===1?"":"s")+', '+andr+' with a fingerprint</h1>'+
     (mism?'<p><b>'+mism+' classification'+(mism===1?"":"s")+' had to be corrected.</b> Those are the'+
       ' most valuable rows in the set.</p>':"")+
-    '<div class="why net"><b>Export your session</b>Download the session file below. It contains all records,'+
-    ' descriptors, and your notes packaged together.</div>'+
-    '<div class="btns" style="margin-bottom:20px">'+
-      '<button class="b" id="dlsession_fin">Download session export (.json)</button>'+
-    '</div>'+
     '<h2>Three questions, while it is fresh</h2>'+
     '<p class="sub">Type the answers into the box below. They go into the file with your records.</p>'+
     '<ol class="mini">'+
@@ -1142,7 +1140,18 @@ function scrFinish(){
     '<textarea class="note" id="wrap" placeholder="Anything at all. One line is fine."></textarea>'+
     '<div class="btns"><button class="b" id="savewrap">Save these answers</button></div>'+
     '<div class="alert good" id="wrapok"></div>'+
-    '<div class="btns"><button class="b ghost" id="more">Capture another device</button></div>'+
+    '<div class="why net" style="margin-top:24px"><b>Export your session</b>Download the session file below. It contains all records,'+
+    ' descriptors, and your notes packaged together.</div>'+
+    '<div class="btns" style="margin-top:16px;margin-bottom:24px">'+
+      '<button class="b" id="dlsession_fin">Download session export (.json)</button>'+
+    '</div>'+
+    '<div class="prompt-card" style="margin-top:20px">'+
+      '<h2 style="margin-top:0">Send it back</h2>'+
+      '<p>Attach the one file you just downloaded. Its name starts with <code>flashguard-</code>. It already contains your descriptors and notes, so there is nothing else to attach.</p>'+
+      '<p style="margin-top:12px"><a class="b" href="https://forms.gle/YkdmQvvBQMYQDKXVA" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none;color:white">Open return form</a></p>'+
+      '<p class="sub" style="margin-top:12px">The form needs a Google account. If you do not have one, email the file to the address in the participation note instead.</p>'+
+    '</div>'+
+    '<div class="btns" style="margin-top:24px"><button class="b ghost" id="more">Capture another device</button></div>'+
   '</div>');
   var wt=c.querySelector("#wrap"); if(wt) wt.value=S.wrapup||"";
   c.querySelector("#savewrap").addEventListener("click",function(){
@@ -1150,9 +1159,15 @@ function scrFinish(){
     var ok=c.querySelector("#wrapok");
     if(lk){ ok.textContent="That contains "+lk+". Records are published, so please take it out.";
             ok.className="alert bad on"; return; }
+    var changed = (v !== (S.wrapup || ""));
     S.wrapup=v; save();
-    ok.textContent="Saved. It will be in the downloaded file.";
-    ok.className="alert good on";
+    if(sessionDownloaded && changed){
+      ok.textContent="You changed your answers after downloading. Download again so the file has them.";
+      ok.className="alert bad on";
+    } else {
+      ok.textContent="Saved. It will be in the downloaded file.";
+      ok.className="alert good on";
+    }
   });
   c.querySelector("#dlsession_fin").addEventListener("click",downloadSessionFile);
   document.getElementById("more").addEventListener("click",scrLoop);
@@ -1162,6 +1177,7 @@ function getSessionExportObject(){
   var ts = new Date().toISOString();
   var handle = S.tester || "unnamed";
   return {
+    kit_version: KIT_VERSION,
     handle: handle,
     host_platform: S.host_platform || "not_stated",
     host_shell: S.host_shell || "not_applicable",
@@ -1181,6 +1197,7 @@ function getSessionExportObject(){
 
 function downloadSessionFile(){
   if(!S.records.length){ alert("No records captured yet."); return; }
+  sessionDownloaded = true;
   var obj = getSessionExportObject();
   var jsonStr = JSON.stringify(obj, null, 2);
   var tsStr = new Date().toISOString().replace(/[:.]/g, "-");

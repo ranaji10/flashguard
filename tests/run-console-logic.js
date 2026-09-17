@@ -316,5 +316,32 @@ console.log("\n  host_platform, host_shell, capture_route, browser_enumeration &
   }
 }
 
+console.log("\n  no verdict strings in START-HERE.html");
+{
+  // Strip HTML comments <!-- ... -->
+  let stripped = html.replace(/<!--[\s\S]*?-->/g, "");
+  // Strip JS block comments /* ... */
+  stripped = stripped.replace(/\/\*[\s\S]*?\*\//g, "");
+  // Strip JS line comments // ...
+  stripped = stripped.replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+
+  const forbiddenStrings = ["safe to flash", "unsafe", "cannot-verify"];
+  for (const str of forbiddenStrings) {
+    const found = stripped.toLowerCase().includes(str.toLowerCase());
+    is(found, false, `START-HERE.html contains no '${str}' outside comments`);
+  }
+}
+
+console.log("\n  browser_enumeration: no inference without tester click");
+{
+  const curUnset = { dev: { k: "phone", phone: true } };
+  const S = { host_platform: "macos", tester: "test" };
+  const recUnset = buildRecord(curUnset, S, true, "adb", "Pixel 4", "default", "", {}, "test.desc", 1, "test-agent");
+  is(recUnset.browser_enumeration, "not_attempted", "unset browser_enumeration defaults to not_attempted");
+  is(recUnset.browser_enumeration_source, "not_applicable", "unset browser_enumeration has source not_applicable");
+  is(recUnset.browser_enumeration !== "not_listed", true, "not_listed is not set without tester choice");
+  is(recUnset.browser_enumeration !== "tester_cancelled", true, "tester_cancelled is not set without tester choice");
+}
+
 console.log(`\n  ${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

@@ -20,3 +20,12 @@ does not carry the executable bit.
 of properties rather than dumping everything, because `adb devices` and
 `fastboot getvar all` both print the device serial and this data is published openly.
 Do not simplify them into a dump.
+
+## Checking the files
+
+To compare against `SHA256SUMS.txt`:
+- Windows: `certutil -hashfile <file> SHA256`
+- macOS: `shasum -a 256 <file>` (or `shasum -a 256 -c SHA256SUMS.txt`)
+- Linux: `sha256sum <file>` (or `sha256sum -c SHA256SUMS.txt`)
+
+These checksums cover this kit. Flashguard holds no checksum for any ROM, and nothing in this kit checks one.

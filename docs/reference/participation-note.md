@@ -53,7 +53,7 @@ responsibility for a device you own. If a device is precious, leave it in the dr
 device that will not power on or will not appear is a useful record in itself and is worth
 reporting rather than forcing.
 
-**How to send it back.** RETURN ROUTE — Google form link: `https://forms.gle/YkdmQvvBQMYQDKXVA`. Send the records file and the `descriptors/` folder.
+**How to send it back.** Google form link: `https://forms.gle/YkdmQvvBQMYQDKXVA`. Attach the one file you just downloaded. Its name starts with `flashguard-`. It already contains your descriptors and notes, so there is nothing else to attach. If you attach anything over 1 MB, such as a screen recording, a person looks at it before anything from it enters the published dataset. The form needs a Google account. If you do not have one, email the file to `ranaji.deb@gmail.com` instead.
 Nothing else, and never a screenshot of a terminal you have not read.
 
 **What we keep about you.** A handle or initials of your choosing, and one contact address so
