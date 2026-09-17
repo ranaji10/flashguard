@@ -72,7 +72,6 @@ Read before writing the proposal or changing a design.
 | `docs/Research/TASK-2-install-method-classification.md` | The follow-up research task: classify all 28 install methods by what the unlock requires and whether a device can ever report it. |
 | `docs/Research/TASK-3-variant-danger.md` | Research task 3: where two models share a codename, does anything upstream treat them differently, and has flashing the wrong one ever cost anybody a modem? Settles the `variant` ruling. |
 | `docs/Research/variant-danger-findings.md` | Task 3 result: cross-flashing across models sharing one codename blows ARB fuses, zeroes IMEIs and corrupts modem NVRAM. 89 codenames have 2-6 upstream pages each. |
-| `docs/Research/variant-danger-findings.md` | Findings for research task 3: upstream model differentiation, verified damage mechanisms across vendors, evaluation of the three variant architectural options. |
 | `docs/Research/reply-to-lineageos-2026-09-15.md` | What to send back to LineageOS after their answer, and the reasoning behind each line of it. |
 | `docs/Research/custom_unlock_cmd-findings.md` | What absence of `custom_unlock_cmd` means in LineageOS, read from the templates. Settles it: the field is a template override, not documentation. |
 | `docs/Research/postmarketos-config-analysis.md` | postmarketOS `deviceinfo`: no unlock field exists anywhere, by design; unlock lives on the wiki. Confirms the 0-of-556 survey number was measuring the right thing. |

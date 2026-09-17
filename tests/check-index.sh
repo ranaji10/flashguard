@@ -129,6 +129,15 @@ if [ -f "$O" ] && [ -f "$S" ] && ! cmp -s "$O" "$S"; then
   fail=1
 fi
 
+# ---- 7. duplicate paths in docs/INDEX.md -------------------------------------
+dup_paths=$(grep -oE '^\|[[:space:]]*`[^`]+`' "$ROOT/docs/INDEX.md" | tr -d '|` ' | sort | uniq -d)
+if [ -n "$dup_paths" ]; then
+  echo "  DUPLICATE PATHS in docs/INDEX.md:"
+  for p in $dup_paths; do echo "      $p"; done
+  echo "      Each file must appear in docs/INDEX.md at most once."
+  fail=1
+fi
+
 if [ "$fail" = 0 ] && [ "$soft" = 0 ]; then
   n=$(find "$ROOT/docs" -name '*.md' | wc -l | tr -d ' ')
   echo "  $n documents, all indexed; no dangling paths; no placeholders in tester text"
