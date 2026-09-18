@@ -15,6 +15,33 @@
 set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"; . "$DIR/_lib.sh"
 
+# adb present? Testers who downloaded Google's platform-tools zip are told to drop the
+# platform-tools folder into scripts/, so look there before giving up. Without this
+# check a missing adb fell through to "NO PHONE IN ADB MODE", which sent people to
+# their phone settings for a problem on the computer (first-round feedback, 18 Sep).
+if ! command -v adb >/dev/null 2>&1; then
+  for cand in "$DIR/platform-tools" "$HOME/Downloads/platform-tools"; do
+    if [ -x "$cand/adb" ]; then PATH="$cand:$PATH"; export PATH; break; fi
+  done
+fi
+if ! command -v adb >/dev/null 2>&1; then
+  cat <<'NOADB'
+
+  ADB IS NOT INSTALLED ON THIS COMPUTER.
+
+  macOS:   brew install android-platform-tools
+           or download "SDK Platform-Tools for Mac" from
+           https://developer.android.com/tools/releases/platform-tools
+           unzip it, and move the platform-tools folder into this scripts folder.
+  Ubuntu:  sudo apt install adb
+           (older releases: sudo apt install android-tools-adb)
+
+  Then run this script again.
+
+NOADB
+  exit 1
+fi
+
 STATE=$(adb get-state 2>/dev/null || true)
 case "$STATE" in
   device) echo; echo "  adb: connected and authorised" ;;

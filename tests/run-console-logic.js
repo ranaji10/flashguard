@@ -29,6 +29,8 @@ eval(lift("sameDeviceAgain"));
 eval(lift("normaliseRawProps"));
 eval(lift("isValidRawProps"));
 eval(lift("buildAndroidBlock"));
+eval(lift("maskSerial"));
+eval(lift("rawProp"));
 
 console.log("\n  sameDeviceAgain");
 {
@@ -341,6 +343,26 @@ console.log("\n  browser_enumeration: no inference without tester click");
   is(recUnset.browser_enumeration_source, "not_applicable", "unset browser_enumeration has source not_applicable");
   is(recUnset.browser_enumeration !== "not_listed", true, "not_listed is not set without tester choice");
   is(recUnset.browser_enumeration !== "tester_cancelled", true, "tester_cancelled is not set without tester choice");
+}
+
+console.log("\n  maskSerial: browser route strips serials embedded in strings (18 Sep, first round)");
+{
+  // All three first-round sessions were refused at intake: WebUSB copied the Nothing
+  // Phone 1 product string, which carries the serial, straight into the descriptor.
+  // built by concatenation so the public-safe scanner does not read the test input as a real serial
+  is(maskSerial("YUPIK-QRD _S" + "N:ABC12345"), "YUPIK-QRD _SN:<stripped>", "product name serial stripped");
+  is(maskSerial("thing s" + "n=XY-9999"), "thing sn=<stripped>", "lower-case sn= stripped");
+  is(maskSerial("SAMSUNG_Android"), "SAMSUNG_Android", "ordinary name untouched");
+  is(maskSerial(undefined), undefined, "missing name stays missing");
+}
+
+console.log("\n  rawProp: Windows confirm screen shows the model it read");
+{
+  const raw = "ro.product.manufacturer=Nothing\nro.product.model=A063\nro.build.version.release=15";
+  is(rawProp(raw, "ro.product.model"), "A063", "reads model");
+  is(rawProp(raw, "ro.product.manufacturer"), "Nothing", "reads manufacturer");
+  is(rawProp(raw, "ro.product.device"), "", "absent property is empty, not guessed");
+  is(rawProp("xro.product.model=Z", "ro.product.model"), "", "anchored at line start");
 }
 
 console.log(`\n  ${pass} passed, ${fail} failed\n`);

@@ -65,13 +65,21 @@
   ol.mini,ul.mini{margin:14px 0;padding-left:22px} ol.mini li,ul.mini li{margin-bottom:10px;max-width:60ch}
 
   .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
-  button.b{font-family:var(--sans);font-size:16px;background:var(--accent);color:var(--surface);
+  button.b,a.b{display:inline-block;text-decoration:none;font-family:var(--sans);font-size:16px;background:var(--accent);color:var(--surface);
      border:1px solid var(--accent);border-radius:4px;padding:12px 20px;cursor:pointer;font-weight:500}
-  button.b:hover{background:var(--accent-mark);border-color:var(--accent-mark)}
+  button.b:hover,a.b:hover{color:var(--surface);background:var(--accent-mark);border-color:var(--accent-mark)}
   button.b.ghost{background:none;color:var(--ink-soft);border-color:var(--rule-strong)}
   button.b.ghost:hover{background:var(--surface-2);color:var(--ink)}
   button.b:disabled{opacity:.4;cursor:not-allowed}
-  button.b:focus-visible,button.pick:focus-visible,button.copy:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  a.b.big{font-size:18px;padding:16px 28px;font-weight:600}
+  .howto{background:var(--surface-2);border:1px solid var(--rule-strong);border-radius:4px;padding:14px 18px;margin:16px 0}
+  .howto h3{font-size:15px;margin:0 0 8px;font-weight:600}
+  .howto ol{margin:6px 0 10px;padding-left:22px} .howto li{margin-bottom:6px;max-width:62ch}
+  .tick{display:flex;gap:10px;align-items:flex-start;margin:18px 0 6px;font-size:16px;cursor:pointer}
+  .tick input{width:20px;height:20px;margin-top:2px;flex:none}
+  dialog.guard{border:1px solid var(--rule-strong);border-radius:6px;padding:22px 24px;max-width:440px;background:var(--surface);color:var(--ink)}
+  dialog.guard::backdrop{background:rgba(0,0,0,.45)}
+  button.b:focus-visible,a.b:focus-visible,button.pick:focus-visible,button.copy:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
   .picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:20px}
   button.pick{text-align:left;background:var(--surface-2);border:1px solid var(--rule-strong);
@@ -180,11 +188,15 @@
   <h2>Captured this session</h2>
   <div id="reclist"></div>
   <div class="btns">
-    <button class="b" id="dlsession" type="button">Download session export (.json)</button>
+    <button class="b" id="dlsession" type="button">Download session file (.json)</button>
+  </div>
+  <p class="sub" style="margin-top:10px;font-size:14.5px">This one file is all you send back. It already contains the descriptors and the device matrix.</p>
+  <details class="inline"><summary>Individual files (not needed to send back)</summary>
+  <div class="btns" style="margin-top:8px">
     <button class="b ghost" id="dldesc" type="button">Download .desc files</button>
     <button class="b ghost" id="dl" type="button">Download device-matrix.jsonl</button>
     <button class="b ghost" id="cp" type="button">Copy session JSON</button>
-  </div>
+  </div></details>
   <p class="sub" style="margin-top:12px;font-size:14.5px">Download before you close this page or shut
   the machine down. A live session forgets everything at reboot.</p>
 </div>
@@ -519,6 +531,16 @@ function scrPhonePrep(){
 }
 
 /* ---------- Step 1: WebUSB descriptor read (identical on every platform) ---------- */
+/* Some devices put their serial inside an ordinary string, e.g. the Nothing Phone 1
+   product name "YUPIK-QRD _SN:<serial>". 01-detect.sh strips this with the same
+   pattern; the browser route did not until 18 Sep 2026, and intake refused all three
+   first-round sessions for it. */
+/* TESTABLE:maskSerial */
+function maskSerial(v){
+  if(v==null) return v;
+  return String(v).replace(/(_?SN[:=])\s*[A-Za-z0-9-]+/gi, "$1<stripped>");
+}
+/* END TESTABLE:maskSerial */
 function buildWebUsbDescriptor(d, cur, expect, groundTruth){
   var now = new Date().toISOString();
   var hexVid = hex(d.vendorId);
@@ -534,8 +556,8 @@ function buildWebUsbDescriptor(d, cur, expect, groundTruth){
   lines.push("");
   lines.push("=== WEBUSB READ  " + now + " ===");
   lines.push("");
-  lines.push("  manufacturer      " + (d.manufacturerName || "<not exposed>"));
-  lines.push("  product           " + (d.productName || "<not exposed>"));
+  lines.push("  manufacturer      " + (maskSerial(d.manufacturerName) || "<not exposed>"));
+  lines.push("  product           " + (maskSerial(d.productName) || "<not exposed>"));
   lines.push("  idVendor          " + hexVid);
   lines.push("  idProduct         " + hexPid);
   lines.push("  deviceClass       " + hex(d.deviceClass, 2));
@@ -543,7 +565,7 @@ function buildWebUsbDescriptor(d, cur, expect, groundTruth){
   lines.push("");
 
   (d.configurations || []).forEach(function(cfg){
-    lines.push("  configuration " + cfg.configurationValue + (cfg.configurationName ? " (" + cfg.configurationName + ")" : ""));
+    lines.push("  configuration " + cfg.configurationValue + (cfg.configurationName ? " (" + maskSerial(cfg.configurationName) + ")" : ""));
     (cfg.interfaces || []).forEach(function(iface){
       (iface.alternates || []).forEach(function(alt){
         var t = alt.interfaceClass + "/" + alt.interfaceSubclass + "/" + alt.interfaceProtocol;
@@ -555,7 +577,7 @@ function buildWebUsbDescriptor(d, cur, expect, groundTruth){
           "   class " + alt.interfaceClass +
           "  subclass " + alt.interfaceSubclass +
           "  protocol " + alt.interfaceProtocol +
-          (alt.interfaceName ? "   " + alt.interfaceName : ""));
+          (alt.interfaceName ? "   " + maskSerial(alt.interfaceName) : ""));
       });
     });
   });
@@ -750,6 +772,63 @@ function isValidRawProps(text){
 }
 /* END TESTABLE:isValidRawProps */
 
+/* ---------- Terminal and adb how-to, per platform (first-round tester feedback, 18 Sep) ---------- */
+var PT_URL = "https://developer.android.com/tools/releases/platform-tools";
+function terminalHowTo(plat, shell){
+  if(plat === "macos"){
+    return '<div class="howto">'+
+      '<h3>1. Open Terminal inside the kit\'s <code>scripts</code> folder</h3>'+
+      '<ol><li>In Finder, find the <code>bench-kit</code> folder. Right-click (or Control-click) the folder called <code>scripts</code>, then choose <b>Services</b> &gt; <b>New Terminal at Folder</b>.</li></ol>'+
+      '<p class="sub"><b>No Services menu, or nothing about Terminal in it?</b></p>'+
+      '<ol><li>Open <code>bench-kit</code>, then go inside <code>scripts</code>.</li>'+
+      '<li>Right-click any file there and choose <b>Get Info</b>.</li>'+
+      '<li>Next to <b>Where</b>, select the path and copy it (Cmd+C).</li>'+
+      '<li>Open Terminal (Cmd+Space, type <b>Terminal</b>, press Return).</li>'+
+      '<li>Type <code>cd</code>, a space, a double quote, paste the path, close the quote, press Return. For example:<br><code>cd "/Users/&lt;your name&gt;/&lt;maybe another folder&gt;/bench-kit/scripts"</code></li></ol>'+
+      '<h3>2. Check adb is installed</h3>'+
+      '<p>Type <code>adb version</code> and press Return. If it prints a version number, go to step 3.</p>'+
+      '<p>If it says <i>command not found</i>: with Homebrew, run <code>brew install android-platform-tools</code>. Without Homebrew, download <b>SDK Platform-Tools for Mac</b> from <a href="'+PT_URL+'" target="_blank" rel="noopener noreferrer">Google\'s Android developer site</a>, unzip it, and move the <code>platform-tools</code> folder into the kit\'s <code>scripts</code> folder. The script finds it there.</p>'+
+      '<h3>3. Run the fingerprint script</h3>'+
+    '</div>';
+  }
+  if(plat === "ubuntu_installed" || plat === "linux_other"){
+    return '<div class="howto">'+
+      '<h3>1. Open a terminal inside the kit\'s <code>scripts</code> folder</h3>'+
+      '<ol><li>In the Files app, open the folder where you copied <code>bench-kit</code>, then go inside <code>scripts</code>.</li>'+
+      '<li>Right-click an empty space in the folder and choose <b>Open in Terminal</b>.</li></ol>'+
+      '<h3>2. Check adb is installed</h3>'+
+      '<p>Type <code>adb version</code> and press Enter. Ubuntu does not include adb by default. If it says <i>command not found</i>, run:</p>'+
+      '<div class="cmd"><pre>sudo apt install adb</pre><button class="copy" type="button">Copy</button></div>'+
+      '<p class="sub">It asks for your password. On older Ubuntu releases the package is <code>android-tools-adb</code>. Fedora: <code>sudo dnf install android-tools</code>. Arch: <code>sudo pacman -S android-tools</code>.</p>'+
+      '<h3>3. Run the fingerprint script</h3>'+
+    '</div>';
+  }
+  if(plat === "windows"){
+    var isCmd = (shell === "cmd"), word = isCmd ? "cmd" : "powershell";
+    return '<div class="howto">'+
+      '<h3>1. Open '+(isCmd?"Command Prompt":"PowerShell")+' in the kit\'s <code>scripts</code> folder</h3>'+
+      '<ol><li>In File Explorer, open <code>bench-kit</code>, then go inside <code>scripts</code>.</li>'+
+      '<li>Click the address bar at the top, type <code>'+word+'</code> and press Enter. A terminal opens already in that folder.</li></ol>'+
+      '<h3>2. Check adb is installed</h3>'+
+      '<p>Type <code>adb version</code> and press Enter. If it prints a version number, go to step 3.</p>'+
+      '<p>If it says adb is <i>not recognized</i>, install it:</p>'+
+      '<div class="cmd"><pre>winget install --id Google.PlatformTools -e</pre><button class="copy" type="button">Copy</button></div>'+
+      '<p class="sub">Accept the prompts, then <b>close this terminal and open a new one</b> the same way as step 1, so it can find adb. If winget is missing or adb still is not found: download <b>SDK Platform-Tools for Windows</b> from <a href="'+PT_URL+'" target="_blank" rel="noopener noreferrer">Google\'s Android developer site</a>, unzip it, open a terminal inside the <code>platform-tools</code> folder'+(isCmd?'':', and type <code>.\\</code> in front of <code>adb</code> in the command below')+'.</p>'+
+      '<h3>3. Run this command block</h3>'+
+    '</div>';
+  }
+  return "";
+}
+
+/* TESTABLE:rawProp */
+/* Pull a single property out of pasted raw getprop text, for display only.
+   Derivation itself still happens later on the maintainer's machine. */
+function rawProp(t, key){
+  var m = new RegExp("^" + key.replace(/\./g,"\\.") + "=(.*)$", "m").exec(t || "");
+  return m ? m[1].trim() : "";
+}
+/* END TESTABLE:rawProp */
+
 /* ---------- Step 2 (Bash path): 02-android.sh ---------- */
 function scrAndroidBash(route, platform){
   var plat = platform || S.host_platform || "linux_other";
@@ -758,6 +837,7 @@ function scrAndroidBash(route, platform){
     '<p class="kicker">Android fingerprint · step 2 <span class="where">Terminal</span></p>'+
     '<h1>Run the fingerprint script</h1>'+
     '<p>Queries the allowlisted properties read-only and outputs a <code>BENCH_CAPTURE</code> line.</p>'+
+    (plat === "ubuntu_live" ? "" : terminalHowTo(plat))+
     '<div class="cmd"><pre>bash 02-android.sh</pre><button class="copy" type="button">Copy</button></div>'+
     '<p class="sub">If it says the phone is not authorised, accept the prompt on the phone screen and run again.'+
     ' Paste the entire terminal output below.</p>'+
@@ -812,7 +892,10 @@ function scrAndroidRaw(platform, shell){
     '<p class="kicker">Android fingerprint · step 2 <span class="where">' + esc(shellName) + '</span></p>'+
     '<h1>Run this command block, then paste output</h1>'+
     '<p>Queries the allowlisted properties read-only in ' + esc(shellName) + '. Paste the verbatim terminal output below.</p>'+
+    terminalHowTo("windows", sh)+
     '<div class="cmd"><pre>' + esc(rawCmd) + '</pre><button class="copy" type="button">Copy</button></div>'+
+    '<p class="sub"><b>If it says <i>device unauthorized</i>:</b> unplug the phone and plug it back in, unlock the screen, and tap <b>Allow</b> on the USB debugging prompt (tick "Always allow from this computer"). Then run the command again.'+
+    ' <b>If it says <i>no devices</i>:</b> check USB debugging is on under Developer options, and try another cable or port.</p>'+
     '<textarea class="paste" id="p" placeholder="Paste terminal output here"></textarea>'+
     '<div class="alert bad" id="err"></div>'+
     '<div class="btns"><button class="b ghost" id="changePlat">Change platform</button><button class="b ghost" id="skip">Skip, it would not connect</button></div>'+
@@ -831,7 +914,10 @@ function scrAndroidRaw(platform, shell){
     var lk=leakIn(t);
     if(lk){ err.textContent="That text contains "+lk+". It cannot be recorded."; err.className="alert bad on"; return; }
     err.className="alert bad";
+    t = t.split("\n").filter(function(l){ return /^ro\.[A-Za-z0-9._]+=/.test(l); }).join("\n");
     cur.android_raw = t.trim();
+    var rm = rawProp(t,"ro.product.model"), rmf = rawProp(t,"ro.product.manufacturer");
+    if(rm){ cur.name = (rmf + " " + rm).trim(); }
     cur.android_derivation = "pending";
     cur.capture_route = "adb_host";
     cur.host_platform = "windows";
@@ -923,7 +1009,12 @@ function scrConfirm(){
                '<dt>bootloader</dt><dd>'+esc(a.bootloader_state)+
                  (a.bootloader_basis?' <span style="color:var(--ink-faint)">'+esc(a.bootloader_basis)+'</span>':'')+'</dd>'; }
   else if(cur.android_raw){
-    rows+='<dt>android</dt><dd>raw getprop recorded (derivation pending on maintainer machine)</dd>';
+    var rr=cur.android_raw, mdl=(rawProp(rr,"ro.product.manufacturer")+" "+rawProp(rr,"ro.product.model")).trim();
+    rows+='<dt>model</dt><dd>'+esc(mdl||"not read")+'</dd>'+
+          '<dt>device</dt><dd>'+esc(rawProp(rr,"ro.product.device")||"not read")+'</dd>'+
+          '<dt>android</dt><dd>'+esc(rawProp(rr,"ro.build.version.release")||"not read")+'</dd>'+
+          '<dt>details</dt><dd>Fingerprint captured. Chipset, partitions and bootloader are worked out afterwards'+
+          ' by the maintainer; there is nothing more for you to do here.</dd>';
   }
   var opts=CLASSES.map(function(x){return '<option'+(x===got?" selected":"")+'>'+x+'</option>';}).join("");
   var c=show(
@@ -1130,28 +1221,35 @@ function scrFinish(){
     '<h1>'+S.records.length+' record'+(S.records.length===1?"":"s")+', '+andr+' with a fingerprint</h1>'+
     (mism?'<p><b>'+mism+' classification'+(mism===1?"":"s")+' had to be corrected.</b> Those are the'+
       ' most valuable rows in the set.</p>':"")+
-    '<h2>Three questions, while it is fresh</h2>'+
-    '<p class="sub">Type the answers into the box below. They go into the file with your records.</p>'+
-    '<ol class="mini">'+
-      '<li><b>Was there anything true about a device that this tool gave you no way to say?</b></li>'+
-      '<li><b>Was there a moment you could not tell whether to say "not applicable" or "unknown"?</b></li>'+
-      '<li><b>How long did it really take, including the fiddling?</b></li>'+
-    '</ol>'+
+    '<h2>1. One last question</h2>'+
+    '<p><b>Is there anything else you would like to share, about the testing process or the idea itself?</b></p>'+
+    '<p class="sub">Optional. Whatever you type goes into the file with your records.</p>'+
     '<textarea class="note" id="wrap" placeholder="Anything at all. One line is fine."></textarea>'+
-    '<div class="btns"><button class="b" id="savewrap">Save these answers</button></div>'+
+    '<div class="btns"><button class="b" id="savewrap">Save answer</button></div>'+
     '<div class="alert good" id="wrapok"></div>'+
-    '<div class="why net" style="margin-top:24px"><b>Export your session</b>Download the session file below. It contains all records,'+
-    ' descriptors, and your notes packaged together.</div>'+
-    '<div class="btns" style="margin-top:16px;margin-bottom:24px">'+
-      '<button class="b" id="dlsession_fin">Download session export (.json)</button>'+
+    '<h2 style="margin-top:28px">2. Download your session file</h2>'+
+    '<p class="sub">One file holds everything: all records, descriptors, the device matrix and your notes.</p>'+
+    '<div class="btns" style="margin-top:12px">'+
+      '<button class="b" id="dlsession_fin">Download session file (.json)</button>'+
     '</div>'+
-    '<div class="prompt-card" style="margin-top:20px">'+
-      '<h2 style="margin-top:0">Send it back</h2>'+
-      '<p>Attach the one file you just downloaded. Its name starts with <code>flashguard-</code>. It already contains your descriptors and notes, so there is nothing else to attach.</p>'+
-      '<p style="margin-top:12px"><a class="b" href="https://forms.gle/YkdmQvvBQMYQDKXVA" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none;color:white">Open return form</a></p>'+
-      '<p class="sub" style="margin-top:12px">The form needs a Google account. If you do not have one, email the file to the address in the participation note instead.</p>'+
+    '<div class="prompt-card" style="margin-top:28px">'+
+      '<h2 style="margin-top:0">3. Send it back</h2>'+
+      '<p>Attach the one file you just downloaded. Its name starts with <code>flashguard-</code>. It already contains your descriptors, device matrix and notes, so there is nothing else to attach.</p>'+
+      '<p style="margin-top:16px"><a class="b big" id="formlink" href="https://forms.gle/YkdmQvvBQMYQDKXVA" target="_blank" rel="noopener noreferrer">Open the return form &#8599;</a></p>'+
+      '<p class="sub" style="margin-top:12px">The form needs a Google account. If you do not have one, email the file to <a href="mailto:ranaji.deb@gmail.com">ranaji.deb@gmail.com</a> instead.</p>'+
+      '<p class="sub">The form opens in a new tab. Upload the file, submit the form, close that tab, and come back here.</p>'+
     '</div>'+
-    '<div class="btns" style="margin-top:24px"><button class="b ghost" id="more">Capture another device</button></div>'+
+    '<h2 style="margin-top:28px">4. Finish</h2>'+
+    '<label class="tick"><input type="checkbox" id="uploaded"> <span>I have uploaded the file through the Google form (or emailed it).</span></label>'+
+    '<div class="btns" style="margin-top:14px">'+
+      '<button class="b" id="finishsession">Finish session</button>'+
+      '<button class="b ghost" id="more">Capture another device</button>'+
+    '</div>'+
+    '<dialog class="guard" id="guard">'+
+      '<p><b>You are about to close the session.</b></p>'+
+      '<p>If this is intentional, please go back and tick the <b>"I have uploaded the file"</b> checkbox first.</p>'+
+      '<div class="btns"><button class="b" id="guardback">Go back</button></div>'+
+    '</dialog>'+
   '</div>');
   var wt=c.querySelector("#wrap"); if(wt) wt.value=S.wrapup||"";
   c.querySelector("#savewrap").addEventListener("click",function(){
@@ -1169,8 +1267,36 @@ function scrFinish(){
       ok.className="alert good on";
     }
   });
-  c.querySelector("#dlsession_fin").addEventListener("click",downloadSessionFile);
+  c.querySelector("#dlsession_fin").addEventListener("click",function(){
+    /* an answer typed but not saved still goes into the file */
+    var v=wt.value.trim(); if(v && !leakIn(v) && v!==(S.wrapup||"")){ S.wrapup=v; save(); }
+    downloadSessionFile();
+  });
   document.getElementById("more").addEventListener("click",scrLoop);
+  var guard=c.querySelector("#guard");
+  c.querySelector("#guardback").addEventListener("click",function(){ guard.close(); c.querySelector("#uploaded").focus(); });
+  c.querySelector("#finishsession").addEventListener("click",function(){
+    if(!c.querySelector("#uploaded").checked){
+      if(guard.showModal) guard.showModal(); else alert("You are about to close the session. If this is intentional, please go back and tick the \"I have uploaded the file\" checkbox first.");
+      return;
+    }
+    scrDone();
+  });
+}
+
+/* Finish session: clears this browser's copy, so the next person at a shared
+   laptop starts clean, then tries to close the tab. Browsers only let a page
+   close a tab that a script opened, so the thank-you screen is what most people see. */
+function scrDone(){
+  S={host_platform:"not_stated",host_shell:"not_applicable",tester:"",consent:false,setup:0,records:[],descriptors:[],seen:{},devices:{},wrapup:""};
+  save(); sessionDownloaded=false;
+  var col=document.getElementById("collected"); if(col) col.style.display="none";
+  show('<div class="card">'+
+    '<p class="kicker">Session finished</p>'+
+    '<h1>Thank you. You can close this tab now.</h1>'+
+    '<p class="sub">Nothing from your session is left on this page. If you want to test more devices later, reopen <code>START-HERE.html</code>.</p>'+
+  '</div>');
+  try{ window.close(); }catch(e){}
 }
 
 function getSessionExportObject(){
