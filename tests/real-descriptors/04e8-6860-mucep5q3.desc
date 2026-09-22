@@ -1,0 +1,28 @@
+#!expect=adb
+#!ground_truth=tester_identified
+#!device=samsung SM-A510F
+#!route=browser
+#!captured=2026-09-22T08:22:42.747Z
+
+=== WEBUSB READ  2026-09-22T08:22:42.747Z ===
+
+  manufacturer      SAMSUNG
+  product           SAMSUNG_Android
+  idVendor          0x04e8
+  idProduct         0x6860
+  deviceClass       0x00
+  usb version       2.0
+
+  configuration 1
+    interface 0 alt 0   class 6  subclass 1  protocol 1
+    interface 1 alt 0   class 2  subclass 2  protocol 1
+    interface 2 alt 0   class 10  subclass 0  protocol 0
+    interface 3 alt 0   class 255  subclass 66  protocol 1
+
+  --- the fields classify.sh uses ---
+  all interface classes   0x06 0x02 0x0a 0xff
+  class/sub/proto         6/1/1, 2/2/1, 10/0/0, 255/66/1
+  ADB interface (255/66/1)      yes
+  fastboot interface (255/66/3) no
+
+  Compare against tests/real-descriptors/04e8-6860-*.desc

@@ -1,0 +1,25 @@
+#!expect=adb
+#!ground_truth=tester_identified
+#!device=Nothing Phone 1
+#!route=browser
+#!captured=2026-09-22T08:24:50.168Z
+
+=== WEBUSB READ  2026-09-22T08:24:50.168Z ===
+
+  manufacturer      Nothing
+  product           YUPIK-QRD _SN:<stripped>
+  idVendor          0x18d1
+  idProduct         0x4ee7
+  deviceClass       0x00
+  usb version       2.1
+
+  configuration 1
+    interface 0 alt 0   class 255  subclass 66  protocol 1
+
+  --- the fields classify.sh uses ---
+  all interface classes   0xff
+  class/sub/proto         255/66/1
+  ADB interface (255/66/1)      yes
+  fastboot interface (255/66/3) no
+
+  Compare against tests/real-descriptors/18d1-4ee7-*.desc
