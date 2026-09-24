@@ -69,6 +69,8 @@ class VerifyContractTest(unittest.TestCase):
             tmproot = pathlib.Path(tmpdir)
             shutil.copytree(ROOT / "flashguard", tmproot / "flashguard")
             (tmproot / "data").mkdir()
+            # The reason texts are a separate required file; this test is about the vocabulary.
+            shutil.copy(ROOT / "data" / "reason_codes.json", tmproot / "data" / "reason_codes.json")
 
             # 1. No vocabulary.json
             proc1 = subprocess.run(

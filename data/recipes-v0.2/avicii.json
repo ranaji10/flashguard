@@ -1,7 +1,7 @@
 {
   "expected_verdict": "cannot-verify",
-  "expected_verdict_reason": "The source requires unlock before additional partitions and recovery; the fingerprint is not part of the recipe.",
-  "human_assessment": "unsafe",
+  "expected_verdict_reason": "No captured AC2001 or AC2003 exists, so the replay has no fingerprint and abstains.",
+  "human_assessment": "safe",
   "install_method": "fastboot_boot_recovery",
   "operations": [
     {
@@ -29,7 +29,9 @@
       "declared_by": "unlock_bootloader",
       "required": "unlocked",
       "source_evidence": "source config unlock_bootloader steps",
-      "state": "OPEN"
+      "state": "OPEN",
+      "unlock_class": "command",
+      "unlock_step": true
     }
   },
   "recipe_id": "avicii-v2",
@@ -50,5 +52,6 @@
     ],
     "partition_scheme": "A/B",
     "product_device": "avicii"
-  }
+  },
+  "verdict_gap_reason": "Relabelled safe on 24 September 2026. The v0.1 label 'unsafe' was written because that recipe omitted the unlock step. This recipe declares it. An AC2001 or AC2003 with an unlocked bootloader and Android 12 stock firmware meets every precondition the source states before dtbo and vbmeta are written and recovery is booted. The unlock is a fastboot command (the source runs fastboot oem unlock), so its class is command."
 }

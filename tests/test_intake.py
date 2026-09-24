@@ -307,7 +307,7 @@ class IntakeTest(unittest.TestCase):
         self.assertIsNotNone(spacewar_corpus_run, "Spacewar run missing from corpus_runs")
 
         self.assertEqual(intake_verdict, spacewar_corpus_run["verdict"])
-        self.assertEqual(intake_verdict, "unsafe")
+        self.assertEqual(intake_verdict, "not-ready")
 
     def test_pii_15_digit_number_refused(self):
         with tempfile.TemporaryDirectory() as tmpdir:

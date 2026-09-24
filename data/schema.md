@@ -309,13 +309,31 @@ index worth maintaining.
 | `unlock_classes` | `command`, `out_of_band` | | |
 | `unlock_evidence_fields` | `bootloader_state` (`unlocked`) | | |
 | `refused_prerequisite_names` | `bootloader_unlocked` | | Use `bootloader_state` |
-| `prerequisite_comparisons` | `equal`, `exact_major`, `minimum` | | |
+| `prerequisite_comparisons` | `equal`, `exact_major`, `minimum`, `one_of` | | `one_of` is v0.3 |
+| `unlock_readback_values` | `device` | | v0.3: out_of_band unlock whose result the phone reports |
+| `unlock_requirement_values` | `no_step` | | v0.3: the source declares no unlock step |
+| `verdicts` | `safe`, `not-ready`, `unsafe`, `cannot-verify` | | Precedence: unsafe > not-ready > cannot-verify > safe |
 
 ## Version comparison (`compare`)
 
-Every prerequisite whose `required` is numeric, or a string that parses as a version, must explicitly declare `"compare"`, one of `equal`, `exact_major`, or `minimum`. Comparison rules must be explicit rather than assumed because upstream sources enforce exact constraints:
+Every prerequisite whose `required` is numeric, or a string that parses as a version, must explicitly declare `"compare"`, one of `equal`, `exact_major`, `minimum`, or (v0.3) `one_of`, where `required` is a list of versions and the phone's major version must equal one of them. Comparison rules must be explicit rather than assumed because upstream sources enforce exact constraints:
 - OpenAndroidInstaller (`requirements_view.py` for `requirements.android`): *"If your current installation is newer or older than Android 12, please upgrade or downgrade to the required version before proceeding."*
 - LineageOS (`spacewar.yml` `before_install`): *"LineageOS builds for this device require an Android 15 version of the stock OS"*.
 
 Treating version requirements as implicit minimums would permit a recipe to return `safe` when an upstream installer requires a downgrade or exact version match. Numeric or version prerequisites lacking an explicit `compare` declaration abstain with `prerequisite-<name>-comparison-undeclared`.
 
+
+## Recipe format v0.3 (24 September 2026)
+
+v0.3 is v0.2 plus three optional fields. A recipe that uses any of them must declare
+`"schema_version": "0.3"`; a v0.2 recipe that uses one is refused as invalid. Nothing
+else changes, and every v0.2 recipe is still a valid v0.2 recipe.
+
+| Field | Where | Meaning | Why |
+|---|---|---|---|
+| `unlock_readback: "device"` | on a `bootloader_state` prerequisite with `unlock_class: out_of_band` | The unlock happens off the phone (a menu, download mode, a vendor portal) but the phone reports the result, so `bootloader_state` is compared like any other field. | The Galaxy A52s (SM-A528B) reports `ro.boot.flash.locked=1`. Without this field every Samsung abstained for ever, even one that answers. |
+| `compare: "one_of"` | on a version prerequisite | `required` is a list; the phone's major version must equal one entry. | LineageOS a52sxq accepts Android 13 or 14 firmware. |
+| `requirement: "no_step"` | on a `bootloader_state` prerequisite, with `source_evidence` | The source declares that no unlock step exists. It abstains with `unlock-no-step-declared` and never reaches `safe` in v0.3. | Distinguishes "the source says none" from "the recipe says nothing" (`prerequisites-none-declared`). |
+
+An `out_of_band` prerequisite without `unlock_readback` still abstains with
+`unlock-out-of-band`: the result lives outside the phone.

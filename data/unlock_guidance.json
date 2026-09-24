@@ -75,6 +75,22 @@
         "Retrieve the unlock token and apply it to the device"
       ],
       "link": "https://www.lenovo.com"
+    },
+    "samsung_download_mode": {
+      "steps": [
+        "Enable Developer options, then turn on OEM unlock",
+        "Power off, then start the phone in download mode with the key combination for your model",
+        "Choose the unlock option shown on screen; the phone erases itself and restarts",
+        "Check that OEM unlock is still on, then plug the phone in and read it again"
+      ],
+      "link": "https://wiki.lineageos.org/devices/"
+    },
+    "samsung_oem_unlock_toggle": {
+      "steps": [
+        "Enable Developer options, then turn on OEM unlock",
+        "Leave it on; this phone does not report the setting, so the tool cannot confirm it"
+      ],
+      "link": "https://wiki.lineageos.org/devices/"
     }
   },
   "exclusions": {}

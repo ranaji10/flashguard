@@ -28,7 +28,7 @@ fi
 # Unticked findings, oldest first, each with the review heading it came from.
 # grep -c prints 0 and exits 1 when nothing matches, so '|| echo 0' would append a SECOND
 # zero and the arithmetic below would see "0\n0". Swallow the status, keep grep's count.
-open_count=$(awk '/^```/{f=!f;next} f{next} /^- \[ \]/{c++} END{print c+0}' "$LOG")
+open_count=$(python3 tests/review_carry_list.py "$LOG" --count)
 
 echo "===== CARRIED FINDINGS  $(date -u +%Y-%m-%dT%H:%MZ) ====="
 if [ "$open_count" -eq 0 ]; then
@@ -41,43 +41,7 @@ if [ "$open_count" -eq 0 ]; then
   exit 0
 fi
 
-# Findings are collected whole -- a finding wrapped over several lines is one finding, and
-# printing only its first line hands the reviewer half a sentence. Sections come out OLDEST
-# FIRST, because age is the thing being judged, and the log itself is newest-first.
-awk '
-  # The log keeps each review verbatim in a fenced block underneath its findings, so the
-  # same "- [ ]" lines appear twice in the file: once as the tracked finding and once
-  # inside the quoted answer. Counting both would carry every finding twice and make the
-  # three-review rule fire a review early. Fences are skipped.
-  /^```/ { fence = !fence; next }
-  fence  { next }
-  /^## / {
-    n++; head[n]=$0; body[n]=""; next
-  }
-  /^- \[ \]/ {
-    cur=n; body[n]=body[n] "\n  " $0; open[n]++; next
-  }
-  /^- \[[xX]\]/ { cur=0; next }
-  /^[[:space:]]+[^[:space:]]/ {
-    # a wrapped continuation of the finding above it
-    if (cur==n && open[n]>0) body[n]=body[n] "\n  " $0
-    next
-  }
-  { cur=0 }
-  END {
-    for (i=n; i>=1; i--) {
-      if (open[i]>0) {
-        later=i-1   # sections above it in the file are the NEWER reviews
-        age = later==0 ? "(newest review)" \
-                       : "(carried through " later " later review" (later==1?"":"s") ")"
-        print ""
-        if (later>=2) print "  >>> SURVIVED " later " REVIEWS. This is a decision now, not a finding."
-        print head[i] "  " age
-        print substr(body[i],2)
-      }
-    }
-  }
-' "$LOG"
+python3 tests/review_carry_list.py "$LOG" | grep -v "distinct finding(s) carried"
 
 echo
 echo "===== ASK ONLY THIS ====="

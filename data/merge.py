@@ -50,8 +50,11 @@ ISERIAL_LINE = re.compile(r"(?:^|[\r\n]|\\n)[ \t]*iSerial[ \t]+\S+")
 
 # Embedded serial in descriptor strings (e.g. YUPIK-QRD _SN:<serial>). Found 13 September 2026.
 # Masked serials (<stripped>, <the serial>) are permitted as proof of stripping.
-EMBEDDED_SN = re.compile(r"(?i)_?SN[:=]\s*(\S+)")
-MASKED_SN = re.compile(r"<stripped>|<the serial>|stripped>", re.I)
+# The value is either a <placeholder> (which may contain spaces) or one token. Fixed
+# 24 September 2026: "<the serial>" never matched because the capture stopped at the space,
+# and a tester note giving the serial as "unknown" refused the whole file.
+EMBEDDED_SN = re.compile(r"(?i)_?SN[:=]\s*(<[^>]*>|[^\s\\\"]+)")
+MASKED_SN = re.compile(r"^(<stripped>|<the serial>|unknown|none|n/a|-)$", re.I)
 
 # 15-digit IMEI, or a MAC address. Cheap tripwires, not a guarantee.
 LOOKS_LIKE_IMEI = re.compile(r"(?<!\d)\d{15}(?!\d)")
@@ -88,7 +91,7 @@ def scan_pii(raw, where, problems):
             problems.append(f"{where}: {what}: {m.group(0).strip()[:24]}")
     for m in EMBEDDED_SN.finditer(raw):
         matched = m.group(0)
-        if not MASKED_SN.search(matched):
+        if not MASKED_SN.search(m.group(1)):
             problems.append(f"{where}: embedded serial: {matched.strip()[:24]}")
 
 def main():

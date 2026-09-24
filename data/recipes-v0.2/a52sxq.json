@@ -1,8 +1,7 @@
 {
   "expected_verdict": "cannot-verify",
-  "expected_verdict_reason": "The unlock is performed on the phone in Samsung download mode, which the current vocabulary classes as out_of_band, so the verifier abstains even though this model reports its lock state. The captured A52s also reports no partition layout property.",
+  "expected_verdict_reason": "The captured A52s reports no partition layout property, so its identity is not fully confirmed and the verifier cannot say not-ready. It lists the locked bootloader as unmet. An A52s that reports its layout would return not-ready while locked.",
   "human_assessment": "safe",
-  "verdict_gap_reason": "An SM-A528B on Android 13 or 14 stock firmware, bootloader unlocked through download mode, satisfies every precondition the LineageOS page states before vbmeta and recovery are written.",
   "install_method": "samloader_rs",
   "operations": [
     {
@@ -17,24 +16,28 @@
   ],
   "prerequisites": {
     "android_version": {
-      "compare": "exact_major",
+      "compare": "one_of",
       "declared_by": "before_install.version",
-      "required": "14",
-      "source_evidence": "LineageOS a52sxq requires Android 13 or 14 stock firmware. The format has no set comparison, so the recipe pins 14, the firmware the captured device runs. An Android 13 phone will read as a mismatch: a false unsafe, never a false safe.",
+      "required": [
+        "13",
+        "14"
+      ],
+      "source_evidence": "LineageOS a52sxq requires Android 13 or 14 stock firmware",
       "state": "OPEN"
     },
     "bootloader_state": {
       "declared_by": "before_recovery_install.samsung_qcom",
       "required": "unlocked",
-      "source_evidence": "OEM unlock toggle in Developer options, then the unlock choice in download mode; wipes userdata",
+      "source_evidence": "OEM unlock toggle in Developer options, then the unlock choice in download mode; wipes userdata. The phone reports the result in ro.boot.flash.locked (the captured SM-A528B reports 1, locked)",
       "state": "OPEN",
       "unlock_class": "out_of_band",
       "unlock_method": "samsung_download_mode",
+      "unlock_readback": "device",
       "unlock_step": true
     }
   },
   "recipe_id": "a52sxq-recovery-v2",
-  "schema_version": "0.2",
+  "schema_version": "0.3",
   "source": {
     "authored": "independent",
     "consulted": "2026-09-24",
@@ -50,5 +53,6 @@
     ],
     "partition_scheme": "single",
     "product_device": "a52sxq"
-  }
+  },
+  "verdict_gap_reason": "An SM-A528B on Android 13 or 14 stock firmware, bootloader unlocked through download mode, satisfies every precondition the LineageOS page states before vbmeta and recovery are written."
 }

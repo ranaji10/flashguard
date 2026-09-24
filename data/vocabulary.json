@@ -1,12 +1,44 @@
 {
   "operation_kinds": {
-    "write-image":       {"requires_unlock": true},
-    "boot-recovery":     {"requires_unlock": true},
-    "unlock_bootloader": {"requires_unlock": true},
-    "unlock":            {"requires_unlock": true}
+    "write-image": {
+      "requires_unlock": true
+    },
+    "boot-recovery": {
+      "requires_unlock": true
+    },
+    "unlock_bootloader": {
+      "requires_unlock": true
+    },
+    "unlock": {
+      "requires_unlock": true
+    }
   },
-  "unlock_classes": ["command", "out_of_band"],
-  "unlock_evidence_fields": {"bootloader_state": "unlocked"},
-  "refused_prerequisite_names": {"bootloader_unlocked": "bootloader_state"},
-  "prerequisite_comparisons": ["equal", "exact_major", "minimum"]
+  "unlock_classes": [
+    "command",
+    "out_of_band"
+  ],
+  "unlock_evidence_fields": {
+    "bootloader_state": "unlocked"
+  },
+  "refused_prerequisite_names": {
+    "bootloader_unlocked": "bootloader_state"
+  },
+  "prerequisite_comparisons": [
+    "equal",
+    "exact_major",
+    "minimum",
+    "one_of"
+  ],
+  "unlock_readback_values": [
+    "device"
+  ],
+  "unlock_requirement_values": [
+    "no_step"
+  ],
+  "verdicts": [
+    "safe",
+    "not-ready",
+    "unsafe",
+    "cannot-verify"
+  ]
 }

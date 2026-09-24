@@ -3,6 +3,18 @@
 Flashguard decides whether a provisioning recipe is safe for a specific device, without
 executing it. A wrong "safe" can brick someone's phone.
 
+
+### Never run these (copied verbatim from CLAUDE.md)
+
+`tests/check-rule-agreement.sh` fails the build if this block differs from CLAUDE.md.
+Edit CLAUDE.md first, then copy the block here unchanged.
+
+    fastboot flashing unlock      fastboot oem unlock
+    fastboot flash ...            fastboot erase ...
+    fastboot format ...           fastboot update ...
+    fastboot set_active ...       adb disable-verity
+    dd ...
+
 ## Review priorities, in order
 
 1. **False-safe pathways.** Any change that could make an uncertain result read as certain

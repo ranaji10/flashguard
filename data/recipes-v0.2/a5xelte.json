@@ -1,6 +1,6 @@
 {
   "expected_verdict": "cannot-verify",
-  "expected_verdict_reason": "The source identifies a recovery flash but does not provide enough state evidence for a safe verdict.",
+  "expected_verdict_reason": "The OEM unlock toggle happens in a phone menu and the A5 (2016) reports neither its lock state nor its partition layout, so the verifier abstains for honest reasons.",
   "human_assessment": "cannot-verify",
   "install_method": "heimdall_flash_recovery",
   "operations": [
@@ -9,7 +9,17 @@
       "partition": "recovery"
     }
   ],
-  "prerequisites": {},
+  "prerequisites": {
+    "bootloader_state": {
+      "declared_by": "recovery_install_samloader_rs (OEM unlock step)",
+      "required": "unlocked",
+      "source_evidence": "LineageOS a5xelte uses the samloader_rs install, which requires the OEM unlock toggle in Developer options before download mode. The A5 (2016) does not report the result.",
+      "state": "OPEN",
+      "unlock_class": "out_of_band",
+      "unlock_method": "samsung_oem_unlock_toggle",
+      "unlock_step": true
+    }
+  },
   "recipe_id": "a5xelte-recovery-v2",
   "schema_version": "0.2",
   "source": {
@@ -33,5 +43,6 @@
     ],
     "partition_scheme": "single",
     "product_device": "a5xelte"
-  }
+  },
+  "verdict_gap_reason": "The human reading agrees: nothing on the device confirms the unlock, so cannot-verify is the correct answer."
 }

@@ -43,7 +43,9 @@ fi
 #
 # A check that only looks where it expects the problem reports clean and means nothing. It
 # was found by a blind reviewer reading a diff, not by this script.
-hits=$(grep -rniE '_?SN[:=]' $D 2>/dev/null | grep -viE '<stripped>|<the serial>|stripped>' || true)
+# Filter each MATCH, not each line: a masked serial on the same line as a raw one must not
+# hide the raw one (batch 7.6 residue, fixed 24 September 2026).
+hits=$(grep -rnoiE '_?SN[:=][[:space:]]*(<[^>]*>|[^[:space:]]+)' $D 2>/dev/null | grep -viE ':_?SN[:=][[:space:]]*(<stripped>|<the serial>)$' || true)
 if [ -n "$hits" ]; then
   echo "  SERIAL EMBEDDED IN A STRING DESCRIPTOR -- do not publish these:"
   printf '%s\n' "$hits" | sed 's/^/      /'

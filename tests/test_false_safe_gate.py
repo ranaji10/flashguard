@@ -34,11 +34,15 @@ class FalseSafeGateTest(unittest.TestCase):
             COVERAGE.enforce_verifier_gate(runs, floor_data={"decided_over_paired": 0.5})
         self.assertEqual(raised.exception.code, 1)
 
-    def test_avicii_recipe_on_disk_is_not_safe(self):
+    def test_avicii_shaped_recipe_labelled_unsafe_is_not_safe(self):
+        """avicii was relabelled safe on 24 Sep. The shape that once shipped a false safe stays guarded:
+        the same recipe labelled unsafe, with its unlock step unclassified, must never return safe."""
         recipe_path = ROOT / "data" / "recipes-v0.2" / "avicii.json"
         with open(recipe_path, encoding="utf-8") as fh:
             recipe = json.load(fh)
-        self.assertEqual(recipe.get("human_assessment"), "unsafe")
+        recipe["human_assessment"] = "unsafe"
+        recipe["prerequisites"]["bootloader_state"].pop("unlock_class", None)
+        recipe["prerequisites"]["bootloader_state"].pop("unlock_step", None)
         target = recipe["target"]
         fp = {
             "product_device": target["product_device"],
@@ -48,12 +52,8 @@ class FalseSafeGateTest(unittest.TestCase):
             "android_version": 12,
         }
         result = verify(fp, recipe)
-        self.assertNotEqual(
-            result["verdict"],
-            "safe",
-            "avicii.json on disk must not return safe while human_assessment is unsafe",
-        )
-
+        self.assertNotEqual(result["verdict"], "safe",
+                            "an avicii-shaped recipe with an unclassified unlock must not return safe")
 
 if __name__ == "__main__":
     unittest.main()

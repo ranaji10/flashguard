@@ -1,10 +1,15 @@
-"""Pure v0.1 and v0.2 recipe verification."""
+"""Pure v0.1, v0.2 and v0.3 recipe verification.
+
+verify() is a pure function: no device I/O, and deterministic given its two arguments.
+It reads two data files (vocabulary, reason texts) once at import; that is not device I/O.
+"""
 
 import json
 import pathlib
 import re
 
 from flashguard.guidance import get_guidance
+from flashguard.reasons import describe, scope as verdict_scope
 
 _VOCABULARY_PATH = pathlib.Path(__file__).resolve().parents[1] / "data" / "vocabulary.json"
 
@@ -97,9 +102,8 @@ def _validate_recipe(recipe):
     missing = [key for key in required if key not in recipe]
     if missing:
         return "Invalid recipe: missing required field(s): " + ", ".join(missing) + "."
-    if recipe.get("schema_version") != "0.1":
-        if recipe.get("schema_version") != "0.2":
-            return "Invalid recipe: unsupported schema_version."
+    if recipe.get("schema_version") not in ("0.1", "0.2", "0.3"):
+        return "Invalid recipe: unsupported schema_version."
     target = recipe.get("target")
     if not isinstance(target, dict):
         return "Invalid recipe: target must be an object."
@@ -113,7 +117,7 @@ def _validate_recipe(recipe):
     operations = recipe.get("operations")
     if not isinstance(operations, list):
         return "Invalid recipe: operations must be an array."
-    if recipe.get("schema_version") == "0.2":
+    if recipe.get("schema_version") in ("0.2", "0.3"):
         required_v2 = ("source", "install_method", "source_fields_unused")
         if any(key not in recipe for key in required_v2):
             return "Invalid recipe: v0.2 is missing a required field."
@@ -123,6 +127,12 @@ def _validate_recipe(recipe):
         prerequisites = recipe.get("prerequisites", absent)
         if prerequisites is not absent and prerequisites is not None and not isinstance(prerequisites, dict):
             return "Invalid recipe: prerequisites must be an object, null, or absent."
+        if recipe.get("schema_version") == "0.2" and isinstance(prerequisites, dict):
+            for req in prerequisites.values():
+                if isinstance(req, dict) and (
+                    "unlock_readback" in req or "requirement" in req or req.get("compare") == "one_of"
+                ):
+                    return "Invalid recipe: a v0.2 recipe uses a v0.3 field (unlock_readback, requirement or one_of)."
         for operation in operations:
             if not isinstance(operation, dict) or any(field not in operation for field in ("kind", "partition")):
                 return "Invalid recipe: every v0.2 operation needs kind and partition."
@@ -150,12 +160,27 @@ def _validate_recipe(recipe):
 
 
 def verify(fingerprint, recipe):
-    """Return a verdict for a fingerprint and a validated recipe."""
+    """Return a verdict for a fingerprint and a recipe.
+
+    Every result carries a plain-language description and a kind on each reason, and
+    the scope of what was and was not checked, so no consumer can render a verdict
+    without also rendering its limits.
+    """
+    result = _verify_core(fingerprint, recipe)
+    for reason in result.get("reasons", []):
+        kind, plain = describe(reason.get("code"), reason.get("result"))
+        reason["kind"] = kind
+        reason["plain"] = plain
+    result["scope"] = verdict_scope()
+    return result
+
+
+def _verify_core(fingerprint, recipe):
     invalid = _validate_recipe(recipe)
     if invalid:
         return _invalid_recipe_reason(invalid, fingerprint)
 
-    if recipe.get("schema_version") == "0.2":
+    if recipe.get("schema_version") in ("0.2", "0.3"):
         return _verify_v2(fingerprint, recipe)
 
     if fingerprint is None:
@@ -442,15 +467,17 @@ def _verify_v2(fingerprint, recipe):
         return {
             "verdict": "unsafe",
             "reasons": reasons,
-            "coverage": {"schema_version": "0.2"},
+            "coverage": {"schema_version": recipe.get("schema_version")},
             "evidence": _build_evidence(fingerprint, fields_consumed),
         }
+
+    identity_abstained = any(reason["result"] == "abstain" for reason in reasons)
 
     if any(reason["result"] == "abstain" for reason in reasons) and "prerequisites" not in recipe:
         return {
             "verdict": "cannot-verify",
             "reasons": reasons,
-            "coverage": {"schema_version": "0.2"},
+            "coverage": {"schema_version": recipe.get("schema_version")},
             "evidence": _build_evidence(fingerprint, fields_consumed),
         }
 
@@ -459,7 +486,7 @@ def _verify_v2(fingerprint, recipe):
         return {
             "verdict": "cannot-verify",
             "reasons": reasons,
-            "coverage": {"schema_version": "0.2"},
+            "coverage": {"schema_version": recipe.get("schema_version")},
             "evidence": _build_evidence(fingerprint, fields_consumed),
         }
     if recipe["prerequisites"] is None:
@@ -467,7 +494,7 @@ def _verify_v2(fingerprint, recipe):
         return {
             "verdict": "cannot-verify",
             "reasons": reasons,
-            "coverage": {"schema_version": "0.2"},
+            "coverage": {"schema_version": recipe.get("schema_version")},
             "evidence": _build_evidence(fingerprint, fields_consumed),
         }
     if not recipe["prerequisites"]:
@@ -475,7 +502,7 @@ def _verify_v2(fingerprint, recipe):
         return {
             "verdict": "cannot-verify",
             "reasons": reasons,
-            "coverage": {"schema_version": "0.2"},
+            "coverage": {"schema_version": recipe.get("schema_version")},
             "evidence": _build_evidence(fingerprint, fields_consumed),
         }
 
@@ -492,7 +519,7 @@ def _verify_v2(fingerprint, recipe):
         return {
             "verdict": "cannot-verify",
             "reasons": reasons,
-            "coverage": {"schema_version": "0.2"},
+            "coverage": {"schema_version": recipe.get("schema_version")},
             "evidence": _build_evidence(fingerprint, fields_consumed),
         }
 
@@ -504,6 +531,9 @@ def _verify_v2(fingerprint, recipe):
         and name in unlock_evidence_fields
         and req.get("required") == unlock_evidence_fields[name]
         and req.get("unlock_class") in unlock_classes
+        for name, req in (recipe["prerequisites"] or {}).items()
+    ) or any(
+        isinstance(req, dict) and name in unlock_evidence_fields and req.get("requirement") == "no_step"
         for name, req in (recipe["prerequisites"] or {}).items()
     )
 
@@ -545,6 +575,31 @@ def _verify_v2(fingerprint, recipe):
             )
             continue
 
+        if isinstance(requirement, dict) and "requirement" in requirement:
+            if (
+                requirement.get("requirement") == "no_step"
+                and name in unlock_evidence_fields
+                and requirement.get("source_evidence")
+            ):
+                reasons.append(
+                    _reason(
+                        "unlock-no-step-declared",
+                        "abstain",
+                        ["prerequisites." + name],
+                        f"The source declares no unlock step for '{name}'. v0.3 records the claim and does not yet rely on it.",
+                    )
+                )
+            else:
+                reasons.append(
+                    _reason(
+                        "unlock-requirement-unrecognized",
+                        "abstain",
+                        ["prerequisites." + name],
+                        f"Prerequisite '{name}' carries an unrecognized requirement or one without source evidence.",
+                    )
+                )
+            continue
+
         unlock_class = requirement.get("unlock_class") if isinstance(requirement, dict) else None
 
         if unlock_class and name not in unlock_evidence_fields:
@@ -576,17 +631,31 @@ def _verify_v2(fingerprint, recipe):
             method_guidance = get_guidance(method_name)
             if method_guidance:
                 guidance = method_guidance
-            reasons.append(
-                _reason(
-                    "unlock-out-of-band",
-                    "abstain",
-                    ["prerequisites." + name],
-                    f"Prerequisite '{name}' requires an out-of-band unlock procedure that cannot be established from device state.",
+            readback = requirement.get("unlock_readback")
+            if readback is None:
+                reasons.append(
+                    _reason(
+                        "unlock-out-of-band",
+                        "abstain",
+                        ["prerequisites." + name],
+                        f"Prerequisite '{name}' requires an out-of-band unlock procedure that cannot be established from device state.",
+                    )
                 )
-            )
-            continue
+                continue
+            if readback not in _VOCABULARY.get("unlock_readback_values", []):
+                reasons.append(
+                    _reason(
+                        "unlock-readback-unrecognized",
+                        "abstain",
+                        ["prerequisites." + name],
+                        f"Prerequisite '{name}' has unrecognized unlock_readback: {readback!r}.",
+                    )
+                )
+                continue
+            # unlock_readback "device": the unlock happens off the phone, but its result is
+            # read back from the phone's own state, so it is compared like any other field.
 
-        if is_unlock and unlock_class != "command":
+        if is_unlock and unlock_class not in ("command", "out_of_band"):
             reasons.append(
                 _reason(
                     "unlock-class-undeclared",
@@ -640,6 +709,48 @@ def _verify_v2(fingerprint, recipe):
             )
             continue
 
+        if compare == "one_of":
+            options = required if isinstance(required, list) else None
+            parsed = [_parse_version(o) for o in options] if options else None
+            obs_ver = _parse_version(observed)
+            if not parsed or any(p is None for p in parsed):
+                reasons.append(
+                    _reason(
+                        f"prerequisite-{name}-unparseable",
+                        "abstain",
+                        ["prerequisites." + name],
+                        f"Required values for prerequisite '{name}' must be a list of versions for one_of.",
+                    )
+                )
+            elif obs_ver is None:
+                reasons.append(
+                    _reason(
+                        f"prerequisite-{name}-unparseable",
+                        "abstain",
+                        [name],
+                        f"Observed value '{observed}' for prerequisite '{name}' cannot be parsed as a version.",
+                    )
+                )
+            elif any(obs_ver[0] == p[0] for p in parsed):
+                reasons.append(
+                    _reason(
+                        f"prerequisite-{name}-confirmed",
+                        "pass",
+                        [name],
+                        "Fingerprint confirms the required prerequisite state.",
+                    )
+                )
+            else:
+                reasons.append(
+                    _reason(
+                        f"prerequisite-{name}-mismatch",
+                        "unmet",
+                        [name],
+                        "Fingerprint prerequisite state contradicts the recipe.",
+                    )
+                )
+            continue
+
         if compare == "exact_major":
             req_ver = _parse_version(required)
             obs_ver = _parse_version(observed)
@@ -674,17 +785,12 @@ def _verify_v2(fingerprint, recipe):
                 reasons.append(
                     _reason(
                         f"prerequisite-{name}-mismatch",
-                        "fail",
+                        "unmet",
                         [name],
                         "Fingerprint prerequisite state contradicts the recipe.",
                     )
                 )
-                return {
-                    "verdict": "unsafe",
-                    "reasons": reasons,
-                    "coverage": {"schema_version": "0.2"},
-                    "evidence": _build_evidence(fingerprint, fields_consumed),
-                }
+                continue
         elif compare == "minimum":
             req_ver = _parse_version(required)
             obs_ver = _parse_version(observed)
@@ -719,17 +825,12 @@ def _verify_v2(fingerprint, recipe):
                 reasons.append(
                     _reason(
                         f"prerequisite-{name}-below-minimum",
-                        "fail",
+                        "unmet",
                         [name],
                         "Fingerprint version is below the required minimum.",
                     )
                 )
-                return {
-                    "verdict": "unsafe",
-                    "reasons": reasons,
-                    "coverage": {"schema_version": "0.2"},
-                    "evidence": _build_evidence(fingerprint, fields_consumed),
-                }
+                continue
         else:  # compare == "equal"
             if is_numeric_or_version_req:
                 req_ver = _parse_version(required)
@@ -765,17 +866,12 @@ def _verify_v2(fingerprint, recipe):
                     reasons.append(
                         _reason(
                             f"prerequisite-{name}-mismatch",
-                            "fail",
+                            "unmet",
                             [name],
                             "Fingerprint prerequisite state contradicts the recipe.",
                         )
                     )
-                    return {
-                        "verdict": "unsafe",
-                        "reasons": reasons,
-                        "coverage": {"schema_version": "0.2"},
-                        "evidence": _build_evidence(fingerprint, fields_consumed),
-                    }
+                    continue
             else:
                 if str(observed) == str(required):
                     reasons.append(
@@ -790,17 +886,12 @@ def _verify_v2(fingerprint, recipe):
                     reasons.append(
                         _reason(
                             f"prerequisite-{name}-mismatch",
-                            "fail",
+                            "unmet",
                             [name],
                             "Fingerprint prerequisite state contradicts the recipe.",
                         )
                     )
-                    return {
-                        "verdict": "unsafe",
-                        "reasons": reasons,
-                        "coverage": {"schema_version": "0.2"},
-                        "evidence": _build_evidence(fingerprint, fields_consumed),
-                    }
+                    continue
 
     source = recipe.get("source", {})
     if "untested" in source:
@@ -836,15 +927,43 @@ def _verify_v2(fingerprint, recipe):
                 )
             )
 
-    verdict = "cannot-verify" if any(reason["result"] == "abstain" for reason in reasons) else "safe"
+    unmet = [reason for reason in reasons if reason["result"] == "unmet"]
+    for reason in unmet:
+        reason["remedy"] = _remedy(reason, fingerprint, recipe)
+    if unmet and not identity_abstained:
+        # The recipe fits this phone, and the phone is not in the state it needs yet.
+        verdict = "not-ready"
+    elif unmet or any(reason["result"] == "abstain" for reason in reasons):
+        # Unmet but the phone's identity is not fully confirmed: the recipe may not fit,
+        # so the verifier cannot say "not ready". The unmet reason stays in the list.
+        verdict = "cannot-verify"
+    else:
+        verdict = "safe"
     evidence = _build_evidence(fingerprint, fields_consumed)
     if guidance is not None:
         evidence["guidance"] = guidance
     return {
         "verdict": verdict,
         "reasons": reasons,
-        "coverage": {"schema_version": "0.2"},
+        "coverage": {"schema_version": recipe.get("schema_version")},
         "evidence": evidence,
     }
 
 
+
+
+def _remedy(reason, fingerprint, recipe):
+    """Plain next step for an unmet prerequisite. Guidance only; never evidence."""
+    name = reason["fields"][0] if reason.get("fields") else ""
+    requirement = (recipe.get("prerequisites") or {}).get(name) or {}
+    required = requirement.get("required") if isinstance(requirement, dict) else None
+    observed = (fingerprint or {}).get(name)
+    if name == "bootloader_state":
+        return ("The bootloader is locked. Unlock it first, which erases everything on the phone, "
+                "then read the phone again.")
+    if name == "android_version":
+        wanted = " or ".join(str(r) for r in required) if isinstance(required, list) else str(required)
+        return ("The phone runs Android %s and this recipe needs Android %s. Install that stock version first, "
+                "then read the phone again. Going back to an older Android version is not always possible."
+                % (observed, wanted))
+    return "Change the phone so that %s is %s, then read the phone again." % (name, required)

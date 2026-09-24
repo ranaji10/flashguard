@@ -18,6 +18,7 @@ title for the wider ambition beyond the grant and is deliberately absent from th
 |---|---|---|
 | 2026-08-26 | v0.1 | Initial skeleton, drafted problem statement |
 | 2026-08-26 | v0.2 | Prior-art scan folded in. Q5 rebuilt around OpenAndroidInstaller and fwupd/LVFS. Two-corpus validation plan added to Q1 and Q4. Evaluation design and the false-safe metric added to Q1 and Q6. /e/OS codename case added to Q6. Data ethics added to Q7. Schedule split into `schedule.md`. |
+| 2026-09-24 | v0.3 | Q6 gains challenge 6: how a corpus label is made and checked, so the corpus reads as method rather than one person's view. Four verdicts (not-ready added). |
 
 Mark edited sections with `<!-- edited vNN -->` when revising.
 
@@ -250,6 +251,37 @@ so caution cannot game it. Every misclassification becomes a permanent corpus ca
 the rule that would catch it is written.
 
 **5. Keeping matrix and corpus valid as ROMs and firmware revisions move.**
+
+**6. Making the corpus more than one person's opinion.** <!-- edited v0.3 --> Every recipe
+in the corpus carries two labels and the reason for each, and each label is made and checked
+the same way.
+
+*How a label is made.*
+1. The recipe cites the upstream page it was read from (OpenAndroidInstaller config,
+   LineageOS device page) and the date it was consulted. Facts are restated independently:
+   codenames, model numbers, partition names, required versions. Upstream prose is never
+   copied, which keeps the corpus CC0 while its sources are GPL or CC BY-SA.
+2. `human_assessment` records what a careful reader of the upstream source concludes: would
+   this procedure be safe on a phone that meets everything the source states? It must carry a
+   written reason. A label with no reason is treated as a defect: the one time a label went
+   stale (avicii, relabelled 24 September 2026), it was because its reason had been lost.
+3. `expected_verdict` records what the verifier should answer from the recipe as written,
+   which is often less than a person can conclude. The gap between the two labels is itself
+   measured ("information loss") and reported on every run.
+
+*How a label is checked.*
+1. Every fact in a recipe must be reproducible from the cited upstream file at a pinned
+   commit. `data/claims.json` holds every count the proposal quotes, with the command that
+   recomputes it, and the build fails if the text disagrees.
+2. The build refuses a recipe that asks the phone a question no capture route answers, or
+   that uses a field outside the declared vocabulary.
+3. A label is tested against real captured phones. When a label and a real phone disagree,
+   the recipe becomes a permanent corpus case before the rule is changed.
+4. A `safe` label can never make the verifier say `safe` on its own: the phone's own reading
+   must confirm every stated condition. A wrong `safe` label therefore produces at worst a
+   false *not-ready* or *cannot-verify*, never a false safe.
+5. During the grant, each new label is reviewed by a second person who did not write it,
+   from the cited source only, before it counts toward any reported figure.
 
 **Design property, not a challenge but worth stating.** Verification is a pure function:
 fingerprint in, recipe in, verdict out, with no device I/O, no USB permission and no

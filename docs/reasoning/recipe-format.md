@@ -77,8 +77,11 @@ Each prerequisite is an object with open-vocabulary `state`, `required`,
 fingerprint evidence: `safe` requires the fingerprint to confirm every required state.
 When `unlock_class` is `out_of_band`, the prerequisite is not establishable from device state,
 and the verifier emits `unlock-out-of-band` (`cannot-verify`) with out-of-band guidance in
-the evidence block. Absence of `unlock_class` is not `command`: an omitted field abstains with
-the generic missing prerequisite reason.
+the evidence block. Absence of `unlock_class` is not `command`: a prerequisite recognised as
+an unlock step with no `unlock_class` abstains with `unlock-class-undeclared`, and a write
+operation with no classified unlock prerequisite abstains with `unlock-undeclared-for-operation`.
+In format v0.3 an `out_of_band` unlock may add `unlock_readback: "device"` when the phone
+reports the result; see `data/schema.md`, "Recipe format v0.3".
 
 The `prerequisites` key has three distinct meanings: absent means the author did
 not record whether prerequisites were considered; `{}` means the author declares

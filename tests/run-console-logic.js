@@ -279,7 +279,7 @@ console.log("\n  host_platform, host_shell, capture_route, browser_enumeration &
       is(allowedSets.browser_enumeration_source.has(rec.browser_enumeration_source), true, "cmd branch: browser_enumeration_source in schema enum");
     }
 
-    // macOS branch with browser enumeration failure / tester_cancelled
+    // macOS fixture: a record whose browser enumeration was cancelled by the tester
     {
       const cur = { dev: { k: "phone", phone: true }, host_platform: "macos", host_shell: "not_applicable", capture_route: "adb_host", browser_enumeration: "tester_cancelled", android: { product_model: "Pixel 4" } };
       const S = { host_platform: "macos", host_shell: "not_applicable", tester: "test" };

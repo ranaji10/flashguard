@@ -1,0 +1,49 @@
+{
+  "_about": "Every number the proposal quotes, with its baseline date and how to reproduce it. tests/check-claims.py fails the build when a proposal file states a different value, or uses a refused phrase. Run it with --final before submission to also recompute the live numbers and the upstream counts. In the proposal text, write each moving number with its date and say that it moves: 'as of <date>, and this figure moves as upstream does.'",
+  "proposal_files": ["grant/nlnet-restack-proposal.md", "grant/schedule.md"],
+  "historical_files_exempt": {
+    "grant/nlnet-findings-2026-09-03.md": "Dated research note. Records what was true on 3 September (88 configs). Not submitted.",
+    "grant/work-log-2026-09-13.md": "Dated work log. Records history, including superseded figures. Not submitted."
+  },
+  "claims": [
+    {"id": "oai_configs", "value": 90, "as_of": "2026-09-07",
+     "what": "OpenAndroidInstaller device configuration files",
+     "reproduce": {"kind": "count_files", "glob": "../library/upstream/openandroidinstaller/openandroidinstaller/assets/configs/*.yaml"},
+     "pinned": "openandroidinstaller 6a8a123",
+     "patterns": ["OpenAndroidInstaller covers (\\d+) devices", "configuration files covering (\\d+) devices", "(\\d+) OpenAndroidInstaller config"]},
+    {"id": "lineage_devices", "value": 737, "as_of": "2026-09-15",
+     "what": "LineageOS wiki device pages (_data/devices/*.yml)",
+     "reproduce": {"kind": "count_files", "glob": "../library/upstream/lineage_wiki/_data/devices/*.yml"},
+     "pinned": "lineage_wiki fc68abe",
+     "patterns": ["(\\d+) LineageOS device", "of (\\d+) LineageOS"]},
+    {"id": "lineage_vendor_gated", "value": 303, "as_of": "2026-09-15",
+     "what": "LineageOS devices whose unlock eligibility is gated by a vendor account, portal, token or waiting period",
+     "reproduce": {"kind": "documented", "where": "docs/Research/install-method-classification.md, section 4"},
+     "patterns": ["On (\\d+) of \\d+ LineageOS devices", "(\\d+) (?:devices )?(?:are )?vendor-gated"]},
+    {"id": "pmos_devices", "value": 555, "as_of": "2026-09-24",
+     "what": "postmarketOS device packages with a deviceinfo file. The survey said 556: one of those files is a test fixture (main/devicepkg-dev/testdata/deviceinfo), not a device.",
+     "reproduce": {"kind": "count_files", "glob": "../library/upstream/pmaports/device/*/*/deviceinfo"},
+     "pinned": "pmaports 817ed87",
+     "patterns": ["(\\d+) postmarketOS device", "0 of (\\d+) (?:postmarketOS|pmOS)"]},
+    {"id": "distinct_complete_phones", "value": 1, "as_of": "2026-09-24",
+     "what": "Distinct phones with all seven verifier fields (a phone read again unchanged counts once)",
+     "reproduce": {"kind": "live", "metric": "distinct_complete_phones"},
+     "patterns": ["(\\d+) (?:distinct )?phones? with all seven"]},
+    {"id": "decided_distinct_paired", "value": "1 of 4", "as_of": "2026-09-24",
+     "what": "Distinct phone-and-recipe pairings that got a definite answer (safe, not-ready or unsafe)",
+     "reproduce": {"kind": "live", "metric": "decided_distinct_paired"},
+     "patterns": ["decided (?:on )?(\\d+ of \\d+)"]},
+    {"id": "false_safes", "value": 0, "as_of": "2026-09-24",
+     "what": "False safes across every corpus run. Always quoted together with the decided share.",
+     "reproduce": {"kind": "live", "metric": "false_safes"},
+     "patterns": ["(\\d+) false safes?"]}
+  ],
+  "refused_phrases": [
+    {"pattern": "68 ?(%|percent)", "why": "The 'readable' share came from install templates that do not contain that information. Ruled 16 September: not quoted until devices are captured."},
+    {"pattern": "\\b93\\b[^.\\n]{0,40}(OpenAndroidInstaller|configs)", "why": "Figure from docs/Research/, not reproducible from the pinned clone (90)."},
+    {"pattern": "500\\+", "why": "Figure from docs/Research/, not reproducible from the pinned clone."},
+    {"pattern": "\\b88\\b[^.\\n]{0,40}(OpenAndroidInstaller|configs|devices)", "why": "OpenAndroidInstaller was 88 on 26 August and 90 from 7 September."},
+    {"pattern": "\\b556\\b", "why": "The pmOS survey count includes one test fixture. The device count is 555."},
+    {"pattern": "\\b348\\b", "why": "Ruled 16 September: the proposal quotes 303, never a second unlock number."}
+  ]
+}

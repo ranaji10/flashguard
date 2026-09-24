@@ -1,0 +1,65 @@
+{
+  "kinds": {
+    "passed":      {"label": "Check passed"},
+    "unsafe":      {"label": "Wrong recipe for this phone"},
+    "not_ready":   {"label": "Right recipe, phone not ready yet"},
+    "honest":      {"label": "Honest abstention: the phone or the world does not tell us"},
+    "our_gap":     {"label": "Our gap: the recipe or the format is missing something we can fix"}
+  },
+  "scope": {
+    "question": "Does this recipe fit this phone, as the phone was when it was read?",
+    "checked": [
+      "The phone's codename, model number and storage layout against the recipe's target.",
+      "Each condition the recipe declares (bootloader lock, Android version) against what the phone reported.",
+      "Whether the project that published the recipe marks it as untested."
+    ],
+    "not_checked": [
+      "The files you will flash: where they came from, whether they are intact, or their checksums.",
+      "Whether the phone has changed since it was read.",
+      "Steps the recipe does not declare.",
+      "Whether the phone will be usable or supported afterwards."
+    ]
+  },
+  "codes": [
+    {"match": "match-*",                                "kind": "passed",    "plain": "This matches the recipe."},
+    {"match": "prerequisite-*-confirmed",               "kind": "passed",    "plain": "The phone meets this condition."},
+
+    {"match": "device-mismatch",                        "kind": "unsafe",    "plain": "The recipe is written for a different phone."},
+    {"match": "model-mismatch",                         "kind": "unsafe",    "plain": "The recipe is written for a different model number of this phone. Flashing across models can destroy the radio or the phone."},
+    {"match": "partition-scheme-mismatch",              "kind": "unsafe",    "plain": "The recipe expects a different storage layout than this phone has."},
+    {"match": "asset-product_device-mismatch",          "kind": "unsafe",    "plain": "A file in the recipe was built for a different phone."},
+
+    {"match": "prerequisite-bootloader_state-mismatch", "kind": "not_ready", "plain": "The bootloader is locked. The recipe needs it unlocked first."},
+    {"match": "prerequisite-android_version-mismatch",  "kind": "not_ready", "plain": "The phone runs a different Android version than the recipe needs."},
+    {"match": "prerequisite-*-below-minimum",           "kind": "not_ready", "plain": "The phone's version is older than the recipe needs."},
+    {"match": "prerequisite-*-mismatch",                "kind": "not_ready", "plain": "The phone does not yet meet a condition the recipe states."},
+
+    {"match": "missing-product_device",                 "kind": "honest",    "plain": "The phone did not report its codename."},
+    {"match": "missing-product_model",                  "kind": "honest",    "plain": "The phone did not report its model number."},
+    {"match": "missing-partition_scheme",               "kind": "honest",    "plain": "The phone did not report how its storage is laid out."},
+    {"match": "missing-bootloader_state",               "kind": "honest",    "plain": "The phone did not report whether its bootloader is locked."},
+    {"match": "missing-*",                              "kind": "honest",    "plain": "The phone did not report a setting this recipe depends on."},
+    {"match": "unlock-out-of-band",                     "kind": "honest",    "plain": "Unlocking happens outside the phone (a menu, a vendor account or a website) and the phone does not report the result."},
+    {"match": "unlock-no-step-declared",                "kind": "honest",    "plain": "The source says this phone needs no unlock step. The tool records that and does not rely on it yet."},
+    {"match": "recipe-untested-upstream",               "kind": "honest",    "plain": "The project that published this recipe says it was never tried on a real phone."},
+
+    {"match": "models-unestablished",                   "kind": "our_gap",   "plain": "The recipe does not list which model numbers it is for."},
+    {"match": "prerequisites-unrecorded",               "kind": "our_gap",   "plain": "The recipe does not say what the phone must be like before starting."},
+    {"match": "prerequisites-invalid",                  "kind": "our_gap",   "plain": "The recipe's list of starting conditions is empty in a way the tool cannot read."},
+    {"match": "prerequisites-none-declared",            "kind": "our_gap",   "plain": "The recipe lists no starting conditions, and the tool cannot tell whether none are needed."},
+    {"match": "operations-none-declared",               "kind": "our_gap",   "plain": "The recipe does not say what it will write to the phone."},
+    {"match": "operation-kind-unrecognized",            "kind": "our_gap",   "plain": "The recipe uses a step the tool does not understand yet."},
+    {"match": "unlock-undeclared-for-operation",        "kind": "our_gap",   "plain": "The recipe writes to the phone but does not say whether it must be unlocked first."},
+    {"match": "unlock-class-*",                         "kind": "our_gap",   "plain": "The recipe describes its unlock step in a way the tool cannot read."},
+    {"match": "unlock-readback-unrecognized",           "kind": "our_gap",   "plain": "The recipe describes its unlock step in a way the tool cannot read."},
+    {"match": "unlock-requirement-unrecognized",        "kind": "our_gap",   "plain": "The recipe describes its unlock step in a way the tool cannot read."},
+    {"match": "prerequisite-name-refused",              "kind": "our_gap",   "plain": "The recipe uses an old name for a phone setting."},
+    {"match": "prerequisite-*-comparison-*",            "kind": "our_gap",   "plain": "The recipe asks for a version without saying whether it means exactly, at least, or one of several."},
+    {"match": "prerequisite-*-unparseable",             "kind": "our_gap",   "plain": "A version number in the recipe or from the phone could not be read."},
+    {"match": "recipe-untested-*",                      "kind": "our_gap",   "plain": "The recipe's 'tested' marker is in a form the tool does not accept."},
+    {"match": "invalid-recipe",                         "kind": "our_gap",   "plain": "The recipe file is malformed."},
+    {"match": "unsupported-operation",                  "kind": "our_gap",   "plain": "This recipe uses the old v0.1 format, which cannot describe enough to decide."},
+    {"match": "unknown-asset",                          "kind": "our_gap",   "plain": "This recipe uses the old v0.1 format, which cannot describe enough to decide."},
+    {"match": "v0.1-incomplete-safety-model",           "kind": "our_gap",   "plain": "This recipe uses the old v0.1 format, which cannot describe enough to decide."}
+  ]
+}

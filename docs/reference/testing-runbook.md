@@ -55,7 +55,7 @@ If more than that line differs, these are two sessions. Take both in, the second
 
     python3 tools/derive-pending.py raw/<date>/<handle>/flashguard-....json
 
-That writes `...-derived.json` beside the original. Use the derived file from here on. Never edit the original.
+That writes a new file beside the original with `-derived` added before `.json`: `flashguard-sam-2026-09-22T08-25-52-959Z.json` becomes `flashguard-sam-2026-09-22T08-25-52-959Z-derived.json`. Use the derived file from here on. Never edit the original.
 
 **4. Dry run.**
 

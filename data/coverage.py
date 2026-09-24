@@ -16,6 +16,16 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 from flashguard import verify
+from flashguard.reasons import kind_label
+
+DECIDED = ("safe", "not-ready", "unsafe")
+# Fields that describe the phone's state as the verifier sees it. Two captures with the
+# same values here are the same observation: re-reading an unchanged phone adds nothing.
+# Two different phones of the same model on the same firmware would also collapse into one,
+# which undercounts. That is the conservative direction.
+STATE_KEY_FIELDS = ("product_device", "product_model", "build_fingerprint", "security_patch",
+                    "android_version", "partition_scheme", "bootloader_state", "verified_boot_state")
+UPSTREAM = os.path.join(os.path.dirname(ROOT), "library", "upstream")
 
 ANDROID_CLASSES = {"adb", "fastboot"}
 
@@ -57,6 +67,11 @@ def get_android_facts(record):
     detected = record.get("detected") or {}
     android = detected.get("android") or {}
     return dict(android)
+
+
+def state_key(android):
+    """The observation a capture represents, ignoring USB mode, tester and date."""
+    return tuple(str(android.get(f, "")) for f in STATE_KEY_FIELDS)
 
 
 def match_recipe_target(product_device, recipe):
@@ -129,6 +144,9 @@ def corpus_runs(recipe_dir, records):
                     "verdict": result.get("verdict"),
                     "paired": True,
                     "fingerprint_source": r.get("record_id") or r.get("device_local_id"),
+                    "observation": (recipe.get("recipe_id", name),) + state_key(android),
+                    "reasons": [(x.get("code"), x.get("result"), x.get("kind"), x.get("plain"))
+                                for x in result.get("reasons", [])],
                 })
         else:
             result = verify({}, recipe)
@@ -139,8 +157,36 @@ def corpus_runs(recipe_dir, records):
                 "verdict": result.get("verdict"),
                 "paired": False,
                 "fingerprint_source": None,
+                "observation": (recipe.get("recipe_id", name), "no-device"),
+                "reasons": [(x.get("code"), x.get("result"), x.get("kind"), x.get("plain"))
+                            for x in result.get("reasons", [])],
             })
     return runs
+
+
+def distinct(runs):
+    """One run per observation. Runs without an observation key count individually."""
+    seen, out = set(), []
+    for run in runs:
+        key = run.get("observation")
+        if key is None:
+            out.append(run)
+            continue
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(run)
+    return out
+
+
+def abstention_kind(run):
+    """For a cannot-verify run: 'our_gap' if any abstention is ours to fix, else 'honest'."""
+    kinds = [k for (_c, result, k, _p) in run.get("reasons", []) if result == "abstain"]
+    if any(k == "our_gap" for k in kinds):
+        return "our_gap"
+    if any(k == "unclassified" for k in kinds):
+        return "unclassified"
+    return "honest"
 
 
 def enforce_false_safe_gate(runs):
@@ -158,12 +204,15 @@ def enforce_verifier_gate(runs, floor_data=None):
     if floor_data is None:
         floor_data = load_coverage_floor()
     floor = floor_data.get("decided_over_paired") if floor_data else None
-    paired_runs = [v for v in runs if v.get("paired")]
-    decided = sum(1 for v in paired_runs if v.get("verdict") in ("safe", "unsafe"))
+    paired_runs = distinct([v for v in runs if v.get("paired")])
+    decided = sum(1 for v in paired_runs if v.get("verdict") in DECIDED)
     share = (decided / len(paired_runs)) if paired_runs else 0.0
     if floor is not None and share < floor:
         print("    DECIDED SHARE BELOW FLOOR: %.2f < %.2f -- BUILD MUST FAIL" % (share, floor))
         raise SystemExit(1)
+
+
+corpus_runs_cache = {}
 
 
 def report_corpus_runs(records):
@@ -171,6 +220,7 @@ def report_corpus_runs(records):
     all_runs = []
     for label, recipe_dir in (("v0.1", RECIPE_DIRS[0]), ("v0.2", RECIPE_DIRS[1])):
         runs = corpus_runs(recipe_dir, records)
+        corpus_runs_cache[label] = runs
         all_runs.extend(runs)
         print("    %s" % label)
         if not runs:
@@ -180,40 +230,111 @@ def report_corpus_runs(records):
     enforce_false_safe_gate(all_runs)
     print("    These are format fixtures, not hardware validation.")
     print()
+    v02_runs = [r for r in all_runs if r in corpus_runs_cache.get("v0.2", [])]
+    report_abstentions(v02_runs)
+    report_unpaired_devices(records, load_all_recipes())
     return all_runs
 
 
 def report_corpus_group(runs):
-    counts = Counter(run["verdict"] for run in runs)
+    obs = distinct(runs)
+    counts = Counter(run["verdict"] for run in obs)
     false_safe = sum(
         1 for run in runs
         if run.get("verdict") == "safe" and (run.get("human_assessment") != "safe" or run.get("expected") != "safe")
     )
-    decided = sum(1 for run in runs if run["verdict"] in ("safe", "unsafe"))
-    definite_human = sum(1 for run in runs
-                         if run["human_assessment"] in ("safe", "unsafe"))
-    information_loss = sum(1 for run in runs
+    decided = sum(1 for run in obs if run["verdict"] in DECIDED)
+    definite_human = sum(1 for run in obs if run["human_assessment"] in ("safe", "unsafe"))
+    information_loss = sum(1 for run in obs
                            if run["human_assessment"] in ("safe", "unsafe")
                            and run["expected"] not in ("safe", "unsafe"))
     distinct_recipes = len(set(run["recipe_id"] for run in runs))
-    total_runs = len(runs)
+    total = len(obs)
     print("      recipes                 %d" % distinct_recipes)
-    print("      runs                    %d" % total_runs)
+    print("      runs                    %d  (%d distinct: a phone read again unchanged counts once)" % (len(runs), total))
     print("      safe                    %d" % counts.get("safe", 0))
-    print("      unsafe                  %d" % counts.get("unsafe", 0))
+    print("      not-ready               %d   right recipe, phone not ready yet" % counts.get("not-ready", 0))
+    print("      unsafe                  %d   wrong recipe for this phone" % counts.get("unsafe", 0))
     print("      cannot-verify           %d" % counts.get("cannot-verify", 0))
-    print("      false safes             %d" % false_safe)
-    print("      decided runs            %d / %d (%.0f%%)" %
-      (decided, total_runs, 100.0 * decided / total_runs))
+    print("      false safes             %d  (over all %d runs)" % (false_safe, len(runs)))
+    print("      decided                 %d / %d distinct (%.0f%%)" %
+          (decided, total, 100.0 * decided / total if total else 0))
     print("      information loss        %d / %d definite human assessments (%.0f%%)" %
-      (information_loss, definite_human,
-       100.0 * information_loss / definite_human if definite_human else 0))
-    paired = sum(1 for run in runs if run.get("paired"))
-    print("      paired runs             %d / %d" % (paired, total_runs))
-    if paired < total_runs:
+          (information_loss, definite_human,
+           100.0 * information_loss / definite_human if definite_human else 0))
+    paired = sum(1 for run in obs if run.get("paired"))
+    print("      paired                  %d / %d distinct" % (paired, total))
+    if paired < total:
         print("      decided cannot exceed paired: a recipe with no captured device has no")
         print("      evidence to check against, so it abstains. That is a gap in the matrix,")
         print("      not in the verifier, and it closes by capturing devices.")
+
+
+def report_abstentions(runs):
+    """Split every cannot-verify into honest abstentions and gaps that are ours to fix."""
+    held = [r for r in distinct(runs) if r["verdict"] == "cannot-verify"]
+    unpaired = [r for r in held if not r.get("paired")]
+    obs = [r for r in held if r.get("paired")]
+    print("  WHY THE VERIFIER HELD BACK (%d distinct cannot-verify)" % len(held))
+    if unpaired:
+        print("    %-3d No phone has been captured for this recipe yet, so there is nothing to check." % len(unpaired))
+    if not obs:
+        print("    nothing held back")
+        print()
+        return
+    by_kind = Counter(abstention_kind(r) for r in obs)
+    for kind in ("honest", "our_gap", "unclassified"):
+        if by_kind.get(kind):
+            print("    %-3d %s" % (by_kind[kind], kind_label(kind)))
+    reasons = Counter()
+    plain = {}
+    for r in obs:
+        for code, result, kind, text in r.get("reasons", []):
+            if result in ("abstain", "unmet"):
+                reasons[(kind, code)] += 1
+                plain[code] = text
+    print()
+    for (kind, code), n in sorted(reasons.items(), key=lambda kv: (kv[0][0] != "honest", -kv[1])):
+        tag = {"honest": "honest ", "our_gap": "our gap", "not_ready": "unmet  "}.get(kind, kind[:7])
+        print("    [%s] %-2d %s" % (tag, n, plain[code]))
+        print("               %s" % code)
+    print()
+
+
+def report_unpaired_devices(records, recipes, upstream=None):
+    """Captured Android phones with no recipe, and whether upstream covers them."""
+    upstream = UPSTREAM if upstream is None else upstream
+    lineage = os.path.join(upstream, "lineage_wiki", "_data", "devices")
+    oai = os.path.join(upstream, "openandroidinstaller", "openandroidinstaller", "assets", "configs")
+    have_upstream = os.path.isdir(lineage) or os.path.isdir(oai)
+    missing = {}
+    for r in records:
+        android = get_android_facts(r)
+        dev = android.get("product_device")
+        if not dev or dev in ("unknown", "not_applicable"):
+            continue
+        if not pair_record_with_recipes(r, recipes):
+            missing.setdefault(dev, android.get("product_model") or "?")
+    out = []
+    print("  CAPTURED PHONES WITH NO RECIPE")
+    if not missing:
+        print("    none: every captured Android codename has a recipe")
+    for dev, model in sorted(missing.items()):
+        where = []
+        if os.path.isfile(os.path.join(lineage, dev + ".yml")):
+            where.append("LineageOS")
+        if os.path.isfile(os.path.join(oai, dev + ".yaml")):
+            where.append("OpenAndroidInstaller")
+        if where:
+            note = "covered upstream by " + " and ".join(where) + ": write the recipe"
+        elif have_upstream:
+            note = "no upstream recipe: record that as a finding"
+        else:
+            note = "upstream clones not found, cannot check"
+        out.append((dev, model, note))
+        print("    %-16s %-14s %s" % (dev, model, note))
+    print()
+    return out
 
 
 SEVEN = ["manufacturer", "product_model", "chipset_family", "android_version",
@@ -232,8 +353,15 @@ def tier_a_gate(records, androids, all_runs):
     def fields_present(a):
         return [f for f in SEVEN if str(a.get(f, "")) not in EMPTY]
 
-    complete = [r for r in androids
-                if len(fields_present(r.get("detected", {}).get("android", {}))) == len(SEVEN)]
+    complete_all = [r for r in androids
+                    if len(fields_present(r.get("detected", {}).get("android", {}))) == len(SEVEN)]
+    # One phone read several times without changing counts once.
+    complete, seen = [], set()
+    for r in complete_all:
+        key = state_key(r["detected"]["android"])
+        if key not in seen:
+            seen.add(key)
+            complete.append(r)
     chips = {r["detected"]["android"].get("chipset_family")
              for r in complete} - set(EMPTY)
 
@@ -250,7 +378,9 @@ def tier_a_gate(records, androids, all_runs):
     print("\n  TIER A EXIT CRITERION")
     def row(ok, label, got, want):
         print("    [%s] %-38s %s" % ("x" if ok else " ", label, "%s of %s" % (got, want)))
-    row(len(complete) >= 10, "android records with all seven fields", len(complete), 10)
+    row(len(complete) >= 10, "distinct phones with all seven fields", len(complete), 10)
+    if len(complete_all) > len(complete):
+        print("        (%d records; repeat reads of an unchanged phone count once)" % len(complete_all))
     row(len(chips) >= 3, "distinct chipset families among them", len(chips), 3)
     row(not wrong, "non-android classified correctly", len(ground_truth) - len(wrong), len(ground_truth))
     row(false_safe == 0, "false safes (must be zero)", false_safe, 0)
@@ -284,8 +414,8 @@ def verifier_gate(runs):
         1 for v in runs
         if v.get("verdict") == "safe" and (v.get("human_assessment") != "safe" or v.get("expected") != "safe")
     )
-    paired_runs = [v for v in runs if v.get("paired")]
-    decided = sum(1 for v in paired_runs if v.get("verdict") in ("safe", "unsafe"))
+    paired_runs = distinct([v for v in runs if v.get("paired")])
+    decided = sum(1 for v in paired_runs if v.get("verdict") in DECIDED)
     share = (decided / len(paired_runs)) if paired_runs else 0.0
 
     floor_data = load_coverage_floor()
@@ -299,7 +429,7 @@ def verifier_gate(runs):
               (100 * share))
     else:
         ok_ds = share >= floor
-        print("    [%s] decided share over paired >= %.0f%%       %.0f%% decided (%d of %d paired runs)"
+        print("    [%s] decided share over paired >= %.0f%%       %.0f%% decided (%d of %d distinct paired)"
               % ("x" if ok_ds else " ", 100 * floor, 100 * share, decided, len(paired_runs)))
         if not ok_ds:
             print("    DECIDED SHARE BELOW FLOOR: %.2f < %.2f -- BUILD MUST FAIL" % (share, floor))

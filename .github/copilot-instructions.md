@@ -23,6 +23,18 @@ below.
 - Copy anything from `../library/`. It is borrowed material under other licences and must
   never enter this GPL repository.
 
+
+### Never run these (copied verbatim from CLAUDE.md)
+
+`tests/check-rule-agreement.sh` fails the build if this block differs from CLAUDE.md.
+Edit CLAUDE.md first, then copy the block here unchanged.
+
+    fastboot flashing unlock      fastboot oem unlock
+    fastboot flash ...            fastboot erase ...
+    fastboot format ...           fastboot update ...
+    fastboot set_active ...       adb disable-verity
+    dd ...
+
 ## Always
 
 - Keep `classify.sh`, `derive.sh` and the verifier **pure**: text in, result out. No device
@@ -57,7 +69,7 @@ zero decided results, and zero false safes. V0.1 has no defensible `safe` case; 
 - **End every piece of work with the command that proves it**, and its output. If no command
   could fail were the work absent, say so rather than reporting completion.
 - **Tense is not decoration.** Describe what EXISTS in the present tense and what does not in
-  the conditional. `verify()` does not exist. Never write a docstring, comment, README line
+  the conditional. (This file once said "`verify()` does not exist" after verify.py was committed.) Never write a docstring, comment, README line
   or commit message that describes unimplemented behaviour as though it works — a document
   that describes a thing convincingly is how this project already lost a week: a run log
   claimed to cover work it predated, and nothing checked. The same rule runs backwards:

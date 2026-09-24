@@ -23,7 +23,11 @@ which relocates the safety decision to the least informed point in the system.
 
 ---
 
-## The three verdicts
+## The four verdicts
+
+Ruled 24 September 2026: `unsafe` was being used for two different situations, a recipe
+that does not fit the phone and a phone that is not ready for a recipe that does. They
+are now separate verdicts. Neither is `safe`, so the false-safe gate is unchanged.
 
 ### `unsafe`
 
@@ -37,6 +41,19 @@ actual partition scheme; an operation requiring an unlocked bootloader on a devi
 reporting locked.
 
 `unsafe` is a positive finding. It requires evidence, not absence of evidence.
+
+### `not-ready`
+
+The recipe fits this phone (codename, model and storage layout all confirmed), and the
+phone is not yet in the state the recipe needs: the bootloader is still locked, or it runs
+a different Android version. Each unmet condition is a reason with `result: "unmet"` and a
+plain `remedy` (for example: unlock the bootloader, which erases the phone, then read the
+phone again).
+
+`not-ready` requires confirmed identity. If any identity check abstained, the recipe might
+not fit this phone at all, so the verdict is `cannot-verify` and the unmet reason stays in
+the list. A remedy is guidance, never evidence: after following it, the phone is read again
+and that reading decides.
 
 ### `cannot-verify`
 
@@ -179,11 +196,13 @@ staleness is the consumer's decision.
 
 ## Precedence
 
-    unsafe  >  cannot-verify  >  safe
+    unsafe  >  not-ready  >  cannot-verify  >  safe
 
-Any check returning `unsafe` makes the verdict `unsafe`, whatever else was found.
-Any check abstaining makes the verdict at best `cannot-verify`. `safe` survives only
-unanimous agreement.
+Any identity check that fails makes the verdict `unsafe`, whatever else was found. An
+unmet prerequisite on a phone whose identity is confirmed makes it `not-ready`, even if
+another check abstained, because "not ready" is already a definite finding. Any check
+abstaining makes the verdict at best `cannot-verify`. `safe` survives only unanimous
+agreement.
 
 ---
 
@@ -204,8 +223,23 @@ metric being gamed by caution.
 ## Every verdict carries reasons
 
 The verdict alone is not the output. Each `reasons[]` entry names the check, its
-result (`pass` / `fail` / `abstain`), the fingerprint fields it relied on, and a
-stable machine-readable code. Reason codes are part of the public interface: other
+result (`pass` / `fail` / `unmet` / `abstain`), the fingerprint fields it relied on, a
+stable machine-readable code, and since 24 September a `kind` and a `plain` sentence a
+non-technical reader can follow, both from `data/reason_codes.json`.
+
+Every abstention has one of two kinds, and the difference matters more than the count:
+
+| Kind | Meaning | Example |
+|---|---|---|
+| `honest` | The phone or the world does not give the evidence. The tool is doing its job. | The phone did not report its storage layout. |
+| `our_gap` | The recipe or the format is missing something this project can fix. | The recipe lists no starting conditions. |
+
+`coverage.py` reports cannot-verify split by kind, so a reviewer can see how many
+abstentions are the world being silent and how many are work left for us.
+
+Every verdict object also carries `scope`: the question it answers, what it checked, and
+what it did not check (the files you will flash, changes since the phone was read, steps the
+recipe does not declare). Anything that renders a verdict has the scope in hand. Reason codes are part of the public interface: other
 tools consume them, so they are versioned and not renamed casually.
 
 `coverage` states what the model could and could not reason about for this device,
@@ -225,6 +259,13 @@ the device will be usable afterwards; or anything about the person's intent.
 
 Verification is a **pure function**. Fingerprint in, recipe in, verdict out. No
 device I/O, no USB permission, no network, no filesystem writes on the verify path.
+
+Ruled 24 September 2026: `verify()` stays a pure function in the sense that matters, **no
+device I/O, and deterministic given its two arguments**. It reads three data files once at
+import (`vocabulary.json`, `unlock_guidance.json`, `reason_codes.json`), refuses to start if
+the vocabulary or the reason texts are missing, and never reads or writes anything while
+verifying. `tests/test_verdict_v03.py` asserts the same inputs give the same output and are
+not mutated.
 Anything that talks to hardware lives in a separate module the verifier cannot call.
 
 This is not defensive coding. It makes "the verifier bricked my phone" a sentence

@@ -61,6 +61,12 @@ def check_schema_table_agrees_with_vocabulary(vocab):
         if f"`{comp}`" not in content and comp not in content:
             raise AssertionError(f"data/schema.md missing comparison `{comp}` from vocabulary.json")
 
+    # v0.3 vocabulary and verdicts
+    for key in ("unlock_readback_values", "unlock_requirement_values", "verdicts"):
+        for val in vocab.get(key, []):
+            if f"`{val}`" not in content:
+                raise AssertionError(f"data/schema.md missing {key} value `{val}` from vocabulary.json")
+
 
 def check_recipe(recipe, recipe_name, derive_fields, vocab):
     refused = vocab.get("refused_prerequisite_names", {})
@@ -77,6 +83,26 @@ def check_recipe(recipe, recipe_name, derive_fields, vocab):
                 f"Recipe '{recipe_name}' prerequisite '{prereq_name}' requires evidence field "
                 f"'{prereq_name}' which is produced by no capture route."
             )
+        if isinstance(req, dict):
+            v03 = [k for k in ("unlock_readback", "requirement") if k in req] + (["one_of"] if req.get("compare") == "one_of" else [])
+            if v03 and recipe.get("schema_version") != "0.3":
+                raise AssertionError(
+                    f"Recipe '{recipe_name}' prerequisite '{prereq_name}' uses v0.3 field(s) {v03} but declares schema_version {recipe.get('schema_version')!r}."
+                )
+            if "unlock_readback" in req:
+                if req.get("unlock_class") != "out_of_band":
+                    raise AssertionError(f"Recipe '{recipe_name}' prerequisite '{prereq_name}' has unlock_readback without unlock_class out_of_band.")
+                if req["unlock_readback"] not in vocab.get("unlock_readback_values", []):
+                    raise AssertionError(f"Recipe '{recipe_name}' prerequisite '{prereq_name}' has unrecognized unlock_readback {req['unlock_readback']!r}.")
+            if "requirement" in req:
+                if req["requirement"] not in vocab.get("unlock_requirement_values", []) or prereq_name not in unlock_evidence_fields:
+                    raise AssertionError(f"Recipe '{recipe_name}' prerequisite '{prereq_name}' has unrecognized requirement {req['requirement']!r}.")
+                if not req.get("source_evidence"):
+                    raise AssertionError(f"Recipe '{recipe_name}' prerequisite '{prereq_name}' declares no_step without source_evidence.")
+            if req.get("compare") == "one_of":
+                opts = req.get("required")
+                if not isinstance(opts, list) or not opts:
+                    raise AssertionError(f"Recipe '{recipe_name}' prerequisite '{prereq_name}' uses one_of without a list of versions.")
         if isinstance(req, dict) and req.get("unlock_class"):
             if prereq_name not in unlock_evidence_fields:
                 raise AssertionError(
@@ -126,7 +152,23 @@ def self_test():
     except AssertionError:
         p2_failed = True
 
-    if not (p1_failed and p2_failed):
+    def fails(plant):
+        try:
+            check_recipe(plant, "plant.json", derive_fields, vocab)
+        except AssertionError:
+            return True
+        return False
+
+    # Plant 3: a v0.3 field in a v0.2 recipe
+    p3_failed = fails({"schema_version": "0.2", "prerequisites": {"bootloader_state": {
+        "required": "unlocked", "unlock_class": "out_of_band", "unlock_readback": "device"}}})
+    # Plant 4: readback on a command-class unlock
+    p4_failed = fails({"schema_version": "0.3", "prerequisites": {"bootloader_state": {
+        "required": "unlocked", "unlock_class": "command", "unlock_readback": "device"}}})
+    # Plant 5: no_step with no source evidence
+    p5_failed = fails({"schema_version": "0.3", "prerequisites": {"bootloader_state": {"requirement": "no_step"}}})
+
+    if not (p1_failed and p2_failed and p3_failed and p4_failed and p5_failed):
         print("  ERROR: check-recipes self-test failed: expected planted defects to raise AssertionError", file=sys.stderr)
         sys.exit(1)
     print("  check-recipes self-test passed")

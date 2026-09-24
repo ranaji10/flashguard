@@ -51,28 +51,60 @@ quoted inside the stored answer is not counted a second time.
 
 <!-- NEWEST REVIEW DIRECTLY BELOW -->
 
+## 2026-09-24 — carry-list sweep — every carried finding checked against the current files
+
+Each finding below was checked against the working tree on 24 September 2026 and ticked above
+with this evidence. None was ticked on the reviewer's word or on a file having changed.
+
+- [x] verify.py `_is_unlock_prerequisite` string match on declared_by: kept on purpose. Over-detecting an unlock step can only abstain (`unlock-class-undeclared`); it cannot reach safe. Documented in docs/reasoning/recipe-format.md.
+- [x] RecipePrerequisitesProduceableTest "unasked-for": it was asked for (tracker, 17 Sep). The producibility check now lives in tests/check-recipes.py.
+- [x] source.untested fallback: it now abstains with `recipe-untested-legacy-field` and never permits.
+- [x] a5xelte provenance: models now come from target_models_from (LineageOS page), which lists exactly the eight models in the recipe.
+- [x] test re-inserting unlock_step: the surviving test deletes unlock_class and asserts `unlock-undeclared-for-operation`. The older copy was dead code and was removed today (tests/test_verify_v2.py held two copies of four classes; 42 methods never ran).
+- [x] test_model_mismatch uses an allowlisted model: it now uses NOT-A-REAL-MODEL and asserts `model-mismatch`.
+- [x] verdict-contract.md still defines variant: the section now defines model matching against target.models.
+- [x] recipe-format-coverage.md tabulates variant: no longer present.
+- [x] recipe_format_coverage.py matches deviceinfo_models: now matches models/device_models/supported_device_codes.
+- [x] product_model stamped into fields_consumed before the model check: now appended only on the branches that compare it.
+- [x] bootloader_unlocked with no marker reaches safe: the name is refused (`prerequisite-name-refused`) and check-recipes fails on it.
+- [x] avicii returns safe against its label: relabelled safe on 24 Sep with its unlock classed as command; the unsafe-labelled shape is guarded in tests/test_false_safe_gate.py.
+- [x] `is_unlock_step` alias: appears nowhere in verify.py.
+- [x] numeric 0 permits untested: the gate compares identity (`is False`); 0 and 0.0 abstain.
+- [x] verdict-contract documents "not_untested": no longer present.
+- [x] recipe-format.md claims an omitted unlock_class abstains generically: text corrected today to name the two real reason codes.
+- [x] coverage false-safe gate counts only expected unsafe: it counts any safe where human_assessment or expected is not safe.
+- [x] required None falls through to pass: an unmatched value is now `unmet` (not-ready or cannot-verify), never safe.
+- [x] get_guidance reads a file on the verify path: ruled 24 Sep, verify() is pure (no device I/O, deterministic given its arguments); data files are read once at import. Recorded in verdict-contract.md.
+- [x] run-console-logic.js schema agreement vacuous on an empty set: the reverse assertion requires every schema value to be found in the page, so an empty extraction fails.
+- [x] run-console-logic.js "macOS branch" comment: reworded to describe the fixture.
+- [x] ubuntu_live rename without a decision: ubuntu_live is declared in data/schema.md.
+- [x] host_shell regex misses the ternary: a second pattern extracts both ternary values.
+- [x] test-android-raw-agreement.sh guard removed: file rewritten in c388c2c; the finding pointed at lines that no longer exist (tracker v-carryghosts).
+- [x] review-log-add.sh substring match on "uncommitted": the heading is now derived from the tree state, not the branch name.
+- [x] tracker-export.py docstring describes lengths: it now says it hashed lengths until 047af5a and hashes content since.
+
 ## 2026-09-17 — uncommitted-on-a0713b1 — Batch 6 task
 
-- [ ] flashguard/verify.py:308 _is_unlock_prerequisite introduces undocumented string-matching
+- [x] flashguard/verify.py:308 _is_unlock_prerequisite introduces undocumented string-matching
       heuristics ("unlock" in declared_by.lower()) to guess if a step is an unlock, masking the absence
       of a formal schema marker and providing a path to a false safe
-- [ ] tests/test_verify_v2.py:554 a completely unasked-for RecipePrerequisitesProduceableTest
+- [x] tests/test_verify_v2.py:554 a completely unasked-for RecipePrerequisitesProduceableTest
       was added that analyzes shell scripts and markdown with regex, out of scope for the PR
-- [ ] flashguard/verify.py:517 the source.untested fallback is retained as a "deprecated
+- [x] flashguard/verify.py:517 the source.untested fallback is retained as a "deprecated
       fallback" indefinitely with no end date and no writer, exactly as criticized previously
-- [ ] data/recipes-v0.2/a5xelte.json:1 the recipe retains a nine-model allowlist while citing
+- [x] data/recipes-v0.2/a5xelte.json:1 the recipe retains a nine-model allowlist while citing
       an upstream config that contains no model strings, leaving its provenance unrecorded
-- [ ] tests/test_verify_v2.py:249 the test named for omitting unlock_class still manually
+- [x] tests/test_verify_v2.py:249 the test named for omitting unlock_class still manually
       re-inserts "unlock_step": True, ensuring it passes by supplying the marker it claims to omit
-- [ ] tests/test_verify_contract.py:52 test_model_mismatch_is_unsafe_not_abstention still uses
+- [x] tests/test_verify_contract.py:52 test_model_mismatch_is_unsafe_not_abstention still uses
       GD1YQ (which is in the allowlist), passing due to a device mismatch instead of testing models
-- [ ] docs/reasoning/verdict-contract.md:123 the specification still formally defines the
+- [x] docs/reasoning/verdict-contract.md:123 the specification still formally defines the
       variant field and the safety tiers built on it, although the verifier no longer reads it
-- [ ] docs/reasoning/recipe-format-coverage.md:53 the measurement record still tabulates
+- [x] docs/reasoning/recipe-format-coverage.md:53 the measurement record still tabulates
       target.variant and assets.variant, which no longer exist in the working corpus
-- [ ] data/recipe_format_coverage.py:60 the postmarketos row is still matched against
+- [x] data/recipe_format_coverage.py:60 the postmarketos row is still matched against
       ^deviceinfo_models=, a key that exists nowhere in the upstream device files
-- [ ] flashguard/verify.py:385 product_model is incorrectly appended to fields_consumed before
+- [x] flashguard/verify.py:385 product_model is incorrectly appended to fields_consumed before
       validation, falsely asserting the field was verified on execution paths lacking a model list
 
 <details><summary>the review, as it came back</summary>
@@ -125,48 +157,48 @@ quoted inside the stored answer is not counted a second time.
 
 ## 2026-09-17 — uncommitted-on-a0713b1 — Batch 5 task
 
-- [ ] `flashguard/verify.py:437` `is_unlock` is now built from `unlock_step`/`is_unlock_step`/
+- [x] `flashguard/verify.py:437` `is_unlock` is now built from `unlock_step`/`is_unlock_step`/
       `unlock_class`, so a prerequisite named `bootloader_unlocked` carrying none of them is
       no longer treated as an unlock and reaches `safe`; `avicii.json`
       returns `safe` (HEAD returned `cannot-verify`) against its own `expected_verdict`
-- [ ] `data/recipes-v0.2/avicii.json:1` the recipe still declares `expected_verdict`
+- [x] `data/recipes-v0.2/avicii.json:1` the recipe still declares `expected_verdict`
       `cannot-verify` and `human_assessment` `unsafe`, and the working-tree verifier now
       answers `safe` for a fingerprint that merely confirms `unlocked`
-- [ ] `flashguard/verify.py:422` the unlock marker is satisfied by the mere presence of
+- [x] `flashguard/verify.py:422` the unlock marker is satisfied by the mere presence of
       `unlock_class`, and a second alias `is_unlock_step` is accepted here and at `:439`
       that appears in no recipe, schema, test or document
-- [ ] `flashguard/verify.py:354` `product_model` is appended to `fields_consumed` before the
+- [x] `flashguard/verify.py:354` `product_model` is appended to `fields_consumed` before the
       models-list check, so a recipe with no list records the field as consumed on a path
       where no model comparison happened — the same evidence-stamp defect as the
       `variant` entry of 13 September
-- [ ] `flashguard/verify.py:511` `in (False, "unestablished", None)` also accepts numeric
+- [x] `flashguard/verify.py:511` `in (False, "unestablished", None)` also accepts numeric
       `0`, which is outside the vocabulary the comment above it states; a hand-written
       `0` silently means "not untested" and permits `safe`
-- [ ] `docs/reasoning/verdict-contract.md:157` documents `"not_untested"` as a permitted
+- [x] `docs/reasoning/verdict-contract.md:157` documents `"not_untested"` as a permitted
       value with no effect, but the verifier returns `cannot-verify` with
       `recipe-untested-unrecognized` for it
-- [ ] `flashguard/verify.py:497` the `source.untested` fallback is kept without a sunset
+- [x] `flashguard/verify.py:497` the `source.untested` fallback is kept without a sunset
       date and with nothing that writes it, which is the second-name problem this change
       exists to remove
-- [ ] `docs/reasoning/recipe-format.md:80` claims an omitted `unlock_class` abstains, which
+- [x] `docs/reasoning/recipe-format.md:80` claims an omitted `unlock_class` abstains, which
       is false unless the prerequisite also carries the marker; the recipe reaches `safe`
-- [ ] `tests/test_verify_v2.py:263` the test named for the rename re-inserts `unlock_step`,
+- [x] `tests/test_verify_v2.py:263` the test named for the rename re-inserts `unlock_step`,
       so it does not exercise the behaviour it is named after; delete that line and it fails
-- [ ] `tests/test_verify_contract.py:50` `test_model_mismatch_is_unsafe_not_abstention` uses
+- [x] `tests/test_verify_contract.py:50` `test_model_mismatch_is_unsafe_not_abstention` uses
       a model that is in the allowlist, so the `unsafe` comes from the device mismatch and
       no model mismatch is tested
-- [ ] `data/recipes-v0.2/a5xelte.json:1` the nine-model allowlist that now decides
+- [x] `data/recipes-v0.2/a5xelte.json:1` the nine-model allowlist that now decides
       `unsafe` cites a source containing no model strings and does not match the only
       upstream file that lists models for this codename
-- [ ] `docs/reasoning/verdict-contract.md:123` the specification still defines `variant`
+- [x] `docs/reasoning/verdict-contract.md:123` the specification still defines `variant`
       and the tiers built on it, while the verifier no longer reads any such field
-- [ ] `docs/reasoning/recipe-format-coverage.md:53` the measurement record still tabulates
+- [x] `docs/reasoning/recipe-format-coverage.md:53` the measurement record still tabulates
       `target.variant` and `assets.variant`, which no longer exist, against a script that
       now emits `target.models`
-- [ ] `data/recipe_format_coverage.py:60` the postmarketOS row is matched on
+- [x] `data/recipe_format_coverage.py:60` the postmarketOS row is matched on
       `^deviceinfo_models=`, a key that exists nowhere in the checkout, so the row reports
       zero for a naming error rather than a fact
-- [ ] `data/coverage.py:109` the false-safe gate counts only `expected == "unsafe"`, so a
+- [x] `data/coverage.py:109` the false-safe gate counts only `expected == "unsafe"`, so a
       recipe whose `expected_verdict` is `cannot-verify` can return `safe` unremarked
 
 <details><summary>the review, as it came back</summary>
@@ -663,10 +695,10 @@ FINDINGS
 
 ## 2026-09-16 — uncommitted-on-bba77c0 — Batch 3 task + Nothing1 recipe
 
-- [ ] flashguard/verify.py:409 assigning None to required when       requirement is not tion check (requiredis not None), falling through to pass and creating a direct path toa false safe verdic
-- [ ] docs/reasoning/recipe-format.md:81 claims that an omitted      unlock_class abstaireason, but the codeskips checking for omission and verifies it identically to a valid requirement.
-- [ ] tests/test_verify_v2.py:327 test_omitted_unlock_class_...      passes for the wronletely because themock fingerprint() lacks bootloader_unlocked data, not because the code enforces the o
-- [ ] flashguard/verify.py:3 importing get_guidance to supply  out-of-band data sta/unlock_guidance.json from the filesystem on the verify path, violating the strict non-negotiable propain a pure function.
+- [x] flashguard/verify.py:409 assigning None to required when       requirement is not tion check (requiredis not None), falling through to pass and creating a direct path toa false safe verdic
+- [x] docs/reasoning/recipe-format.md:81 claims that an omitted      unlock_class abstaireason, but the codeskips checking for omission and verifies it identically to a valid requirement.
+- [x] tests/test_verify_v2.py:327 test_omitted_unlock_class_...      passes for the wronletely because themock fingerprint() lacks bootloader_unlocked data, not because the code enforces the o
+- [x] flashguard/verify.py:3 importing get_guidance to supply  out-of-band data sta/unlock_guidance.json from the filesystem on the verify path, violating the strict non-negotiable propain a pure function.
 
 <details><summary>the review, as it came back</summary>
 
@@ -698,11 +730,11 @@ Based on a review of the uncommitted diff, here are the answers to your question
 
 ## 2026-09-16 — uncommitted-on-e7ad22c — Added tests for capture route and browser enumeration
 
-- [ ] tests/run-console-logic.js:146 schema agreement checks were added prematurely, violating
+- [x] tests/run-console-logic.js:146 schema agreement checks were added prematurely, violating
       the explicit deferrt asked to wait forthe variant omission decision                                       [ ] tests/run-consoextraction allows thetest to pass vacuously if no                                        assignments happen  since an empty arrayskips the assertion loop                                            [ ] tests/run-consot claims to test"across all capture routes &                                        enumerations" but tndpicked combinations
-- [ ] tests/run-console-logic.js:243 the comment "macOS branch with   browser enumeration
+- [x] tests/run-console-logic.js:243 the comment "macOS branch with   browser enumeration
       implies the existence of specific branching logic in the builder    that does not exist
-- [ ] tests/run-console-logic.js:256 the Linux host platform test was changed from ubuntu
+- [x] tests/run-console-logic.js:256 the Linux host platform test was changed from ubuntu
       to ubuntu_live without being asked for and without an accompanying decision in a file
 
 <details><summary>the review, as it came back</summary>
@@ -736,8 +768,8 @@ Based on a review of the uncommitted diff, here are the answers to your question
 
 ## 2026-09-16 — uncommitted-on-3ed8346 — Batch 2b changes on the BenchKit based on MAC vs windows commands
 
-- [ ] tests/run-console-logic.js:157 the schema validation test merely checks whether a string is present in its own hardcoded Set parsed from the Markdown file, instead of testing any actual schema enforcer, meaning the test asserts a tautology and proves nothing about validation.
-- [ ] tests/run-console-logic.js:177 the regex /host_shell\s*[:=]\s*"([^"]+)"/g fails to match the ternary assignment cur.host_shell = isCmd ? "cmd" : "powershell" in the application code, allowing the check to pass without actually validating those assigned values.
+- [x] tests/run-console-logic.js:157 the schema validation test merely checks whether a string is present in its own hardcoded Set parsed from the Markdown file, instead of testing any actual schema enforcer, meaning the test asserts a tautology and proves nothing about validation.
+- [x] tests/run-console-logic.js:177 the regex /host_shell\s*[:=]\s*"([^"]+)"/g fails to match the ternary assignment cur.host_shell = isCmd ? "cmd" : "powershell" in the application code, allowing the check to pass without actually validating those assigned values.
 
 <details><summary>the review, as it came back</summary>
 
@@ -834,7 +866,7 @@ Summary: The batch 2 work is complete and correct. bash tests/all.sh passes (the
 
 ## 2026-09-14 — 251df11 — Second Repair run for WebUSB+Benchkit Integration
 
-- [ ] tests/test-android-raw-agreement.sh:5-6 The old test mechanically guarded against
+- [x] tests/test-android-raw-agreement.sh:5-6 The old test mechanically guarded against
       re-introduction of bare getprART-HERE.html (grepping
       for adb shell getprop ro.product.manufacturer). That assertion was removed. The
       only remaining guard is the p copilot-instructions.md,
@@ -1395,3 +1427,4 @@ and the commit message it had already read said the change was a fix.
 ---
 
 *Older reviews go below. Newest at the top.*
+
