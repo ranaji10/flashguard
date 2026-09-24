@@ -404,8 +404,17 @@ function scrWho(){
   var c=show(
   '<div class="card">'+
     '<p class="kicker">Setup · once only</p>'+
-    '<h1>Two things, then you are set up</h1>'+
+    '<h1>Three things, then you are set up</h1>'+
     '<p class="sub">Asked once. Remembered for every device after.</p>'+
+    '<div class="why hot" id="unplugbox" role="alert" style="margin-top:20px;border-left-width:4px">'+
+      '<b>Unplug every device you are going to test, now</b>'+
+      'Phones, tablets, cameras, USB sticks, e-readers: disconnect all of them from this computer'+
+      ' before you continue. Keep only your keyboard, mouse and charger. The page will ask you to plug'+
+      ' each device in, one at a time. A device that is already connected when you start can be missed'+
+      ' or recorded as the wrong thing.</div>'+
+    '<label style="display:flex;gap:10px;align-items:flex-start;margin:12px 0 4px;font-size:15px;cursor:pointer">'+
+      '<input type="checkbox" id="unplugged" style="margin-top:4px;width:18px;height:18px">'+
+      '<span>Every device I am going to test is unplugged from this computer.</span></label>'+
     '<p style="margin-top:20px"><b>What should the records credit you as?</b><br>'+
     '<span class="sub">A handle or initials. Not your full name; these are published.</span></p>'+
     '<input class="txt" id="who" placeholder="ADK" value="'+esc(S.tester)+'">'+
@@ -419,7 +428,9 @@ function scrWho(){
   '</div>');
   c.querySelector("#go").addEventListener("click",function(){
     var v=c.querySelector("#who").value.trim();
-    if(!v){ var e=c.querySelector("#err"); e.textContent="A handle or set of initials, so records can be attributed."; e.className="alert bad on"; return; }
+    var e=c.querySelector("#err");
+    if(!c.querySelector("#unplugged").checked){ e.textContent="Unplug every device you are going to test, then tick the box above. You will plug them in one at a time."; e.className="alert bad on"; c.querySelector("#unplugbox").scrollIntoView({behavior:"smooth",block:"center"}); return; }
+    if(!v){ e.textContent="A handle or set of initials, so records can be attributed."; e.className="alert bad on"; return; }
     S.tester=v; S.consent=true; save(); scrLoop();
   });
 }
@@ -1368,9 +1379,13 @@ document.getElementById("cp").addEventListener("click",function(){
   if(S.records.length) copyText(JSON.stringify(getSessionExportObject(), null, 2), this);
 });
 document.getElementById("restart").addEventListener("click",function(){
-  if(S.records.length && !confirm("Start over? "+S.records.length+" record"+(S.records.length===1?"":"s")+
-     " will be cleared from this page. Download them first if you have not.")) return;
-  S={host_platform:"not_stated",host_shell:"not_applicable",tester:S.tester,consent:S.consent,setup:0,records:[],descriptors:[],seen:{},devices:{},wrapup:""}; save(); scrWho();
+  /* Start over means the very beginning: handle, consent and the unplug check are asked again. */
+  if(S.records.length && !confirm("Start over from the beginning? "+S.records.length+" record"+(S.records.length===1?"":"s")+
+     " and your handle will be cleared from this page. Download them first if you have not.")) return;
+  S={host_platform:"not_stated",host_shell:"not_applicable",tester:"",consent:false,setup:0,records:[],descriptors:[],seen:{},devices:{},wrapup:""};
+  save(); cur=null; sessionDownloaded=false;
+  var col=document.getElementById("collected"); if(col) col.style.display="none";
+  scrWho();
 });
 
 if(!S.tester||!S.consent) scrWho();

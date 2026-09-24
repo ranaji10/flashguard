@@ -1,0 +1,54 @@
+{
+  "expected_verdict": "cannot-verify",
+  "expected_verdict_reason": "The unlock is performed on the phone in Samsung download mode, which the current vocabulary classes as out_of_band, so the verifier abstains even though this model reports its lock state. The captured A52s also reports no partition layout property.",
+  "human_assessment": "safe",
+  "verdict_gap_reason": "An SM-A528B on Android 13 or 14 stock firmware, bootloader unlocked through download mode, satisfies every precondition the LineageOS page states before vbmeta and recovery are written.",
+  "install_method": "samloader_rs",
+  "operations": [
+    {
+      "declared_by": "before_recovery_install.samsung_qcom",
+      "kind": "write-image",
+      "partition": "vbmeta"
+    },
+    {
+      "kind": "write-image",
+      "partition": "recovery"
+    }
+  ],
+  "prerequisites": {
+    "android_version": {
+      "compare": "exact_major",
+      "declared_by": "before_install.version",
+      "required": "14",
+      "source_evidence": "LineageOS a52sxq requires Android 13 or 14 stock firmware. The format has no set comparison, so the recipe pins 14, the firmware the captured device runs. An Android 13 phone will read as a mismatch: a false unsafe, never a false safe.",
+      "state": "OPEN"
+    },
+    "bootloader_state": {
+      "declared_by": "before_recovery_install.samsung_qcom",
+      "required": "unlocked",
+      "source_evidence": "OEM unlock toggle in Developer options, then the unlock choice in download mode; wipes userdata",
+      "state": "OPEN",
+      "unlock_class": "out_of_band",
+      "unlock_method": "samsung_download_mode",
+      "unlock_step": true
+    }
+  },
+  "recipe_id": "a52sxq-recovery-v2",
+  "schema_version": "0.2",
+  "source": {
+    "authored": "independent",
+    "consulted": "2026-09-24",
+    "device_facts_from": "https://wiki.lineageos.org/devices/a52sxq/",
+    "upstream_untested": "unestablished"
+  },
+  "source_fields_unused": [],
+  "target": {
+    "models": [
+      "SM-A528B",
+      "SM-A528B/DS",
+      "SM-A528N"
+    ],
+    "partition_scheme": "single",
+    "product_device": "a52sxq"
+  }
+}
