@@ -1,0 +1,77 @@
+{
+  "expected_verdict": "cannot-verify",
+  "expected_verdict_reason": "The captured SM-G965F reports no partition layout property, so the verifier abstains. It also reports a locked bootloader, listed as unmet.",
+  "verdict_gap_reason": "An SM-G965F on Android 10 stock firmware, bootloader unlocked through download mode, satisfies every precondition the LineageOS star2lte page states before recovery is written.",
+  "human_assessment": "safe",
+  "install_method": "samloader_rs",
+  "operations": [
+    {
+      "kind": "write-image",
+      "partition": "recovery",
+      "declared_by": "recovery_partition_name"
+    }
+  ],
+  "prerequisites": {
+    "android_version": {
+      "compare": "exact_major",
+      "declared_by": "before_install.version",
+      "required": "10",
+      "source_evidence": "LineageOS star2lte requires Android 10 stock firmware",
+      "state": "OPEN"
+    },
+    "bootloader_state": {
+      "declared_by": "unlock_bootloader",
+      "required": "unlocked",
+      "source_evidence": "OEM unlock in Developer options, then the unlock choice in download mode; the phone reports the result in ro.boot.flash.locked (the captured SM-G965F reports 1, locked)",
+      "state": "OPEN",
+      "unlock_class": "out_of_band",
+      "unlock_method": "samsung_download_mode",
+      "unlock_readback": "device",
+      "unlock_step": true
+    }
+  },
+  "recipe_id": "star2lte-recovery-v3",
+  "schema_version": "0.3",
+  "source": {
+    "authored": "independent",
+    "consulted": "2026-10-08",
+    "device_facts_from": "https://wiki.lineageos.org/devices/star2lte/",
+    "upstream_untested": "unestablished"
+  },
+  "source_fields_unused": [
+    "format_on_upgrade",
+    "quirks"
+  ],
+  "target": {
+    "product_device": "star2lte",
+    "models": [
+      "SM-G965F",
+      "SM-G965F/DS",
+      "SM-G965N"
+    ],
+    "models_sources": [
+      {
+        "project": "LineageOS",
+        "url": "https://wiki.lineageos.org/devices/star2lte/",
+        "name": "Samsung Galaxy S9+",
+        "models": [
+          "SM-G965F",
+          "SM-G965F/DS",
+          "SM-G965N"
+        ],
+        "install_method": "samloader_rs",
+        "consulted": "2026-10-08"
+      },
+      {
+        "project": "postmarketOS",
+        "url": "https://gitlab.postmarketos.org/postmarketOS/pmaports/-/tree/master/device/testing/device-samsung-star2lte",
+        "name": "Samsung Galaxy S9+",
+        "models": [],
+        "install_method": null,
+        "consulted": "2026-10-08"
+      }
+    ],
+    "competing_sources": [],
+    "partition_scheme": "single"
+  }
+}

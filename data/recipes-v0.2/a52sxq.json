@@ -51,6 +51,20 @@
       "SM-A528B/DS",
       "SM-A528N"
     ],
+    "models_sources": [
+      {
+        "project": "LineageOS",
+        "url": "https://wiki.lineageos.org/devices/a52sxq/",
+        "name": "Samsung Galaxy A52s 5G",
+        "models": [
+          "SM-A528B",
+          "SM-A528N",
+          "SM-A528B/DS"
+        ],
+        "consulted": "2026-10-08"
+      }
+    ],
+    "competing_sources": [],
     "partition_scheme": "single",
     "product_device": "a52sxq"
   },

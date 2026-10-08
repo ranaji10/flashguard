@@ -30,11 +30,14 @@ There are three PII scanners with three different patterns across the project:
 3. check-descriptor-privacy.sh and check-public-safe.sh run over files at rest in the repo.
 They deliberately differ, because they see different text at different moments.
 """
-import json, sys, re, hashlib, collections, pathlib
+import json, sys, re, hashlib, collections, pathlib, subprocess
 
 HERE = pathlib.Path(__file__).parent
 CONTRIB = HERE / "contributions"
 OUT = HERE / "device-matrix.jsonl"
+CONFIRMATIONS = HERE / "confirmations.jsonl"
+DERIVE = HERE.parent / "bench-kit" / "scripts" / "derive.sh"
+EMPTY = ("", None, "unknown", "not_applicable", "not_recorded")
 
 # FORBIDDEN matches field names in JSON records.
 # On 18 September 2026 (defect D1), iSerial was split out of FORBIDDEN into ISERIAL_LINE:
@@ -81,6 +84,78 @@ def device_key(rec):
     d = rec.get("detected", {})
     return f"{t}/{d.get('usb_vendor_id','?')}-{d.get('usb_product_id','?')}", "vendor_product"
 
+def reconcile_key(rec):
+    """The key two records must share before they are treated as one physical phone.
+
+    Tester and reported name, as before, plus the chipset when the record knows it. Added
+    8 Oct 2026: two different Xiaomi phones running Ubuntu Touch both reported
+    "halium Generic Device" and were merged into one, although one was an sdm660 and the
+    other an mt6768. A ROM can rename a phone; it cannot change its chip.
+    """
+    a = (rec.get("detected") or {}).get("android") or {}
+    chip = a.get("board_platform")
+    if chip in EMPTY:
+        chip = a.get("chipset_family")
+    chip = "" if chip in EMPTY else slug(chip)
+    return (slug(rec.get("tester")), slug(rec.get("reported_device")), chip)
+
+
+def backfill_firmware_origin(android):
+    """Derive firmware_origin for a record captured before the kit reported it (8 Oct 2026).
+
+    Feeds the properties the record already holds through derive.sh, the one place this is
+    worked out, and marks where the value came from. Never overwrites a captured value.
+    """
+    if not isinstance(android, dict) or android.get("firmware_origin") not in EMPTY:
+        return False
+    fp = android.get("build_fingerprint")
+    if fp in EMPTY:
+        return False
+    props = "ro.build.fingerprint=%s\nro.build.version.release=%s\nro.product.manufacturer=%s\n" % (
+        fp, android.get("android_version") or "", android.get("manufacturer") or "")
+    out = subprocess.run(["bash", str(DERIVE)], input=props, capture_output=True, text=True, check=True).stdout
+    got = dict(line.split("\t", 1) for line in out.splitlines() if "\t" in line)
+    android["firmware_origin"] = got.get("firmware_origin", "unknown")
+    android["firmware_basis"] = got.get("firmware_basis", "")
+    android["firmware_origin_source"] = "backfilled_from_build_fingerprint"
+    return True
+
+
+def load_confirmations(problems):
+    """Answers to the verifier's model question (8 Oct 2026 ruling, revised).
+
+    Asked only when no credible source lists a model code for the recipe. One JSON object
+    per line: record_id, model_confirmation (human_confirmed with model_confirmed_source, or
+    human_rejected), confirmed_by, date. Written by tools/confirm-model.py, never by
+    hand-editing a contribution, so the capture stays exactly as the tester sent it.
+    """
+    out = {}
+    if not CONFIRMATIONS.is_file():
+        return out
+    for n, line in enumerate(CONFIRMATIONS.read_text().splitlines(), 1):
+        line = line.strip()
+        if not line:
+            continue
+        where = f"{CONFIRMATIONS.name}:{n}"
+        scan_pii(line, where, problems)
+        try:
+            c = json.loads(line)
+        except json.JSONDecodeError as e:
+            problems.append(f"{where}: not valid JSON: {e}")
+            continue
+        if c.get("model_confirmation") not in ("human_confirmed", "human_rejected"):
+            problems.append(f"{where}: model_confirmation must be human_confirmed or human_rejected")
+            continue
+        if c["model_confirmation"] == "human_confirmed" and not c.get("model_confirmed_source"):
+            problems.append(f"{where}: human_confirmed needs model_confirmed_source, the link the person recognised")
+            continue
+        if not c.get("record_id") or not c.get("confirmed_by"):
+            problems.append(f"{where}: record_id and confirmed_by are required")
+            continue
+        out[c["record_id"]] = c
+    return out
+
+
 def scan_pii(raw, where, problems):
     for pat, what in ((FORBIDDEN, "forbidden field name"),
                       (ISERIAL_LINE, "forbidden field name"),
@@ -104,6 +179,9 @@ def main():
     if not files:
         print(f"No contributions in {CONTRIB}/. Nothing to merge.")
         return 0
+
+    confirmations = load_confirmations(problems)
+    backfilled = 0
 
     for f in files:
         for n, line in enumerate(f.read_text().splitlines(), 1):
@@ -136,6 +214,15 @@ def main():
                 notes.append((f.name, rec))
                 continue
             rec["_source_file"] = f.name
+            if isinstance(android_block, dict):
+                if backfill_firmware_origin(android_block):
+                    backfilled += 1
+                c = confirmations.get(rec.get("record_id"))
+                if c:
+                    android_block["model_confirmation"] = c["model_confirmation"]
+                    if c.get("model_confirmed_source"):
+                        android_block["model_confirmed_source"] = c["model_confirmed_source"]
+                    android_block["model_confirmation_by"] = f"{c['confirmed_by']}, {c.get('date', '')}"
             k, how = device_key(rec)
             rec["device_key"] = k
             rec["device_key_basis"] = how
@@ -151,7 +238,7 @@ def main():
         name = (r.get("reported_device") or "").strip().lower()
         if not name or name == "unnamed" or name.startswith("unidentified"):
             continue
-        nk = (slug(r.get("tester")), slug(r.get("reported_device")))
+        nk = reconcile_key(r)
         by_name.setdefault(nk, set()).add(r["device_key"])
     aliases = {}
     for nk, keys in by_name.items():
@@ -193,6 +280,10 @@ def main():
     if retired:
         print(f"  {len(retired)} superseded file(s) kept but not merged: "
               + ", ".join(f.name for f in retired))
+    if backfilled:
+        print(f"  {backfilled} record(s) given firmware_origin from their build fingerprint")
+    if confirmations:
+        print(f"  {len(confirmations)} answer(s) to the model question from {CONFIRMATIONS.name}")
     print(f"  {len(records)} usable records")
     print(f"  {len(devices)} distinct physical devices\n")
 

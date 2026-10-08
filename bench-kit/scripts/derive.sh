@@ -85,6 +85,55 @@ fi
 # later against more devices without recapturing anyone's drawer.
 CHIP_CAND="soc=${SOCM:-} platform=${PLAT:-} hardware=${HW:-} board=${BOARD:-}"
 
+# ---- firmware origin --------------------------------------------------------
+# Added 8 Oct 2026 when custom-ROM handling came into scope. A ROM rewrites
+# ro.product.* (Ubuntu Touch reports "Generic Device"), so identity read from those
+# properties is only as good as the firmware that wrote them. Three outcomes:
+#   custom   positive evidence that the running system is not the vendor's build
+#   stock    user build, release-keys, and no custom marker anywhere
+#   unknown  neither. A stock KaiOS phone signed with dev-keys lands here, honestly.
+# Unlocked is not custom: a stock phone with an unlocked bootloader is still stock.
+FP=$(g ro.build.fingerprint); REL=$(g ro.build.version.release)
+FP_REL=""; FP_TYPE=""; FP_TAGS=""
+case "$FP" in
+  */*:*/*:*/*)
+    FP_REL=${FP#*:}; FP_REL=${FP_REL%%/*}
+    FP_TT=${FP##*:}; FP_TYPE=${FP_TT%%/*}; FP_TAGS=${FP_TT#*/} ;;
+esac
+BTYPE=$(g ro.build.type); BTAGS=$(g ro.build.tags)
+[ -z "$BTYPE" ] && BTYPE="$FP_TYPE"
+[ -z "$BTAGS" ] && BTAGS="$FP_TAGS"
+LDEV=$(g ro.lineage.device); MANUF=$(g ro.product.manufacturer)
+FW_WHY=""
+if   [ -n "$LDEV" ];                     then FW_WHY="ro.lineage.device=$LDEV"
+elif [ "$MANUF" = "halium" ];            then FW_WHY="ro.product.manufacturer=halium"
+else case "$FP" in
+       halium/*)                           FW_WHY="fingerprint brand halium" ;;
+       */lineage_*|*/aosp_*)               FW_WHY="fingerprint product is a lineage_ or aosp_ build" ;;
+     esac
+fi
+if [ -z "$FW_WHY" ]; then
+  case "$BTYPE" in userdebug|eng) FW_WHY="build type $BTYPE" ;; esac
+fi
+if [ -z "$FW_WHY" ]; then
+  case "$BTAGS" in *test-keys*) FW_WHY="build tags $BTAGS" ;; esac
+fi
+if [ -z "$FW_WHY" ] && [ -n "$FP_REL" ] && [ -n "$REL" ] && [ "$FP_REL" != "$REL" ]; then
+  FW_WHY="fingerprint says Android $FP_REL, system says $REL"
+fi
+if [ -n "$FW_WHY" ]; then FW="custom"
+elif [ "$BTYPE" = "user" ] && [ "$BTAGS" = "release-keys" ]; then FW="stock"; FW_WHY="user build, release-keys, no custom marker"
+else FW="unknown"; FW_WHY="build ${BTYPE:-?}/${BTAGS:-?}: neither a stock nor a custom marker"
+fi
+
+# ---- launch era --------------------------------------------------------------
+# The 4 Oct data split cleanly at Android 8 on the RUNNING firmware. Whether it is the
+# running firmware or the launch firmware that matters is the open question, and
+# first_api_level is the property that tells the two apart.
+FAPI=$(g ro.product.first_api_level); FAPI_SRC="ro.product.first_api_level"
+if [ -z "$FAPI" ]; then FAPI=$(g ro.board.first_api_level); FAPI_SRC="ro.board.first_api_level"; fi
+[ -z "$FAPI" ] && FAPI_SRC="none"
+
 n(){ printf '%s' "${1:-unknown}"; }
 p(){ printf '%s\t%s\n' "$1" "$2"; }
 p manufacturer      "$(n "$(g ro.product.manufacturer)")"
@@ -108,3 +157,17 @@ p bootloader_state  "$BL"
 p bootloader_basis  "$BL_WHY"
 p verified_boot_state "$VBS"
 p bootloader_unlockable "unknown"
+p firmware_origin   "$FW"
+p firmware_basis    "$FW_WHY"
+p build_type        "$(n "$BTYPE")"
+p build_tags        "$(n "$BTAGS")"
+p first_api_level   "$(n "$FAPI")"
+p first_api_source  "$FAPI_SRC"
+p treble_enabled    "$(n "$(g ro.treble.enabled)")"
+p dynamic_partitions "$(n "$(g ro.boot.dynamic_partitions)")"
+p build_product     "$(n "$(g ro.build.product)")"
+p product_name      "$(n "$(g ro.product.name)")"
+p vendor_device     "$(n "$(g ro.product.vendor.device)")"
+p vendor_model      "$(n "$(g ro.product.vendor.model)")"
+p hardware_sku      "$(n "$(g ro.boot.hardware.sku)")"
+p lineage_device    "$(n "$LDEV")"

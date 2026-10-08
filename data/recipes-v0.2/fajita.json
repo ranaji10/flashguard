@@ -1,0 +1,107 @@
+{
+  "expected_verdict": "not-ready",
+  "expected_verdict_reason": "An unlocked OnePlus 6T on Android 11 stock firmware meets every precondition, but the 6T and the 6T (T-Mobile) share the codename and model code A6013, and no source tells them apart. The verifier is expected to hold at not-ready pending the person's confirmation.",
+  "verdict_gap_reason": "A non-T-Mobile 6T on Android 11 stock firmware, unlocked with fastboot, satisfies every precondition the LineageOS fajita page states. The T-Mobile unit unlocks differently (fastboot_oneplus_tmo).",
+  "human_assessment": "safe",
+  "install_method": "fastboot_nexus",
+  "operations": [
+    {
+      "declared_by": "before_recovery_install.partitions",
+      "kind": "write-image",
+      "partition": "dtbo"
+    },
+    {
+      "kind": "boot-recovery",
+      "partition": "boot",
+      "declared_by": "recovery_partition_name"
+    }
+  ],
+  "prerequisites": {
+    "android_version": {
+      "compare": "exact_major",
+      "declared_by": "before_install.version",
+      "required": "11",
+      "source_evidence": "LineageOS fajita requires Android 11 stock firmware; OpenAndroidInstaller fajita.yaml requirements android: 11",
+      "state": "OPEN"
+    },
+    "bootloader_state": {
+      "declared_by": "unlock_bootloader",
+      "required": "unlocked",
+      "source_evidence": "fastboot_nexus install method: fastboot unlock command",
+      "state": "OPEN",
+      "unlock_class": "command",
+      "unlock_step": true
+    }
+  },
+  "recipe_id": "fajita-recovery-v3",
+  "schema_version": "0.3",
+  "source": {
+    "authored": "independent",
+    "consulted": "2026-10-08",
+    "device_facts_from": "https://wiki.lineageos.org/devices/fajita/",
+    "upstream_untested": "unestablished"
+  },
+  "source_fields_unused": [
+    "firmware_update"
+  ],
+  "target": {
+    "product_device": "fajita",
+    "supported_device_codes": [
+      "fajita",
+      "OnePlus6T",
+      "OnePlus6TSingle"
+    ],
+    "models": [
+      "A6010",
+      "A6013"
+    ],
+    "models_sources": [
+      {
+        "project": "LineageOS",
+        "url": "https://wiki.lineageos.org/devices/fajita/",
+        "name": "OnePlus 6T",
+        "models": [],
+        "install_method": "fastboot_nexus",
+        "consulted": "2026-10-08"
+      },
+      {
+        "project": "OpenAndroidInstaller",
+        "url": "https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/fajita.yaml",
+        "name": "",
+        "models": [],
+        "install_method": null,
+        "consulted": "2026-10-08"
+      },
+      {
+        "project": "postmarketOS",
+        "url": "https://gitlab.postmarketos.org/postmarketOS/pmaports/-/tree/master/device/community/device-oneplus-fajita",
+        "name": "OnePlus 6T",
+        "models": [],
+        "install_method": null,
+        "consulted": "2026-10-08"
+      },
+      {
+        "project": "GSMArena",
+        "url": "https://www.gsmarena.com/oneplus_6t-9350.php",
+        "name": "OnePlus 6T",
+        "models": [
+          "A6010",
+          "A6013"
+        ],
+        "consulted": "2026-10-08",
+        "note": "Models field read 8 Oct 2026: 'A6010, A6013'. Added by hand; model-sources.py --write would drop it."
+      }
+    ],
+    "competing_sources": [
+      {
+        "project": "LineageOS",
+        "url": "https://wiki.lineageos.org/devices/fajita/variant2/",
+        "name": "OnePlus 6T (T-Mobile)",
+        "models": [],
+        "install_method": "fastboot_oneplus_tmo",
+        "consulted": "2026-10-08"
+      }
+    ],
+    "partition_scheme": "A/B"
+  }
+}

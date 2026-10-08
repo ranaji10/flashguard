@@ -20,12 +20,19 @@ SPEC = importlib.util.spec_from_file_location("coverage_module", ROOT / "data" /
 COVERAGE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(COVERAGE)
 
+# 8 Oct 2026 ruling: a model code counts when a credible public source lists it for the
+# recipe. Fixtures name one such source; tests/test_rulings_2026_10_08.py covers the rest.
+def src(models):
+    return [{"project": "LineageOS", "url": "https://wiki.lineageos.org/devices/fixture/",
+             "consulted": "2026-10-08", "models": list(models)}]
+
+
 BASE = {
     "schema_version": "0.2",
     "recipe_id": "t",
     "source": {"device_facts_from": "synthetic", "consulted": "2026-09-24", "authored": "independent",
                "upstream_untested": "unestablished"},
-    "target": {"product_device": "spacewar", "models": ["A063"], "partition_scheme": "virtual_A/B"},
+    "target": {"product_device": "spacewar", "models": ["A063"], "models_sources": src(["A063"]), "partition_scheme": "virtual_A/B"},
     "install_method": "fastboot_nexus",
     "prerequisites": {"bootloader_state": {"required": "unlocked", "unlock_class": "command", "unlock_step": True,
                                            "declared_by": "unlock_bootloader", "source_evidence": "synthetic"}},
@@ -96,7 +103,7 @@ class ScopeAndPlainReasons(unittest.TestCase):
         (fp(product_device="other"), BASE),
         ({}, {"schema_version": "9"}),
         (fp(), {"schema_version": "0.1", "recipe_id": "x", "target": {"product_device": "spacewar",
-                "partition_scheme": "virtual_A/B", "models": ["A063"]}, "assets": [], "operations": []}),
+                "partition_scheme": "virtual_A/B", "models": ["A063"], "models_sources": src(["A063"])}, "assets": [], "operations": []}),
     ]
 
     def test_every_verdict_carries_scope(self):
@@ -191,6 +198,8 @@ class RealRecipes(unittest.TestCase):
 
     def test_a52s_that_reports_its_layout_is_not_ready_while_locked(self):
         rec = [json.loads(l) for l in MATRIX() if '"a52sxq"' in l][0]
+        # Synthetic on top of the real record: a layout it does not report, and the model check
+        # the 4 Oct kit did not yet ask. Each was absent on the real capture.
         f = dict(rec["detected"]["android"], partition_scheme="single")
         self.assertEqual(verify(f, self.load("a52sxq.json"))["verdict"], "not-ready")
 

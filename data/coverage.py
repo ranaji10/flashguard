@@ -4,6 +4,7 @@
 
 import json
 import os
+import re
 import sys
 from collections import Counter
 
@@ -74,15 +75,26 @@ def state_key(android):
     return tuple(str(android.get(f, "")) for f in STATE_KEY_FIELDS)
 
 
-def match_recipe_target(product_device, recipe):
-    """Return True if product_device matches target.product_device or supported_device_codes."""
+def match_recipe_target(product_device, recipe, android=None):
+    """True if the phone's device code is the recipe's codename or an alias, or (8 Oct 2026)
+    if a model code it reports is listed for the recipe by one of its own sources. Stock
+    firmware often reports an internal code (the Nord CE 3 Lite says OP5958L1, upstream says
+    larry); pairing on the codename alone would never put that phone in front of its recipe.
+    Pairing only decides which recipes are tried; the verifier decides the verdict."""
     target = recipe.get("target") or {}
     target_device = (target.get("product_device") or "").lower()
     target_aliases = [code.lower() for code in target.get("supported_device_codes", [])]
     device_lower = (product_device or "").lower()
-    if not device_lower or device_lower == "not_applicable":
-        return False
-    return device_lower == target_device or device_lower in target_aliases
+    if device_lower and device_lower != "not_applicable" and (device_lower == target_device or device_lower in target_aliases):
+        return True
+    if android:
+        from flashguard.verify import _model_forms, _norm_model
+        listed = {_norm_model(m) for src in (target.get("models_sources") or []) if isinstance(src, dict)
+                  for m in (src.get("models") or [])}
+        models = [android.get(k) for k in ("product_model", "hardware_sku", "vendor_model")
+                  if android.get(k) not in ("", None, "unknown", "not_applicable")]
+        return any(_model_forms(m, android.get("manufacturer")) & listed for m in models)
+    return False
 
 
 def load_all_recipes(recipe_dirs=RECIPE_DIRS):
@@ -110,7 +122,7 @@ def pair_record_with_recipes(record, recipes):
     product_device = android.get("product_device")
     paired = []
     for rname, recipe in recipes:
-        if match_recipe_target(product_device, recipe):
+        if match_recipe_target(product_device, recipe, android):
             paired.append((rname, recipe))
     return paired
 
@@ -130,7 +142,7 @@ def corpus_runs(recipe_dir, records):
         for r in records:
             android = get_android_facts(r)
             device = android.get("product_device")
-            if match_recipe_target(device, recipe):
+            if match_recipe_target(device, recipe, android):
                 matching_records.append(r)
 
         if matching_records:
@@ -142,6 +154,7 @@ def corpus_runs(recipe_dir, records):
                     "human_assessment": recipe.get("human_assessment"),
                     "expected": recipe.get("expected_verdict"),
                     "verdict": result.get("verdict"),
+                    "pending_confirmation": bool(result.get("pending_confirmation")),
                     "paired": True,
                     "fingerprint_source": r.get("record_id") or r.get("device_local_id"),
                     "observation": (recipe.get("recipe_id", name),) + state_key(android),
@@ -164,17 +177,30 @@ def corpus_runs(recipe_dir, records):
     return runs
 
 
+def decided_count(runs):
+    """Decided runs. A not-ready that waits on a person's confirmation is not decided yet."""
+    return sum(1 for v in runs if v.get("verdict") in DECIDED and not v.get("pending_confirmation"))
+
+
 def distinct(runs):
-    """One run per observation. Runs without an observation key count individually."""
-    seen, out = set(), []
+    """One run per observation. Runs without an observation key count individually.
+
+    When reads of one unchanged phone differ only in how much evidence their records
+    carry (8 Oct 2026: a model check confirmed after capture lands on one record), the
+    decided run represents the phone. The count stays one either way.
+    """
+    index, out = {}, []
     for run in runs:
         key = run.get("observation")
         if key is None:
             out.append(run)
             continue
-        if key in seen:
+        if key in index:
+            i = index[key]
+            if not decided_count([out[i]]) and decided_count([run]):
+                out[i] = run
             continue
-        seen.add(key)
+        index[key] = len(out)
         out.append(run)
     return out
 
@@ -205,7 +231,7 @@ def enforce_verifier_gate(runs, floor_data=None):
         floor_data = load_coverage_floor()
     floor = floor_data.get("decided_over_paired") if floor_data else None
     paired_runs = distinct([v for v in runs if v.get("paired")])
-    decided = sum(1 for v in paired_runs if v.get("verdict") in DECIDED)
+    decided = decided_count(paired_runs)
     share = (decided / len(paired_runs)) if paired_runs else 0.0
     if floor is not None and share < floor:
         print("    DECIDED SHARE BELOW FLOOR: %.2f < %.2f -- BUILD MUST FAIL" % (share, floor))
@@ -243,7 +269,7 @@ def report_corpus_group(runs):
         1 for run in runs
         if run.get("verdict") == "safe" and (run.get("human_assessment") != "safe" or run.get("expected") != "safe")
     )
-    decided = sum(1 for run in obs if run["verdict"] in DECIDED)
+    decided = decided_count(obs)
     definite_human = sum(1 for run in obs if run["human_assessment"] in ("safe", "unsafe"))
     information_loss = sum(1 for run in obs
                            if run["human_assessment"] in ("safe", "unsafe")
@@ -253,7 +279,9 @@ def report_corpus_group(runs):
     print("      recipes                 %d" % distinct_recipes)
     print("      runs                    %d  (%d distinct: a phone read again unchanged counts once)" % (len(runs), total))
     print("      safe                    %d" % counts.get("safe", 0))
-    print("      not-ready               %d   right recipe, phone not ready yet" % counts.get("not-ready", 0))
+    pend = sum(1 for run in obs if run.get("pending_confirmation"))
+    print("      not-ready               %d   right recipe, phone not ready yet" % (counts.get("not-ready", 0) - pend))
+    print("      pending confirmation    %d   not-ready until the person confirms the model (not decided)" % pend)
     print("      unsafe                  %d   wrong recipe for this phone" % counts.get("unsafe", 0))
     print("      cannot-verify           %d" % counts.get("cannot-verify", 0))
     print("      false safes             %d  (over all %d runs)" % (false_safe, len(runs)))
@@ -301,12 +329,136 @@ def report_abstentions(runs):
     print()
 
 
+_UPSTREAM_INDEX = {}
+OAI_URL = "https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/"
+PMOS_URL = "https://gitlab.postmarketos.org/postmarketOS/pmaports/-/tree/master/device/"
+
+
+def _upstream_index(upstream):
+    """Every upstream entry once, as dicts: project, url, name, codes, models, install_method.
+
+    LineageOS lists model codes and splits one codename into variants (fajita: 6T and
+    6T T-Mobile, different install methods); OpenAndroidInstaller lists the stock-firmware
+    device codes a phone may report (OnePlus6T); postmarketOS names the phone. Matching on
+    the file name alone missed 8 of 15 captured phones on 8 Oct 2026.
+    """
+    if upstream in _UPSTREAM_INDEX:
+        return _UPSTREAM_INDEX[upstream]
+    entries = []
+    lineage = os.path.join(upstream, "lineage_wiki", "_data", "devices")
+    if os.path.isdir(lineage):
+        for fname in sorted(os.listdir(lineage)):
+            if not fname.endswith(".yml"):
+                continue
+            text = open(os.path.join(lineage, fname), encoding="utf-8", errors="replace").read()
+            def field(k):
+                m = re.search(r"^%s:\s*(.+)$" % k, text, re.M)
+                return m.group(1).strip().strip("'\"") if m else None
+            code = field("codename") or fname[:-4]
+            models = re.search(r"^models:\s*\[([^\]]*)\]", text, re.M)
+            mods = [m.strip().strip("'\"") for m in models.group(1).split(",") if m.strip()] if models else []
+            var = re.search(r"_variant(\d+)\.yml$", fname)
+            n = int(var.group(1)) if var else 1
+            url = "https://wiki.lineageos.org/devices/%s/" % code + ("variant%d/" % n if n > 1 else "")
+            entries.append({"project": "LineageOS", "url": url, "file": fname,
+                            "name": " ".join(x for x in (field("vendor"), field("name")) if x),
+                            "codes": [code], "models": mods, "install_method": field("install_method")})
+    oai = os.path.join(upstream, "openandroidinstaller", "openandroidinstaller", "assets", "configs")
+    if os.path.isdir(oai):
+        for fname in sorted(os.listdir(oai)):
+            if not fname.endswith(".yaml"):
+                continue
+            text = open(os.path.join(oai, fname), encoding="utf-8", errors="replace").read()
+            codes = [fname[:-5]]
+            m = re.search(r"device_code:\s*(\S+)", text)
+            if m and m.group(1).strip("'\"") not in codes:
+                codes.append(m.group(1).strip("'\""))
+            block = re.search(r"supported_device_codes:\s*\n((?:\s+-\s*.+\n?)+)", text)
+            if block:
+                for l in block.group(1).splitlines():
+                    c = l.strip()[1:].strip().strip("'\"")
+                    if l.strip().startswith("-") and c and c not in codes:
+                        codes.append(c)
+            nm = re.search(r"^\s*devicename:\s*(.+)$", text, re.M)
+            entries.append({"project": "OpenAndroidInstaller", "url": OAI_URL + fname, "file": fname,
+                            "name": nm.group(1).strip().strip("'\"") if nm else "",
+                            "codes": codes, "models": [], "install_method": None})
+    pmos = os.path.join(upstream, "pmaports", "device")
+    if os.path.isdir(pmos):
+        for cat in sorted(os.listdir(pmos)):
+            catdir = os.path.join(pmos, cat)
+            if not os.path.isdir(catdir) or cat == "archived":
+                continue
+            for d in sorted(os.listdir(catdir)):
+                info = os.path.join(catdir, d, "deviceinfo")
+                if not d.startswith("device-") or not os.path.isfile(info):
+                    continue
+                text = open(info, encoding="utf-8", errors="replace").read()
+                cn = re.search(r'^deviceinfo_codename="([^"]+)"', text, re.M)
+                nm = re.search(r'^deviceinfo_name="([^"]+)"', text, re.M)
+                full = cn.group(1) if cn else d[len("device-"):]
+                entries.append({"project": "postmarketOS", "url": PMOS_URL + "%s/%s" % (cat, d), "file": d,
+                                "name": nm.group(1).strip() if nm else "",
+                                "codes": [full.split("-", 1)[1] if "-" in full else full], "models": [],
+                                "install_method": None})
+    _UPSTREAM_INDEX[upstream] = entries
+    return entries
+
+
+_EMPTY_FACT = ("", None, "unknown", "not_applicable", "not_recorded")
+
+
+def upstream_entries(android, upstream=None):
+    """All upstream entries that relate to this phone, by codename, alias, model code or name."""
+    upstream = UPSTREAM if upstream is None else upstream
+    devs = {str(android.get(k)).lower() for k in ("product_device", "vendor_device", "lineage_device", "codename")
+            if android.get(k) not in _EMPTY_FACT}
+    models = {android.get(k) for k in ("product_model", "hardware_sku", "vendor_model") if android.get(k) not in _EMPTY_FACT}
+    names = {m.lower() for m in models}
+    if android.get("manufacturer") not in _EMPTY_FACT:
+        names |= {(android["manufacturer"] + " " + m).lower() for m in models}
+    out = []
+    for e in _upstream_index(upstream):
+        if ({c.lower() for c in e["codes"]} & devs) or (set(e["models"]) & models) or (e["name"] and e["name"].lower() in names):
+            out.append(e)
+    # One codename's variants are related even when only one of them matched by model.
+    shared = {c.lower() for e in out for c in e["codes"]}
+    for e in _upstream_index(upstream):
+        if e not in out and e["project"] == "LineageOS" and {c.lower() for c in e["codes"]} & shared:
+            out.append(e)
+    return out
+
+
+def upstream_sources_for(android, upstream=None):
+    """Which upstream projects describe this phone."""
+    seen = []
+    for e in upstream_entries(android, upstream):
+        if e["project"] not in seen:
+            seen.append(e["project"])
+    return seen
+
+
+def model_outcome(android, entries):
+    """Would the model be settled from these sources, or would the person be asked?"""
+    from flashguard.verify import _model_forms, _norm_model
+    manufacturer = android.get("manufacturer")
+    models = [android.get(k) for k in ("product_model", "hardware_sku", "vendor_model") if android.get(k) not in _EMPTY_FACT]
+    listed = {_norm_model(m) for e in entries for m in e["models"]}
+    if not listed:
+        return "no source lists models: would ask the person"
+    if any(_model_forms(m, manufacturer) & listed for m in models):
+        return "model listed upstream: decided from sources"
+    names = {e["name"].lower() for e in entries if e["name"]}
+    reported = {m.lower() for m in models} | ({(manufacturer + " " + m).lower() for m in models} if manufacturer not in _EMPTY_FACT else set())
+    if names & reported:
+        return "phone reports a model name, sources list codes: would ask the person"
+    return "upstream lists other models: would not match"
+
+
 def report_unpaired_devices(records, recipes, upstream=None):
     """Captured Android phones with no recipe, and whether upstream covers them."""
     upstream = UPSTREAM if upstream is None else upstream
-    lineage = os.path.join(upstream, "lineage_wiki", "_data", "devices")
-    oai = os.path.join(upstream, "openandroidinstaller", "openandroidinstaller", "assets", "configs")
-    have_upstream = os.path.isdir(lineage) or os.path.isdir(oai)
+    have_upstream = bool(_upstream_index(upstream))
     missing = {}
     for r in records:
         android = get_android_facts(r)
@@ -314,25 +466,37 @@ def report_unpaired_devices(records, recipes, upstream=None):
         if not dev or dev in ("unknown", "not_applicable"):
             continue
         if not pair_record_with_recipes(r, recipes):
-            missing.setdefault(dev, android.get("product_model") or "?")
+            missing.setdefault(dev, android)
     out = []
     print("  CAPTURED PHONES WITH NO RECIPE")
     if not missing:
         print("    none: every captured Android codename has a recipe")
-    for dev, model in sorted(missing.items()):
+    for dev, android in sorted(missing.items()):
+        model = android.get("product_model") or "?"
+        entries = upstream_entries(android, upstream)
         where = []
-        if os.path.isfile(os.path.join(lineage, dev + ".yml")):
-            where.append("LineageOS")
-        if os.path.isfile(os.path.join(oai, dev + ".yaml")):
-            where.append("OpenAndroidInstaller")
+        for e in entries:
+            if e["project"] not in where:
+                where.append(e["project"])
         if where:
-            note = "covered upstream by " + " and ".join(where) + ": write the recipe"
+            note = "covered upstream by " + " and ".join(where) + "; " + model_outcome(android, entries)
         elif have_upstream:
             note = "no upstream recipe: record that as a finding"
         else:
             note = "upstream clones not found, cannot check"
+        if android.get("firmware_origin") == "custom":
+            note += " (custom firmware)"
         out.append((dev, model, note))
         print("    %-16s %-14s %s" % (dev, model, note))
+    pm = os.path.join(upstream, "pmaports")
+    if os.path.isdir(os.path.join(pm, ".git")):
+        try:
+            import subprocess
+            when = subprocess.run(["git", "-C", pm, "log", "-1", "--format=%cs"], capture_output=True, text=True).stdout.strip()
+            if when:
+                print("    (postmarketOS clone last updated %s)" % when)
+        except OSError:
+            pass
     print()
     return out
 
@@ -342,28 +506,55 @@ SEVEN = ["manufacturer", "product_model", "chipset_family", "android_version",
 EMPTY = ("", None, "unknown", "not_applicable", "not_recorded", "not_saved")
 
 
+LAYOUTS_REPORTED_AB = ("A/B", "virtual_A/B")
+
+
 def tier_a_gate(records, androids, all_runs):
-    """Score the dataset against the Tier A exit criterion, field by field.
+    """Score the dataset against the Tier A exit criterion, per storage layout.
 
-    Tier A is done when TEN records across at least THREE chipset families
-    carry all seven verifier fields, every non-Android device is classified
-    correctly against an independently established identity, and no verifier
-    run has produced a false safe.
+    Ruled 8 Oct 2026: Tier A is reported per layout. A phone without A/B partitions has no
+    property that says so (13 of 13 captured by 7 Oct), so "all seven fields" could only
+    ever be met by A/B phones and silently excluded the older majority. Each phone now
+    counts when it carries every field its layout can report: all seven for A/B and
+    virtual A/B (and for an explicit "single"), the other six when the layout is not
+    reported. The rows are shown separately so the two are never read as one.
+
+    Tier A is done when TEN distinct phones complete for their layout span at least THREE
+    chipset families, every non-Android device is classified correctly against an
+    independently established identity, and no verifier run has produced a false safe.
     """
-    def fields_present(a):
-        return [f for f in SEVEN if str(a.get(f, "")) not in EMPTY]
+    six = [f for f in SEVEN if f != "partition_scheme"]
 
-    complete_all = [r for r in androids
-                    if len(fields_present(r.get("detected", {}).get("android", {}))) == len(SEVEN)]
-    # One phone read several times without changing counts once.
-    complete, seen = [], set()
-    for r in complete_all:
-        key = state_key(r["detected"]["android"])
-        if key not in seen:
-            seen.add(key)
-            complete.append(r)
-    chips = {r["detected"]["android"].get("chipset_family")
-             for r in complete} - set(EMPTY)
+    def has(a, fields):
+        return all(str(a.get(f, "")) not in EMPTY for f in fields)
+
+    groups = {"ab": [], "single": [], "unreported": []}
+    complete_all = []
+    for r in androids:
+        a = r.get("detected", {}).get("android", {})
+        scheme = str(a.get("partition_scheme", ""))
+        if scheme in LAYOUTS_REPORTED_AB and has(a, SEVEN):
+            groups["ab"].append(r)
+        elif scheme == "single" and has(a, SEVEN):
+            groups["single"].append(r)
+        elif scheme in EMPTY and has(a, six):
+            groups["unreported"].append(r)
+        else:
+            continue
+        complete_all.append(r)
+
+    def once(rs):
+        out, seen = [], set()
+        for r in rs:
+            key = state_key(r["detected"]["android"])
+            if key not in seen:
+                seen.add(key)
+                out.append(r)
+        return out
+
+    complete = once(complete_all)
+    per = {k: once(v) for k, v in groups.items()}
+    chips = {r["detected"]["android"].get("chipset_family") for r in complete} - set(EMPTY)
 
     non_android = [r for r in records if r not in androids]
     ground_truth = [r for r in non_android if r.get("identity_source") == "tester_identified"]
@@ -375,15 +566,24 @@ def tier_a_gate(records, androids, all_runs):
         if v.get("verdict") == "safe" and (v.get("human_assessment") != "safe" or v.get("expected") != "safe")
     )
 
-    print("\n  TIER A EXIT CRITERION")
+    print("\n  TIER A EXIT CRITERION (per storage layout)")
     def row(ok, label, got, want):
-        print("    [%s] %-38s %s" % ("x" if ok else " ", label, "%s of %s" % (got, want)))
-    row(len(complete) >= 10, "distinct phones with all seven fields", len(complete), 10)
+        print("    [%s] %-44s %s" % ("x" if ok else " ", label, "%s of %s" % (got, want)))
+    def info(label, n):
+        print("        %-44s %d" % (label, n))
+    info("A/B or virtual A/B, all seven fields", len(per["ab"]))
+    if per["single"]:
+        info("single, reported by the phone, all seven", len(per["single"]))
+    info("layout not reported, the other six fields", len(per["unreported"]))
+    row(len(complete) >= 10, "distinct phones complete for their layout", len(complete), 10)
     if len(complete_all) > len(complete):
         print("        (%d records; repeat reads of an unchanged phone count once)" % len(complete_all))
     row(len(chips) >= 3, "distinct chipset families among them", len(chips), 3)
     row(not wrong, "non-android classified correctly", len(ground_truth) - len(wrong), len(ground_truth))
     row(false_safe == 0, "false safes (must be zero)", false_safe, 0)
+    if per["unreported"]:
+        print("\n    Phones whose layout is not reported are complete for Tier A, but the verifier")
+        print("    abstains on every recipe for them until a phone can show it has a single layout.")
 
     if unverifiable:
         print("\n    %d non-android record(s) carry no independent identity, so they" % unverifiable)
@@ -415,7 +615,7 @@ def verifier_gate(runs):
         if v.get("verdict") == "safe" and (v.get("human_assessment") != "safe" or v.get("expected") != "safe")
     )
     paired_runs = distinct([v for v in runs if v.get("paired")])
-    decided = sum(1 for v in paired_runs if v.get("verdict") in DECIDED)
+    decided = decided_count(paired_runs)
     share = (decided / len(paired_runs)) if paired_runs else 0.0
 
     floor_data = load_coverage_floor()

@@ -41,6 +41,39 @@
       "SM-A510S",
       "SM-A5108"
     ],
+    "models_sources": [
+      {
+        "project": "LineageOS",
+        "url": "https://wiki.lineageos.org/devices/a5xelte/",
+        "name": "Samsung Galaxy A5 (2016)",
+        "models": [
+          "SM-A510F",
+          "SM-A510F/DS",
+          "SM-A510M",
+          "SM-A510Y",
+          "SM-A510K",
+          "SM-A510L",
+          "SM-A510S",
+          "SM-A5108"
+        ],
+        "consulted": "2026-10-08"
+      },
+      {
+        "project": "OpenAndroidInstaller",
+        "url": "https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/a5xelte.yaml",
+        "name": "",
+        "models": [],
+        "consulted": "2026-10-08"
+      },
+      {
+        "project": "postmarketOS",
+        "url": "https://gitlab.postmarketos.org/postmarketOS/pmaports/-/tree/master/device/testing/device-samsung-a5xelte",
+        "name": "Samsung Galaxy A5 (2016)",
+        "models": [],
+        "consulted": "2026-10-08"
+      }
+    ],
+    "competing_sources": [],
     "partition_scheme": "single",
     "product_device": "a5xelte"
   },

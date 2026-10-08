@@ -40,5 +40,61 @@
     "not-ready",
     "unsafe",
     "cannot-verify"
+  ],
+  "model_source_domains": [
+    "wiki.lineageos.org",
+    "github.com",
+    "wiki.postmarketos.org",
+    "gitlab.postmarketos.org",
+    "gitlab.com",
+    "gsmarena.com",
+    "samsung.com",
+    "motorola.com",
+    "oneplus.com",
+    "sony.com",
+    "sonymobile.com",
+    "fairphone.com",
+    "support.google.com",
+    "nothing.tech",
+    "mi.com",
+    "xiaomi.com",
+    "lenovo.com",
+    "nokia.com",
+    "hmd.com",
+    "asus.com",
+    "huawei.com",
+    "honor.com",
+    "oppo.com",
+    "realme.com",
+    "vivo.com",
+    "zte.com",
+    "lg.com",
+    "htc.com",
+    "fxtec.com",
+    "shiftphones.com",
+    "unihertz.com",
+    "google.com",
+    "store.google.com"
+  ],
+  "model_confirmation_values": [
+    "human_confirmed",
+    "human_rejected"
+  ],
+  "firmware_origin_values": [
+    "stock",
+    "custom",
+    "unknown"
+  ],
+  "stock_firmware_prerequisites": [
+    "android_version",
+    "sdk",
+    "security_patch"
+  ],
+  "model_source_excluded_subdomains": [
+    "forum",
+    "forums",
+    "community",
+    "communities",
+    "xdaforums"
   ]
 }

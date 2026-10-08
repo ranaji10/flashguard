@@ -121,6 +121,29 @@ This is uncomputed state, not `"unknown"` (which is a final assertion that a fie
 
 ## Field notes
 
+**Added 8 October 2026** (`docs/reasoning/rulings-2026-10-08.md`), all inside `detected.android`,
+all from `derive.sh` except the last row, which is a person's answer to the verifier:
+
+| Field | From | Values |
+|---|---|---|
+| `firmware_origin`, `firmware_basis` | build type and tags, fingerprint, ROM markers | `stock`, `custom`, `unknown`; the basis says which evidence decided it. `firmware_origin_source: backfilled_from_build_fingerprint` marks a value `merge.py` derived for an earlier record. |
+| `build_type`, `build_tags` | `ro.build.type`, `ro.build.tags`, or the fingerprint | verbatim |
+| `first_api_level`, `first_api_source` | `ro.product.first_api_level`, else `ro.board.first_api_level` | API level the phone launched on |
+| `treble_enabled`, `dynamic_partitions` | `ro.treble.enabled`, `ro.boot.dynamic_partitions` | verbatim; not yet used to derive `partition_scheme` |
+| `build_product`, `product_name` | `ro.build.product`, `ro.product.name` | verbatim |
+| `vendor_device`, `vendor_model` | `ro.product.vendor.device`, `ro.product.vendor.model` | verbatim |
+| `hardware_sku` | `ro.boot.hardware.sku` | verbatim (Motorola XT code) |
+| `lineage_device` | `ro.lineage.device` | verbatim |
+| `model_confirmation`, `model_confirmed_source` | the person's answer, only when the verifier asked | `human_confirmed` with the link they recognised, or `human_rejected`; absent otherwise |
+
+The kit never asks about the model. The verifier asks only when credible sources cannot settle
+it (see the rulings file). An answer for a phone already captured is not written into the
+contribution: it goes into `data/confirmations.jsonl` through `tools/confirm-model.py`, and
+`merge.py` applies it with `model_confirmation_by` naming who and when.
+
+Recipes gain two fields under `target`: `models_sources` and `competing_sources`, lists of
+`{project, url, name, models, consulted}` filled by `tools/model-sources.py`.
+
 **`variant_confirmed_by`** New in 0.3, added 13 September. Set to `human` ONLY when a
 person was shown the identified variant and confirmed it. Absent means no confirmation, not
 an unknown one. It is deliberately separate from `identity_source`: that field records that

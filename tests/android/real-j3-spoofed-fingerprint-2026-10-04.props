@@ -1,0 +1,13 @@
+#!expect_scheme=unknown
+#!expect_bootloader=unknown
+#!expect_firmware=custom
+#!note=REAL. Samsung Galaxy J3 2016 (SM-J320FN), LinuxDays 4 Oct 2026. The system reports
+#!note=Android 7.1.2 while the build fingerprint still says the stock 5.1.1 build: a custom
+#!note=ROM carrying the stock fingerprint. user/release-keys alone would have called it stock.
+ro.product.manufacturer=samsung
+ro.product.model=SM-J320FN
+ro.product.device=j3xnlte
+ro.board.platform=sc8830
+ro.build.version.release=7.1.2
+ro.build.version.sdk=25
+ro.build.fingerprint=samsung/j3xnltexx/j3xnlte:5.1.1/LMY47V/J320FNXXU0ARB1:user/release-keys

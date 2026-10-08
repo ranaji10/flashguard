@@ -44,6 +44,18 @@
     "models": [
       "A063"
     ],
+    "models_sources": [
+      {
+        "project": "LineageOS",
+        "url": "https://wiki.lineageos.org/devices/Spacewar/",
+        "name": "Nothing Phone (1)",
+        "models": [
+          "A063"
+        ],
+        "consulted": "2026-10-08"
+      }
+    ],
+    "competing_sources": [],
     "partition_scheme": "virtual_A/B",
     "product_device": "Spacewar"
   }

@@ -536,9 +536,9 @@ function scrPhonePrep(){
     '<div class="btns"><button class="b" id="ok">Debugging is on, phone plugged in</button>'+
     '<button class="b ghost" id="skip">Cannot enable it, capture anyway</button></div>'+
   '</div>');
-  function go(){ cur.mode=c.querySelector("#mode").value; scrWebUSB(); }
-  c.querySelector("#ok").addEventListener("click",go);
-  c.querySelector("#skip").addEventListener("click",go);
+  function go(debugOn){ cur.mode=c.querySelector("#mode").value; cur.debugOn=debugOn; scrWebUSB(); }
+  c.querySelector("#ok").addEventListener("click",function(){ go(true); });
+  c.querySelector("#skip").addEventListener("click",function(){ go(false); });
 }
 
 /* ---------- Step 1: WebUSB descriptor read (identical on every platform) ---------- */
@@ -662,15 +662,9 @@ function scrWebUSB(){
     navigator.usb.requestDevice({filters:[]}).then(function(d){
       return d.open().then(function(){ return d; }).catch(function(){ return d; });
     }).then(function(d){
-      var desc = buildWebUsbDescriptor(d, cur, cur.dev.expect, cur.idsrc);
+      var desc = buildWebUsbDescriptor(d, cur, descriptorExpect(cur.dev, cur.debugOn), cur.idsrc);
       cur.descText = desc.text;
-      var devClass = "unknown";
-      if (d.vendorId === 0x05ac) devClass = "ios";
-      else if (desc.hasAdb) devClass = "adb";
-      else if (desc.hasFb) devClass = "fastboot";
-      else if (desc.classes.length && desc.classes[0] === "0x08") devClass = "mass_storage";
-      else if (desc.classes.length && desc.classes[0] === "0x06") devClass = (cur.dev.phone ? "mtp" : "ptp_camera");
-      else if (cur.dev.expect) devClass = cur.dev.expect;
+      var devClass = browserDeviceClass(d.vendorId, desc, cur.dev);
 
       var descFilename = desc.vendorId.slice(2) + "-" + desc.productId.slice(2) + "-" + Date.now().toString(36) + ".desc";
       cur.cap = {
@@ -840,6 +834,30 @@ function rawProp(t, key){
 }
 /* END TESTABLE:rawProp */
 
+/* TESTABLE:browserDeviceClass */
+/* What the browser read shows, and nothing else. Until 8 Oct an interface the browser
+   did not recognise was filled in from the category the tester picked, so a phone without
+   USB debugging was recorded as adb. Unrecognised is unknown. */
+function browserDeviceClass(vendorId, desc, dev){
+  if (vendorId === 0x05ac) return "ios";
+  if (desc.hasAdb) return "adb";
+  if (desc.hasFb) return "fastboot";
+  if (desc.classes.length && desc.classes[0] === "0x08") return "mass_storage";
+  if (desc.classes.length && desc.classes[0] === "0x06") return (dev && dev.phone) ? "mtp" : "ptp_camera";
+  return "unknown";
+}
+/* END TESTABLE:browserDeviceClass */
+
+/* TESTABLE:descriptorExpect */
+/* The #!expect header is an assertion the classifier is tested against. For a phone it
+   is only "adb" when the tester said debugging is on; otherwise there is no assertion.
+   Three descriptors on 4 Oct carried expect=adb from the category alone. */
+function descriptorExpect(dev, debugOn){
+  if (dev && dev.phone) return debugOn === true ? "adb" : "";
+  return (dev && dev.expect) || "";
+}
+/* END TESTABLE:descriptorExpect */
+
 /* ---------- Step 2 (Bash path): 02-android.sh ---------- */
 function scrAndroidBash(route, platform){
   var plat = platform || S.host_platform || "linux_other";
@@ -893,7 +911,7 @@ function scrAndroidRaw(platform, shell){
   var sh = shell || S.host_shell || "powershell";
   var isCmd = (sh === "cmd");
   var shellName = isCmd ? "Command Prompt (cmd)" : "PowerShell";
-  var propList = "ro.product.manufacturer ro.product.model ro.product.device ro.product.board ro.board.platform ro.hardware ro.soc.manufacturer ro.soc.model ro.product.cpu.abi ro.build.version.release ro.build.version.sdk ro.build.version.security_patch ro.build.fingerprint ro.build.ab_update ro.virtual_ab.enabled ro.boot.slot_suffix ro.boot.verifiedbootstate ro.boot.flash.locked ro.boot.vbmeta.device_state";
+  var propList = "ro.product.manufacturer ro.product.model ro.product.device ro.product.board ro.board.platform ro.hardware ro.soc.manufacturer ro.soc.model ro.product.cpu.abi ro.build.version.release ro.build.version.sdk ro.build.version.security_patch ro.build.fingerprint ro.build.ab_update ro.virtual_ab.enabled ro.boot.slot_suffix ro.boot.verifiedbootstate ro.boot.flash.locked ro.boot.vbmeta.device_state ro.product.first_api_level ro.board.first_api_level ro.treble.enabled ro.boot.dynamic_partitions ro.build.type ro.build.tags ro.build.product ro.product.name ro.product.vendor.device ro.product.vendor.model ro.boot.hardware.sku ro.lineage.device";
   var rawCmd = isCmd
     ? 'adb shell "for p in ' + propList + '; do echo $p=$(getprop $p); done"'
     : "adb shell 'for p in " + propList + "; do echo $p=$(getprop $p); done'";
@@ -1106,6 +1124,20 @@ function buildAndroidBlock(cur){
       build_fingerprint:NA_android(a.build_fingerprint), partition_scheme:NA_android(a.partition_scheme),
       slot_suffix:NA_android(a.slot_suffix), bootloader_state:NA_android(a.bootloader_state),
       verified_boot_state:NA_android(a.verified_boot_state),
+      firmware_origin:NA_android(a.firmware_origin),
+      firmware_basis:NA_android(a.firmware_basis),
+      build_type:NA_android(a.build_type),
+      build_tags:NA_android(a.build_tags),
+      first_api_level:NA_android(a.first_api_level),
+      first_api_source:NA_android(a.first_api_source),
+      treble_enabled:NA_android(a.treble_enabled),
+      dynamic_partitions:NA_android(a.dynamic_partitions),
+      build_product:NA_android(a.build_product),
+      product_name:NA_android(a.product_name),
+      vendor_device:NA_android(a.vendor_device),
+      vendor_model:NA_android(a.vendor_model),
+      hardware_sku:NA_android(a.hardware_sku),
+      lineage_device:NA_android(a.lineage_device),
       bootloader_unlockable: a.bootloader_unlockable || "unknown"
     };
   }
@@ -1191,7 +1223,7 @@ function saveRecord(correct,cls,name,mode,note){
       content: cur.descText,
       device: rec.reported_device,
       route: "browser",
-      expect: cur.dev.expect || "",
+      expect: descriptorExpect(cur.dev, cur.debugOn),
       ground_truth: cur.idsrc || "unidentified",
       captured: new Date().toISOString()
     });

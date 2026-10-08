@@ -50,6 +50,26 @@
       "AC2001",
       "AC2003"
     ],
+    "models_sources": [
+      {
+        "project": "LineageOS",
+        "url": "https://wiki.lineageos.org/devices/avicii/",
+        "name": "OnePlus Nord",
+        "models": [
+          "AC2001",
+          "AC2003"
+        ],
+        "consulted": "2026-10-08"
+      },
+      {
+        "project": "OpenAndroidInstaller",
+        "url": "https://github.com/openandroidinstaller-dev/openandroidinstaller/blob/main/openandroidinstaller/assets/configs/avicii.yaml",
+        "name": "",
+        "models": [],
+        "consulted": "2026-10-08"
+      }
+    ],
+    "competing_sources": [],
     "partition_scheme": "A/B",
     "product_device": "avicii"
   },

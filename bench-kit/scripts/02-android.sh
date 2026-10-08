@@ -74,6 +74,9 @@ esac
 
 # The allowlist. Adding a line here is a deliberate act: check it cannot carry a
 # serial, an IMEI, a MAC or an account identifier before you add it.
+# The last three lines were added on 8 Oct 2026 (docs/reasoning/rulings-2026-10-08.md):
+# launch era, layout evidence, firmware origin, and the vendor-side identity that
+# survives a custom ROM. Each was checked: none carries a per-unit identifier.
 PROPS="
 ro.product.manufacturer ro.product.model ro.product.device ro.product.board
 ro.board.platform ro.hardware ro.soc.manufacturer ro.soc.model ro.product.cpu.abi
@@ -81,6 +84,9 @@ ro.build.version.release ro.build.version.sdk ro.build.version.security_patch
 ro.build.fingerprint ro.build.ab_update ro.virtual_ab.enabled
 ro.boot.slot_suffix ro.boot.verifiedbootstate ro.boot.flash.locked
 ro.boot.vbmeta.device_state
+ro.product.first_api_level ro.board.first_api_level ro.treble.enabled
+ro.boot.dynamic_partitions ro.build.type ro.build.tags ro.build.product ro.product.name
+ro.product.vendor.device ro.product.vendor.model ro.boot.hardware.sku ro.lineage.device
 "
 
 RAW=""
@@ -110,6 +116,8 @@ printf '    %-22s %-18s %s\n' "partition scheme" "$(g partition_scheme)" "$(g pa
 printf '    %-22s %-18s %s\n' "bootloader"       "$(g bootloader_state)" "$(g bootloader_basis)"
 printf '    %-22s %-18s %s\n' "verified boot"    "$(g verified_boot_state)" ""
 printf '    %-22s %-18s %s\n' "unlockable"       "unknown" "not determinable read-only"
+printf '    %-22s %-18s %s\n' "firmware"         "$(g firmware_origin)" "$(g firmware_basis)"
+printf '    %-22s %-18s %s\n' "launched on api"  "$(g first_api_level)" "$(g first_api_source)"
 
 UNK=0
 [ "$(g partition_scheme)" = "unknown" ] && UNK=$((UNK+1))
@@ -134,4 +142,4 @@ cat <<'TAIL2'
 TAIL2
 
 j(){ jesc "$(g "$1")"; }
-emit "BENCH_CAPTURE {\"device_class\":\"adb\",\"android\":{\"manufacturer\":\"$(j manufacturer)\",\"product_model\":\"$(j product_model)\",\"product_device\":\"$(j product_device)\",\"product_board\":\"$(j product_board)\",\"board_platform\":\"$(j board_platform)\",\"hardware\":\"$(j hardware)\",\"chipset_family\":\"$(j chipset_family)\",\"chipset_source\":\"$(j chipset_source)\",\"chipset_candidates\":\"$(j chipset_candidates)\",\"cpu_abi\":\"$(j cpu_abi)\",\"android_version\":\"$(j android_version)\",\"sdk\":\"$(j sdk)\",\"security_patch\":\"$(j security_patch)\",\"build_fingerprint\":\"$(j build_fingerprint)\",\"partition_scheme\":\"$(j partition_scheme)\",\"partition_basis\":\"$(j partition_basis)\",\"slot_suffix\":\"$(j slot_suffix)\",\"bootloader_state\":\"$(j bootloader_state)\",\"bootloader_basis\":\"$(j bootloader_basis)\",\"verified_boot_state\":\"$(j verified_boot_state)\",\"bootloader_unlockable\":\"unknown\"},\"_detected\":true}"
+emit "BENCH_CAPTURE {\"device_class\":\"adb\",\"android\":{\"manufacturer\":\"$(j manufacturer)\",\"product_model\":\"$(j product_model)\",\"product_device\":\"$(j product_device)\",\"product_board\":\"$(j product_board)\",\"board_platform\":\"$(j board_platform)\",\"hardware\":\"$(j hardware)\",\"chipset_family\":\"$(j chipset_family)\",\"chipset_source\":\"$(j chipset_source)\",\"chipset_candidates\":\"$(j chipset_candidates)\",\"cpu_abi\":\"$(j cpu_abi)\",\"android_version\":\"$(j android_version)\",\"sdk\":\"$(j sdk)\",\"security_patch\":\"$(j security_patch)\",\"build_fingerprint\":\"$(j build_fingerprint)\",\"partition_scheme\":\"$(j partition_scheme)\",\"partition_basis\":\"$(j partition_basis)\",\"slot_suffix\":\"$(j slot_suffix)\",\"bootloader_state\":\"$(j bootloader_state)\",\"bootloader_basis\":\"$(j bootloader_basis)\",\"verified_boot_state\":\"$(j verified_boot_state)\",\"firmware_origin\":\"$(j firmware_origin)\",\"firmware_basis\":\"$(j firmware_basis)\",\"build_type\":\"$(j build_type)\",\"build_tags\":\"$(j build_tags)\",\"first_api_level\":\"$(j first_api_level)\",\"first_api_source\":\"$(j first_api_source)\",\"treble_enabled\":\"$(j treble_enabled)\",\"dynamic_partitions\":\"$(j dynamic_partitions)\",\"build_product\":\"$(j build_product)\",\"product_name\":\"$(j product_name)\",\"vendor_device\":\"$(j vendor_device)\",\"vendor_model\":\"$(j vendor_model)\",\"hardware_sku\":\"$(j hardware_sku)\",\"lineage_device\":\"$(j lineage_device)\",\"bootloader_unlockable\":\"unknown\"},\"_detected\":true}"

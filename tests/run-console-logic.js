@@ -31,6 +31,8 @@ eval(lift("isValidRawProps"));
 eval(lift("buildAndroidBlock"));
 eval(lift("maskSerial"));
 eval(lift("rawProp"));
+eval(lift("browserDeviceClass"));
+eval(lift("descriptorExpect"));
 
 console.log("\n  sameDeviceAgain");
 {
@@ -363,6 +365,44 @@ console.log("\n  rawProp: Windows confirm screen shows the model it read");
   is(rawProp(raw, "ro.product.manufacturer"), "Nothing", "reads manufacturer");
   is(rawProp(raw, "ro.product.device"), "", "absent property is empty, not guessed");
   is(rawProp("xro.product.model=Z", "ro.product.model"), "", "anchored at line start");
+}
+
+
+console.log("\n  browserDeviceClass: a class the descriptor does not show is never filled in from the category (8 Oct)");
+{
+  const phone = { phone: true, expect: "adb" };
+  is(browserDeviceClass(0x04e8, { hasAdb: false, hasFb: false, classes: ["0xff", "0x02", "0x0a"] }, phone),
+     "unknown", "Samsung MTP without ADB is unknown, not adb");
+  is(browserDeviceClass(0x0fce, { hasAdb: false, hasFb: false, classes: ["0xe0", "0x0a"] }, phone),
+     "unknown", "RNDIS tethering without ADB is unknown, not adb");
+  is(browserDeviceClass(0x22d9, { hasAdb: false, hasFb: false, classes: ["0x06"] }, phone),
+     "mtp", "a phone presenting class 0x06 is mtp");
+  is(browserDeviceClass(0x04e8, { hasAdb: true, hasFb: false, classes: ["0xff"] }, phone),
+     "adb", "an ADB interface is adb");
+  is(browserDeviceClass(0x05ac, { hasAdb: false, hasFb: false, classes: [] }, { expect: "ios" }),
+     "ios", "Apple vendor id is ios");
+  is(browserDeviceClass(0x1234, { hasAdb: false, hasFb: false, classes: ["0x03"] }, { expect: "mass_storage" }),
+     "unknown", "an unrecognised class stays unknown whatever was expected");
+}
+
+console.log("\n  descriptorExpect: a phone's expected class comes from the tester's answer, not the category");
+{
+  is(descriptorExpect({ phone: true, expect: "adb" }, true), "adb", "debugging on: expect adb");
+  is(descriptorExpect({ phone: true, expect: "adb" }, false), "", "debugging not on: no assertion");
+  is(descriptorExpect({ phone: true, expect: "adb" }, undefined), "", "not asked: no assertion");
+  is(descriptorExpect({ expect: "mass_storage" }, undefined), "mass_storage", "non-phone categories unchanged");
+}
+
+console.log("\n  buildAndroidBlock carries the 8 Oct properties, and the kit asks nothing new");
+{
+  const cur = { dev: { phone: true }, android: { product_model: "A063", firmware_origin: "stock",
+    first_api_level: "31", hardware_sku: "", vendor_device: "Spacewar" } };
+  const b = buildAndroidBlock(cur);
+  is(b.firmware_origin, "stock", "firmware_origin carried");
+  is(b.first_api_level, "31", "first_api_level carried");
+  is(b.hardware_sku, "unknown", "empty property is unknown on a phone");
+  is(b.vendor_device, "Spacewar", "vendor_device carried");
+  is(b.model_confirmation, undefined, "capture asks the tester nothing about the model (8 Oct, revised)");
 }
 
 console.log(`\n  ${pass} passed, ${fail} failed\n`);

@@ -17,6 +17,13 @@ CHECK_RECIPES = importlib.util.module_from_spec(SPEC_CHECK)
 SPEC_CHECK.loader.exec_module(CHECK_RECIPES)
 
 
+# 8 Oct 2026 ruling: a model code counts when a credible public source lists it for the
+# recipe. Fixtures name one such source; tests/test_rulings_2026_10_08.py covers the rest.
+def src(models):
+    return [{"project": "LineageOS", "url": "https://wiki.lineageos.org/devices/fixture/",
+             "consulted": "2026-10-08", "models": list(models)}]
+
+
 BASE_RECIPE = {
     "schema_version": "0.2",
     "recipe_id": "spacewar-unlock-aware",
@@ -28,7 +35,7 @@ BASE_RECIPE = {
     },
     "target": {
         "product_device": "spacewar",
-        "models": ["A063"],
+        "models": ["A063"], "models_sources": src(["A063"]),
         "partition_scheme": "virtual_A/B",
     },
     "install_method": "fastboot_nexus",
@@ -90,21 +97,23 @@ class VerifyV2Test(unittest.TestCase):
         recipe = {
             "schema_version": "0.1",
             "recipe_id": "legacy",
-            "target": {"product_device": "spacewar", "models": ["A063"], "partition_scheme": "virtual_A/B"},
+            "target": {"product_device": "spacewar", "models": ["A063"], "models_sources": src(["A063"]), "partition_scheme": "virtual_A/B"},
             "assets": [],
             "operations": [],
         }
         self.assertEqual(verify(fingerprint("unlocked"), recipe)["verdict"], "cannot-verify")
 
     def test_identity_mismatch_precedes_prerequisite_reasoning(self):
-        result = verify(fingerprint("locked", "other-device"), BASE_RECIPE)
+        # A different device AND a model no credible source lists for this recipe. (A different
+        # codename with a listed model is the stock-firmware alias case, settled by the model.)
+        result = verify(fingerprint("locked", "other-device", product_model="X999"), BASE_RECIPE)
         self.assertEqual(result["verdict"], "unsafe")
         self.assertIn("device-mismatch", str(result["reasons"]))
 
     def test_partial_real_samsung_fingerprint_cannot_satisfy_unlock(self):
         result = verify(
             {"product_device": "a5y17lte", "product_model": "SM-A520F", "partition_scheme": "unknown"},
-            dict(BASE_RECIPE, target={"product_device": "a5y17lte", "models": ["SM-A520F"], "partition_scheme": "unknown"}),
+            dict(BASE_RECIPE, target={"product_device": "a5y17lte", "models": ["SM-A520F"], "models_sources": src(["SM-A520F"]), "partition_scheme": "unknown"}),
         )
         self.assertEqual(result["verdict"], "cannot-verify")
         self.assertIn("bootloader_state", str(result["reasons"]))
@@ -118,7 +127,7 @@ class VerifyV2Test(unittest.TestCase):
         self.assertNotEqual(verify(fingerprint("unlocked"), declared_none)["reasons"], verify(fingerprint("unlocked"), author_unknown)["reasons"])
 
     def test_exact_model_match_gives_safe_verdict(self):
-        recipe = dict(BASE_RECIPE, target={"product_device": "spacewar", "models": ["A063"], "partition_scheme": "virtual_A/B"})
+        recipe = dict(BASE_RECIPE, target={"product_device": "spacewar", "models": ["A063"], "models_sources": src(["A063"]), "partition_scheme": "virtual_A/B"})
         fp = fingerprint("unlocked", product_model="A063")
         result = verify(fp, recipe)
         self.assertEqual(result["verdict"], "safe")
@@ -132,7 +141,7 @@ class VerifyV2Test(unittest.TestCase):
             "source": {"device_facts_from": "synthetic", "consulted": "2026-09-16", "authored": "independent", "upstream_untested": "unestablished"},
             "target": {
                 "product_device": "a5xelte",
-                "models": ["SM-A510F"],
+                "models": ["SM-A510F"], "models_sources": src(["SM-A510F"]),
                 "partition_scheme": "single",
             },
             "install_method": "heimdall_flash_recovery",
@@ -175,22 +184,29 @@ class VerifyV2Test(unittest.TestCase):
             self.assertNotIn("model-mismatch", codes)
 
     def test_recipe_with_no_model_list_abstains(self):
-        """A recipe with no model list (or empty list) abstains and does not pass."""
-        for empty_models in (None, []):
+        """No source lists a model code and nobody has answered: ask, never pass.
+
+        Before 8 Oct this was models-unestablished. The model list now lives on the sources,
+        so "no list" means no credible source lists codes, whatever target.models says."""
+        for recipe_models in (None, [], ["A063"]):
             recipe = copy.deepcopy(BASE_RECIPE)
-            if empty_models is None:
+            recipe["target"]["models_sources"] = src([])
+            if recipe_models is None:
                 del recipe["target"]["models"]
             else:
-                recipe["target"]["models"] = empty_models
+                recipe["target"]["models"] = recipe_models
             result = verify(fingerprint("unlocked"), recipe)
-            self.assertEqual(result["verdict"], "cannot-verify")
+            # Evening ruling, 8 Oct: not-ready pending the person's confirmation, never safe.
+            self.assertEqual(result["verdict"], "not-ready")
+            self.assertTrue(result.get("pending_confirmation"))
             codes = [r["code"] for r in result["reasons"]]
-            self.assertIn("models-unestablished", codes)
+            self.assertIn("model-needs-confirmation", codes)
 
     def test_product_model_not_in_fields_consumed_when_recipe_has_no_models(self):
         """Append product_model to fields_consumed ONLY after comparison has run."""
         recipe = copy.deepcopy(BASE_RECIPE)
         del recipe["target"]["models"]
+        recipe["target"]["models_sources"] = src([])
         fp = {"product_device": "spacewar", "partition_scheme": "virtual_A/B", "bootloader_state": "unlocked"}
         result = verify(fp, recipe)
         consumed = result.get("evidence", {}).get("fields_consumed", [])
@@ -201,7 +217,7 @@ class VerifyV2Test(unittest.TestCase):
             BASE_RECIPE,
             target={
                 "product_device": "spacewar",
-                "models": ["A063"],
+                "models": ["A063"], "models_sources": src(["A063"]),
                 "partition_scheme": "virtual_A/B",
                 "supported_device_codes": ["spacewar-eea", "spacewar-in"],
             },
@@ -224,7 +240,7 @@ class VerifyV2Test(unittest.TestCase):
             "product_model": "A063",
             "partition_scheme": "virtual_A/B",
             "bootloader_state": "unlocked",
-        }
+            }
         result = verify(fp, BASE_RECIPE)
         self.assertEqual(result["verdict"], "safe")
         self.assertIn("evidence", result)
@@ -243,7 +259,7 @@ class VerifyV2Test(unittest.TestCase):
             "recipe_id": "oriole-system-only",
             "target": {
                 "product_device": "oriole",
-                "models": ["GD1YQ"],
+                "models": ["GD1YQ"], "models_sources": src(["GD1YQ"]),
                 "partition_scheme": "A/B",
             },
             "assets": [

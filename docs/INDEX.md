@@ -38,6 +38,7 @@ Read before writing the proposal or changing a design.
 | `docs/reasoning/delivery-platform.md` | Browser-first direction, what it changes about the matrix, what the bench kit stops proving. |
 | `docs/reasoning/testing-protocol.md` | How defects get caught before a device is plugged in. Pure functions, fixtures, the bash 3.2 rule. |
 | `docs/reasoning/prior-art.md` | OpenAndroidInstaller, LineageOS, postmarketOS. Positioning and corpus sources. |
+| `docs/reasoning/rulings-2026-10-08.md` | Five rulings after round 2: kit unfrozen with twelve more properties, Tier A per layout, custom firmware in scope, model settled from sources and asked only when they cannot, postmarketOS checked. |
 | `docs/reasoning/verifier-readiness-review.md` | The original design review, 26 Aug. **Carries a superseded-in-parts header naming exactly which conclusions were overtaken.** Method still sound; figures and plans are not. |
 
 ## Reference — facts and procedures you look up
@@ -114,6 +115,9 @@ Read before writing the proposal or changing a design.
 | `tests/test_intake.py` | Unit tests for session intake validation, PII blocking, and overwrite prevention. |
 | `tests/promote.py` | Descriptors to fixtures, with the ground-truth and consistency gates. |
 | `tests/webusb-probe.html` | Can a browser read what Tier A needs? **Not yet run.** |
+| `tools/confirm-model.py` | Lists the model questions the verifier is asking, and records a person's answer into a confirmations file beside the matrix, which merge.py applies. |
+| `tools/model-sources.py` | Isolates every upstream source for a device from the local clones and files them on a recipe as its own sources and the ones it cannot tell apart from. |
+| `tests/test_rulings_2026_10_08.py` | Holds the five rulings of 8 October. |
 | `tools/intake.py` | Session export intake: validation, PII scan, contributions and descriptors writer. |
 | `tests/check-index.sh` | Enforces this file: dangling paths, unindexed docs, broken editor instruction files, diverged copies. |
 | `tests/check-tracker.sh` | Enforces the tracker: no dead paths, a banner that is not older than the data, and a "what changed" filter that is not silently empty. |

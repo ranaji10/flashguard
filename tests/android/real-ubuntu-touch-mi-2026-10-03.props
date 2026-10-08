@@ -1,0 +1,16 @@
+#!expect_scheme=A/B
+#!expect_bootloader=unlocked
+#!expect_firmware=custom
+#!note=REAL. Xiaomi phone running Ubuntu Touch (halium, Android 9 base), LinuxDays 3 Oct 2026.
+#!note=Reconstructed from the record's own fields. The ROM replaces product identity with
+#!note="Generic Device"/halium_arm64, so identity must not be read from ro.product.*.
+ro.product.manufacturer=halium
+ro.product.model=Generic Device
+ro.product.device=halium_arm64
+ro.board.platform=sdm660
+ro.boot.slot_suffix=_b
+ro.boot.flash.locked=0
+ro.boot.verifiedbootstate=orange
+ro.build.version.release=9
+ro.build.version.sdk=28
+ro.build.fingerprint=halium/lineage_halium_arm64/halium_arm64:9/PQ3A.190801.002/294:userdebug/test-keys

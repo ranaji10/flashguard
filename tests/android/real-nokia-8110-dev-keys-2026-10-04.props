@@ -1,0 +1,12 @@
+#!expect_scheme=unknown
+#!expect_bootloader=unknown
+#!expect_firmware=unknown
+#!note=REAL. Nokia 8110 4G, KaiOS on an Android 6.0.1 base, LinuxDays 4 Oct 2026. Stock, but
+#!note=signed with dev-keys: neither a stock marker nor a custom one, so origin is unknown.
+ro.product.manufacturer=QUALCOMM
+ro.product.model=Nokia 8110 4G
+ro.product.device=Nokia 8110 4G
+ro.board.platform=msm8909
+ro.build.version.release=6.0.1
+ro.build.version.sdk=23
+ro.build.fingerprint=Nokia/Nokia_8110_4G/Nokia_8110_4G:6.0.1/MMB29M/17.00.17.01:user/dev-keys

@@ -15,7 +15,7 @@ for f in "$HERE"/android/*.props; do
   out=$(grep -v '^#!' "$f" | bash "$D")
   gv(){ printf '%s\n' "$out" | awk -F'\t' -v k="$1" '$1==k{print $2}'; }
   first=1
-  for pair in scheme:partition_scheme bootloader:bootloader_state chipset_source:chipset_source; do
+  for pair in scheme:partition_scheme bootloader:bootloader_state chipset_source:chipset_source firmware:firmware_origin first_api:first_api_level; do
     hk="${pair%%:*}"; ok="${pair##*:}"
     want=$(sed -n "s/^#!expect_$hk=//p" "$f" | head -1); [ -z "$want" ] && continue
     got=$(gv "$ok")

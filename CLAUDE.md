@@ -21,9 +21,11 @@ authored corpus recipes exist under `data/recipes/`. The corpus replay reports f
 `cannot-verify` results, zero decided results, and zero false safes. V0.1 has no
 defensible `safe` case; see `docs/reasoning/safe-case.md`.
 
-The bench kit remains frozen unless a tester is blocked. It produced a complete
-seven-field record on 29 August; further polishing is out of scope while the
-verifier's corpus and safety contract are being settled.
+The bench kit was unfrozen on 8 October 2026 for one change set: twelve more
+allowlisted properties and two console fixes. Capture asks the tester nothing new. Custom
+firmware is in scope, and the verifier settles a phone's model from credible public
+sources, asking the person only when those cannot. See
+`docs/reasoning/rulings-2026-10-08.md`. Kit changes beyond that set still need a ruling.
 
 ## Scope guardrail
 

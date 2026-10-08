@@ -1,0 +1,93 @@
+{
+  "expected_verdict": "safe",
+  "expected_verdict_reason": "A CPH2467 or CPH2465 on Android 14 or 15 stock firmware with an unlocked bootloader satisfies every precondition the LineageOS larry page states. The N30 (CPH2513) shares the codename and is excluded by its model code.",
+  "human_assessment": "safe",
+  "install_method": "fastboot_nexus",
+  "operations": [
+    {
+      "declared_by": "before_recovery_install.partitions",
+      "kind": "write-image",
+      "partition": "boot"
+    },
+    {
+      "declared_by": "before_recovery_install.partitions",
+      "kind": "write-image",
+      "partition": "dtbo"
+    },
+    {
+      "declared_by": "before_recovery_install.partitions",
+      "kind": "write-image",
+      "partition": "vbmeta"
+    },
+    {
+      "kind": "boot-recovery",
+      "partition": "vendor_boot",
+      "declared_by": "recovery_partition_name"
+    }
+  ],
+  "prerequisites": {
+    "android_version": {
+      "compare": "one_of",
+      "declared_by": "before_install.version",
+      "required": [
+        "14",
+        "15"
+      ],
+      "source_evidence": "LineageOS larry requires Android 14 or 15 stock firmware (version '14/15')",
+      "state": "OPEN"
+    },
+    "bootloader_state": {
+      "declared_by": "unlock_bootloader",
+      "required": "unlocked",
+      "source_evidence": "LineageOS larry custom_unlock_cmd: fastboot flashing unlock",
+      "state": "OPEN",
+      "unlock_class": "command",
+      "unlock_step": true
+    }
+  },
+  "recipe_id": "larry-recovery-v3",
+  "schema_version": "0.3",
+  "source": {
+    "authored": "independent",
+    "consulted": "2026-10-08",
+    "device_facts_from": "https://wiki.lineageos.org/devices/larry/",
+    "upstream_untested": "unestablished"
+  },
+  "source_fields_unused": [
+    "before_lineage_install",
+    "firmware_update"
+  ],
+  "target": {
+    "product_device": "larry",
+    "models": [
+      "CPH2467",
+      "CPH2465"
+    ],
+    "models_sources": [
+      {
+        "project": "LineageOS",
+        "url": "https://wiki.lineageos.org/devices/larry/",
+        "name": "OnePlus Nord CE 3 Lite 5G",
+        "models": [
+          "CPH2467",
+          "CPH2465"
+        ],
+        "install_method": "fastboot_nexus",
+        "consulted": "2026-10-08"
+      }
+    ],
+    "competing_sources": [
+      {
+        "project": "LineageOS",
+        "url": "https://wiki.lineageos.org/devices/larry/variant2/",
+        "name": "OnePlus Nord N30 5G",
+        "models": [
+          "CPH2513"
+        ],
+        "install_method": "fastboot_nexus",
+        "consulted": "2026-10-08"
+      }
+    ],
+    "partition_scheme": "A/B"
+  }
+}

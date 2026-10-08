@@ -57,6 +57,53 @@ def _parse_version(val):
     return None
 
 
+_EMPTY = (None, "", "unknown", "not_applicable", "not_recorded")
+
+
+def _public_model_source(sources):
+    """True when at least one entry names an https URL on a domain in the vocabulary.
+
+    Ruled 8 Oct 2026: a model list is credible only with a public source behind it. The
+    verifier cannot judge credibility, so it checks the source against a fixed list of
+    domains held in data/vocabulary.json, which a person maintains.
+    """
+    domains = _VOCABULARY.get("model_source_domains", [])
+    if not isinstance(sources, list):
+        return False
+    for entry in sources:
+        url = entry.get("url") if isinstance(entry, dict) else None
+        if not isinstance(url, str) or not url.startswith("https://"):
+            continue
+        host = url[len("https://"):].split("/", 1)[0].split(":", 1)[0].lower()
+        if host.split(".", 1)[0] in _VOCABULARY.get("model_source_excluded_subdomains", []):
+            continue  # a community forum on a maker's domain is not the maker speaking
+        if any(host == d or host.endswith("." + d) for d in domains):
+            return True
+    return False
+
+
+# Ruled 8 Oct 2026, evening: when the sources cannot settle the model, the verdict is
+# not-ready pending the person's confirmation, never cannot-verify for that reason alone.
+_PENDING_CODES = ("model-needs-confirmation", "model-ambiguous-variant", "device-code-differs")
+
+
+def _norm_model(value):
+    return " ".join(str(value).upper().split())
+
+
+def _model_forms(model, manufacturer):
+    """A reported model as the sources may write it: case and spacing ignored, and the
+    manufacturer's own name dropped from the front (OnePlus reports "ONEPLUS A6013" where
+    GSMArena writes "A6013"). Only the phone's own manufacturer name is ever dropped."""
+    forms = {_norm_model(model)}
+    if manufacturer not in _EMPTY:
+        prefix = _norm_model(manufacturer) + " "
+        for f in list(forms):
+            if f.startswith(prefix) and len(f) > len(prefix):
+                forms.add(f[len(prefix):])
+    return forms
+
+
 def _reason(code, result, fields, message):
     return {
         "code": code,
@@ -386,19 +433,46 @@ def _is_unlock_prerequisite(name, req):
 
 
 def _verify_v2(fingerprint, recipe):
+    ctx = {}
+    result = _verify_v2_inner(fingerprint, recipe, ctx)
+    if result.get("verdict") in ("cannot-verify", "not-ready") and ctx.get("confirmation_request"):
+        result.setdefault("evidence", {})["confirmation_request"] = ctx["confirmation_request"]
+    return result
+
+
+def _verify_v2_inner(fingerprint, recipe, ctx):
     if fingerprint is None:
         fingerprint = {}
     reasons = []
     target = recipe["target"]
     fields_consumed = []
     identity_mismatch = False
+    device_reason_index = None
     supported_aliases = target.get("supported_device_codes", [])
 
     observed_device = fingerprint.get("product_device")
     fields_consumed.append("product_device")
     expected_device = target.get("product_device")
+    # Ruled 8 Oct 2026: custom firmware is in scope. A ROM writes ro.product.* itself, so on
+    # custom firmware those values can confirm an identity but never contradict one.
+    custom_firmware = fingerprint.get("firmware_origin") == "custom"
+    if custom_firmware:
+        fields_consumed.append("firmware_origin")
+    rom_candidates = [fingerprint.get(k) for k in ("product_device", "lineage_device", "vendor_device")]
+    rom_candidates = [c for c in rom_candidates if c not in _EMPTY]
 
-    if observed_device in (None, "", "unknown", "not_applicable"):
+    if custom_firmware and any(c == expected_device or c in supported_aliases for c in rom_candidates):
+        fields_consumed.extend(["lineage_device", "vendor_device"])
+        reasons.append(
+            _reason("match-device-custom-firmware", "pass", ["product_device", "lineage_device", "vendor_device", "target.product_device"],
+                    "On custom firmware, a device code the ROM reports matches the recipe target.")
+        )
+    elif custom_firmware:
+        reasons.append(
+            _reason("identity-custom-firmware", "abstain", ["product_device", "firmware_origin"],
+                    "The phone runs custom firmware whose device code does not match; a ROM's own identity cannot show the recipe is wrong.")
+        )
+    elif observed_device in (None, "", "unknown", "not_applicable"):
         reasons.append(
             _reason("missing-product_device", "abstain", ["product_device"], "Required fingerprint evidence is absent or unknown.")
         )
@@ -411,6 +485,9 @@ def _verify_v2(fingerprint, recipe):
             _reason("match-device-alias", "pass", ["product_device", "target.supported_device_codes"], f"Device code matches supported alias '{observed_device}'.")
         )
     else:
+        # Held open until the model is read: stock firmware often reports an internal code
+        # (OP5958L1) where upstream uses a codename (larry). Credible sources settle it below.
+        device_reason_index = len(reasons)
         reasons.append(
             _reason("device-mismatch", "fail", ["product_device", "target.product_device"], "Fingerprint value contradicts the recipe target.")
         )
@@ -424,6 +501,13 @@ def _verify_v2(fingerprint, recipe):
         reasons.append(
             _reason("missing-partition_scheme", "abstain", ["partition_scheme"], "Required fingerprint evidence is absent or unknown.")
         )
+    elif expected_scheme == "A/B" and observed_scheme == "virtual_A/B":
+        # Upstream records only whether a device has slots (is_ab_device). Virtual A/B has
+        # slots; a recipe written for A/B therefore fits it. The reverse does not hold.
+        reasons.append(
+            _reason("match-partition_scheme-slots", "pass", ["partition_scheme", "target.partition_scheme"],
+                    "The recipe is for a phone with A/B slots, and virtual A/B has them.")
+        )
     elif observed_scheme != expected_scheme:
         reasons.append(
             _reason("partition-scheme-mismatch", "fail", ["partition_scheme", "target.partition_scheme"], "Fingerprint value contradicts the recipe target.")
@@ -434,34 +518,158 @@ def _verify_v2(fingerprint, recipe):
             _reason("match-partition_scheme", "pass", ["partition_scheme", "target.partition_scheme"], "Fingerprint value matches the recipe target.")
         )
 
-    # Hardware model matching against allowlist
-    # The previous DISPUTED marker asked whether an alias hit in supported_device_codes could
-    # confirm a variant. That question no longer needs asking: hardware identity is confirmed
-    # directly by checking product_model against target.models. Ruled by Ranaji on 16 September
-    # on the evidence in docs/Research/variant-danger-findings.md.
-    observed_model = fingerprint.get("product_model")
-    target_models = target.get("models")
+    # Ruled 8 Oct 2026, revised the same day: capture asks the tester nothing about the model.
+    # The verifier settles it from credible public sources, each of which records the model
+    # codes it lists. Only when no credible source lists any model does it ask, and then it
+    # returns a confirmation_request naming the phone's reported models, the links this
+    # recipe rests on, and the upstream entries it cannot tell apart from them. The person's
+    # answer comes back as model_confirmation plus the link they recognised, and counts
+    # only for a link of this recipe. An answer never overrides a credible list.
+    sources = target.get("models_sources") if isinstance(target.get("models_sources"), list) else []
+    credible = [src for src in sources if _public_model_source([src])]
+    credible_models = set()
+    for src in credible:
+        if isinstance(src.get("models"), list):
+            credible_models.update(m for m in src["models"] if isinstance(m, str) and m)
+    recipe_models = target.get("models") if isinstance(target.get("models"), list) else []
+    effective = (credible_models & set(recipe_models)) if recipe_models else credible_models
 
-    if "models" not in target or target_models is None or not isinstance(target_models, list) or len(target_models) == 0:
-        reasons.append(
-            _reason("models-unestablished", "abstain", ["target.models"], "Recipe model coverage is unestablished.")
-        )
-    elif observed_model in (None, "", "unknown", "not_applicable"):
-        fields_consumed.append("product_model")
+    software = [] if custom_firmware else [fingerprint.get("product_model")]
+    observed_models = software + [fingerprint.get("hardware_sku"), fingerprint.get("vendor_model")]
+    model_fields = (["product_model"] if not custom_firmware else []) + ["hardware_sku", "vendor_model"]
+    observed_models = [m for m in observed_models if m not in _EMPTY]
+
+    source_names = {str(src.get("name")).lower() for src in credible if src.get("name")}
+    manufacturer = fingerprint.get("manufacturer")
+    reported_names = {m.lower() for m in observed_models}
+    if manufacturer not in _EMPTY:
+        reported_names |= {(manufacturer + " " + m).lower() for m in observed_models}
+    name_hit = bool(source_names & reported_names)
+
+    competing = [c for c in (target.get("competing_sources") or []) if isinstance(c, dict)]
+
+    def config(src, own):
+        out = {k: src.get(k) for k in ("project", "name", "url", "install_method") if src.get(k)}
+        out["models"] = src.get("models") if src.get("models") else "no model codes listed"
+        out["this_recipe"] = own
+        return out
+
+    def ask_or_accept(code_if_unanswered, message, mismatch=None):
+        """The sources cannot settle the model: take the person's answer, or ask for it."""
+        answer = fingerprint.get("model_confirmation")
+        answered_url = fingerprint.get("model_confirmed_source")
+        own_urls = {src.get("url") for src in credible}
+        fields_consumed.append("model_confirmation")
+        if answer == "human_confirmed" and answered_url in own_urls:
+            reasons.append(
+                _reason("match-model-confirmed-by-person", "pass", ["model_confirmation", "model_confirmed_source"],
+                        "The sources could not settle the model; the person holding the phone recognised it as the device at " + str(answered_url) + ".")
+            )
+            return True
+        if answer == "human_rejected":
+            code, msg = "model-rejected-by-person", "The person holding the phone said it is not the device this recipe describes."
+        elif answer == "human_confirmed":
+            code, msg = "model-confirmed-elsewhere", "The person recognised the phone at a link this recipe does not rest on."
+        else:
+            code, msg = code_if_unanswered, message
+        reason = _reason(code, "abstain", model_fields + ["target.models_sources"], msg)
+        reasons.append(reason)
+        found = list(mismatch or [])
+        if device_reason_index is not None:
+            found.insert(0, {"field": "product_device", "phone_reports": observed_device,
+                             "recipe_expects": expected_device,
+                             "aliases_known": list(supported_aliases)})
+        ctx["confirmation_request"] = {
+            "mismatch": found,
+            "possible_configs": [config(src, True) for src in (credible or sources)] + [config(c, False) for c in competing],
+            "observed_models": observed_models,
+            "device": target.get("product_device"),
+            "recipe_sources": [{k: src.get(k) for k in ("project", "url", "name") if src.get(k)} for src in credible]
+                              or [{k: src.get(k) for k in ("project", "url", "name") if src.get(k)} for src in sources],
+            "cannot_tell_apart_from": [{k: src.get(k) for k in ("project", "url", "name") if src.get(k)}
+                                       for src in (target.get("competing_sources") or []) if isinstance(src, dict)],
+            "question": "Your phone reports itself as %s. Is it the device described at the link%s above, and not one of the others listed?"
+                        % (" / ".join(observed_models), "" if len(credible) == 1 else "s"),
+        }
+        if code in _PENDING_CODES:
+            reason["remedy"] = ctx["confirmation_request"]["question"] + " Confirm it, then run the check again."
+        return False
+
+    def settle_device(by_model):
+        """Resolve a held-open codename mismatch once the model has been read."""
+        if device_reason_index is None:
+            return
+        if by_model:
+            reasons[device_reason_index] = _reason(
+                "match-device-by-model", "pass", ["product_device", "product_model", "target.models_sources"],
+                "The phone's own device code differs from upstream's, and a credible source lists its model code for this recipe.")
+        else:
+            reasons[device_reason_index] = _reason(
+                "device-code-differs", "abstain", ["product_device", "target.product_device"],
+                "The phone's own device code differs from upstream's, and its model name matches the recipe's sources, so the person is asked.")
+
+    if not observed_models:
+        if effective:
+            fields_consumed.append("product_model")
         reasons.append(
             _reason("missing-product_model", "abstain", ["product_model", "target.models"], "Target product_model is unconfirmed from fingerprint.")
         )
-    elif observed_model not in target_models:
-        fields_consumed.append("product_model")
-        reasons.append(
-            _reason("model-mismatch", "fail", ["product_model", "target.models"], f"Fingerprint model '{observed_model}' contradicts the recipe target models.")
-        )
-        identity_mismatch = True
+    elif effective:
+        fields_consumed.extend(model_fields)
+        effective_norm = {_norm_model(m) for m in effective}
+        hit = next((m for m in observed_models
+                    if _model_forms(m, fingerprint.get("manufacturer")) & effective_norm), None)
+        hit_forms = _model_forms(hit, fingerprint.get("manufacturer")) if hit is not None else set()
+        unexcluded = [c for c in competing
+                      if not c.get("models") or ({_norm_model(m) for m in c["models"]} & hit_forms)]
+        if hit is not None and unexcluded:
+            # The code is listed for this recipe, but a device configuration that shares the
+            # codename either lists no codes or lists the same one: the sources cannot tell
+            # which of them the phone is (the 6T and the 6T T-Mobile are both A6013).
+            settle_device(by_model=True)
+            listed_by = [src.get("url") for src in credible
+                         if {_norm_model(m) for m in (src.get("models") or [])} & hit_forms]
+            ask_or_accept("model-ambiguous-variant",
+                          "The model is listed for this recipe, but another device configuration with the same codename cannot be ruled out from the sources.",
+                          [{"field": "product_model", "phone_reports": hit, "listed_for_this_recipe_by": listed_by,
+                            "not_excluded_by": [{"name": c.get("name"), "url": c.get("url"),
+                                                 "lists": c.get("models") or "no model codes"} for c in unexcluded]}])
+        elif hit is not None:
+            settle_device(by_model=True)
+            reasons.append(
+                _reason("match-product_model", "pass", model_fields + ["target.models_sources"],
+                        f"Model '{hit}' is listed by a credible source for this recipe.")
+            )
+        elif custom_firmware:
+            reasons.append(
+                _reason("identity-custom-firmware", "abstain", model_fields + ["firmware_origin"],
+                        "The phone runs custom firmware and no model it reports is in the credible list; a ROM's own model cannot show the recipe is wrong.")
+            )
+        elif name_hit:
+            # A model NAME where the sources list model CODES (Motorola: "motorola edge 30 ultra"
+            # against XT2241-1). The device is recognised, the variant is not: ask.
+            settle_device(by_model=False)
+            ask_or_accept("model-needs-confirmation",
+                          "The phone reports a model name where the sources list model codes, so the person holding it is asked.",
+                          [{"field": "product_model", "phone_reports": observed_models,
+                            "problem": "a model name where the sources list model codes",
+                            "sources_list": {src.get("url"): src.get("models") for src in credible if src.get("models")}}])
+        else:
+            reasons.append(
+                _reason("model-mismatch", "fail", model_fields + ["target.models_sources"],
+                        f"Fingerprint model '{observed_models[0]}' is not among the models credible sources list for this recipe.")
+            )
+            identity_mismatch = True
     else:
-        fields_consumed.append("product_model")
-        reasons.append(
-            _reason("match-product_model", "pass", ["product_model", "target.models"], f"Fingerprint model '{observed_model}' matches recipe target models.")
-        )
+        fields_consumed.extend(model_fields)
+        if device_reason_index is None or name_hit:
+            settle_device(by_model=False)
+            ask_or_accept("model-needs-confirmation",
+                          "No credible source lists model codes for this recipe, so the person holding the phone is asked.",
+                          [{"field": "product_model", "phone_reports": observed_models,
+                            "problem": "no credible source lists model codes for this recipe"}])
+
+    identity_mismatch = any(r["result"] == "fail" for r in reasons)
 
     if identity_mismatch:
         return {
@@ -471,7 +679,7 @@ def _verify_v2(fingerprint, recipe):
             "evidence": _build_evidence(fingerprint, fields_consumed),
         }
 
-    identity_abstained = any(reason["result"] == "abstain" for reason in reasons)
+    identity_abstained = any(reason["result"] == "abstain" and reason["code"] not in _PENDING_CODES for reason in reasons)
 
     if any(reason["result"] == "abstain" for reason in reasons) and "prerequisites" not in recipe:
         return {
@@ -694,6 +902,20 @@ def _verify_v2(fingerprint, recipe):
 
         if not compare:
             compare = "equal"
+
+        if custom_firmware and name in _VOCABULARY.get("stock_firmware_prerequisites", []):
+            # The recipe states what the vendor's firmware must be before installing. A phone
+            # already running something else does not report that, whatever it says.
+            fields_consumed.append("firmware_origin")
+            reasons.append(
+                _reason(
+                    "firmware-version-custom-rom",
+                    "abstain",
+                    [name, "firmware_origin", "prerequisites." + name],
+                    f"Prerequisite '{name}' is about the vendor's firmware, and this phone runs custom firmware.",
+                )
+            )
+            continue
 
         observed = fingerprint.get(name)
         fields_consumed.append(name)
@@ -930,7 +1152,13 @@ def _verify_v2(fingerprint, recipe):
     unmet = [reason for reason in reasons if reason["result"] == "unmet"]
     for reason in unmet:
         reason["remedy"] = _remedy(reason, fingerprint, recipe)
-    if unmet and not identity_abstained:
+    pending = [r for r in reasons if r["result"] == "abstain" and r["code"] in _PENDING_CODES]
+    other_abstain = [r for r in reasons if r["result"] == "abstain" and r["code"] not in _PENDING_CODES]
+    if pending and not other_abstain:
+        # Everything the phone can show fits; the sources cannot settle which device
+        # configuration it is. Not ready until the person confirms (evening ruling, 8 Oct).
+        verdict = "not-ready"
+    elif unmet and not identity_abstained:
         # The recipe fits this phone, and the phone is not in the state it needs yet.
         verdict = "not-ready"
     elif unmet or any(reason["result"] == "abstain" for reason in reasons):
@@ -942,12 +1170,15 @@ def _verify_v2(fingerprint, recipe):
     evidence = _build_evidence(fingerprint, fields_consumed)
     if guidance is not None:
         evidence["guidance"] = guidance
-    return {
+    result = {
         "verdict": verdict,
         "reasons": reasons,
         "coverage": {"schema_version": recipe.get("schema_version")},
         "evidence": evidence,
     }
+    if verdict == "not-ready" and pending:
+        result["pending_confirmation"] = True
+    return result
 
 
 

@@ -1,0 +1,16 @@
+#!expect_scheme=A/B
+#!expect_bootloader=unlocked
+#!expect_firmware=stock
+#!note=REAL. OnePlus 6T (ONEPLUS A6013), LinuxDays 4 Oct 2026. Stock OxygenOS 11 with an
+#!note=unlocked bootloader: unlocked is not the same as custom firmware.
+ro.product.manufacturer=OnePlus
+ro.product.model=ONEPLUS A6013
+ro.product.device=OnePlus6T
+ro.board.platform=sdm845
+ro.build.ab_update=true
+ro.boot.slot_suffix=_b
+ro.boot.flash.locked=0
+ro.boot.verifiedbootstate=orange
+ro.build.version.release=11
+ro.build.version.sdk=30
+ro.build.fingerprint=OnePlus/OnePlus6T/OnePlus6T:11/RKQ1.201217.002/2111252327:user/release-keys
