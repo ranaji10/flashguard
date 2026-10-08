@@ -1,0 +1,29 @@
+#!expect=
+#!note=8 Oct: #!expect=adb was stamped by the kit from the device category the tester picked
+#!note=(Android phone), not from the USB mode at the moment of the browser read. This descriptor
+#!note=has no ADB interface (255/66/1), so the label was wrong, not the classifier. Blanked
+#!note=rather than guessed: the mode was not established by a human at capture time.
+#!ground_truth=tester_identified
+#!device=Oneplus Nord CE 3 Lite
+#!route=browser
+#!captured=2026-10-03T12:45:16.258Z
+
+=== WEBUSB READ  2026-10-03T12:45:16.258Z ===
+
+  manufacturer      OnePlus
+  product           SM6375-QRD _SN:<stripped>
+  idVendor          0x22d9
+  idProduct         0x2764
+  deviceClass       0x00
+  usb version       2.0
+
+  configuration 1
+    interface 0 alt 0   class 6  subclass 1  protocol 1
+
+  --- the fields classify.sh uses ---
+  all interface classes   0x06
+  class/sub/proto         6/1/1
+  ADB interface (255/66/1)      no
+  fastboot interface (255/66/3) no
+
+  Compare against tests/real-descriptors/22d9-2764-*.desc

@@ -1,0 +1,25 @@
+#!expect=
+#!ground_truth=tester_identified
+#!device=Nokia 8110 4G EDLmode
+#!route=browser
+#!captured=2026-10-04T10:07:59.743Z
+
+=== WEBUSB READ  2026-10-04T10:07:59.743Z ===
+
+  manufacturer      Qualcomm CDMA Technologies MSM
+  product           QHSUSB__BULK
+  idVendor          0x05c6
+  idProduct         0x9008
+  deviceClass       0x00
+  usb version       2.0
+
+  configuration 1
+    interface 0 alt 0   class 255  subclass 255  protocol 255
+
+  --- the fields classify.sh uses ---
+  all interface classes   0xff
+  class/sub/proto         255/255/255
+  ADB interface (255/66/1)      no
+  fastboot interface (255/66/3) no
+
+  Compare against tests/real-descriptors/05c6-9008-*.desc

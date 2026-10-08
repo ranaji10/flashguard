@@ -1,0 +1,25 @@
+#!expect=adb
+#!ground_truth=tester_identified
+#!device=Lenovo K10 Note
+#!route=browser
+#!captured=2026-10-04T09:29:13.816Z
+
+=== WEBUSB READ  2026-10-04T09:29:13.816Z ===
+
+  manufacturer      Lenovo
+  product           Lenovo L38111
+  idVendor          0x17ef
+  idProduct         0x7b8e
+  deviceClass       0x00
+  usb version       2.1
+
+  configuration 1
+    interface 0 alt 0   class 255  subclass 66  protocol 1
+
+  --- the fields classify.sh uses ---
+  all interface classes   0xff
+  class/sub/proto         255/66/1
+  ADB interface (255/66/1)      yes
+  fastboot interface (255/66/3) no
+
+  Compare against tests/real-descriptors/17ef-7b8e-*.desc

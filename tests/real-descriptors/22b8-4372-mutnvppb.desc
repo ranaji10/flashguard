@@ -1,0 +1,26 @@
+#!expect=adb
+#!ground_truth=tester_identified
+#!device=Motorola Droid 4
+#!route=browser
+#!captured=2026-10-04T10:11:50.109Z
+
+=== WEBUSB READ  2026-10-04T10:11:50.109Z ===
+
+  manufacturer      Motorola
+  product           XT894
+  idVendor          0x22b8
+  idProduct         0x4372
+  deviceClass       0x00
+  usb version       2.0
+
+  configuration 1
+    interface 0 alt 0   class 8  subclass 6  protocol 80
+    interface 1 alt 0   class 255  subclass 66  protocol 1
+
+  --- the fields classify.sh uses ---
+  all interface classes   0x08 0xff
+  class/sub/proto         8/6/80, 255/66/1
+  ADB interface (255/66/1)      yes
+  fastboot interface (255/66/3) no
+
+  Compare against tests/real-descriptors/22b8-4372-*.desc
