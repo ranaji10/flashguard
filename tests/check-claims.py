@@ -37,7 +37,10 @@ def live_metrics():
     for d in cov.RECIPE_DIRS:
         runs += cov.corpus_runs(d, records)
     paired = cov.distinct([r for r in runs if r.get("paired")])
-    decided = sum(1 for r in paired if r["verdict"] in cov.DECIDED)
+    # A pending not-ready waits on a person and is not decided (ruled 8 October 2026),
+    # the same rule data/coverage.py applies in its gate.
+    decided = sum(1 for r in paired if r["verdict"] in cov.DECIDED
+                  and not r.get("pending_confirmation"))
     fs = sum(1 for r in runs if r["verdict"] == "safe"
              and (r.get("human_assessment") != "safe" or r.get("expected") != "safe"))
     return {"distinct_complete_phones": len(complete),

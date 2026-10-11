@@ -1,7 +1,8 @@
 """Pure v0.1, v0.2 and v0.3 recipe verification.
 
 verify() is a pure function: no device I/O, and deterministic given its two arguments.
-It reads two data files (vocabulary, reason texts) once at import; that is not device I/O.
+Its modules read three data files (vocabulary, reason texts, unlock guidance) once at
+import; that is not device I/O.
 """
 
 import json

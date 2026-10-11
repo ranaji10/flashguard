@@ -1,7 +1,7 @@
 # Verifier. Repository context.
 
 Given a **device fingerprint** and a **candidate provisioning recipe**, return
-**safe / unsafe / cannot-verify** *without executing the recipe on hardware*.
+**safe / not-ready / unsafe / cannot-verify** *without executing the recipe on hardware*.
 
 Read `docs/reasoning/verdict-contract.md` before touching verification logic. It is the
 specification; the code is measured against it, not the other way round.
@@ -16,10 +16,12 @@ Applicant: Ranaji Deb, sole applicant, in his own name.
 
 ## Current state
 
-The v0.1 pure verifier exists at `flashguard/verify.py`, and five independently
-authored corpus recipes exist under `data/recipes/`. The corpus replay reports five
-`cannot-verify` results, zero decided results, and zero false safes. V0.1 has no
-defensible `safe` case; see `docs/reasoning/safe-case.md`.
+The pure verifier at `flashguard/verify.py` reads recipe formats v0.1 to v0.3 and returns
+one of four verdicts (`docs/reasoning/verdict-contract.md`). Fifteen recipes exist: five in
+format v0.1 under `data/recipes/`, kept as evidence, and ten under `data/recipes-v0.2/`.
+For current numbers run `python3 data/coverage.py`; on 11 October 2026 it reported zero
+false safes in 24 runs and 2 of 7 paired recipes decided. Format v0.1 has no defensible
+`safe` case; see `docs/reasoning/safe-case.md`.
 
 The bench kit was unfrozen on 8 October 2026 for one change set: twelve more
 allowlisted properties and two console fixes. Capture asks the tester nothing new. Custom

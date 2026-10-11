@@ -2,6 +2,22 @@
 
 *Measured 6 September 2026, the first time the corpus was replayed through `verify()`.*
 
+> **Status, 11 October 2026.** This page records the first measurement, made on recipe
+> format v0.1. Since then recipes carry their prerequisites (formats v0.2 and v0.3), and the
+> gap has narrowed but not closed. Today's replay (`python3 data/coverage.py`):
+>
+>     format    recipes   decided    information loss         false safes
+>     v0.1      5         0 of 5     4 of 4 definite (100%)   0
+>     v0.2+     10        2 of 10    7 of 9 definite (78%)    0
+>
+> The five v0.1 recipes are kept unchanged as evidence. The two fields this page proposes,
+> `human_assessment` and `expected_verdict`, are now on every recipe and are enforced by
+> `tests/test_verdict_gap.py`. One caveat: most v0.2 labels were set in the same sitting as
+> the verifier change, with an AI coding assistant, so the loss rate is a fair measure of the
+> format and a weaker measure of the corpus. The labels of the three recipes added on
+> 8 October (`larry`, `fajita`, `star2lte`) rest on public sources only: Ranaji has
+> deliberately not confirmed them, because he does not own these phones.
+
     recipe                    human says    verifier returns
     a5xelte-recovery          cannot-verify cannot-verify     agree
     avicii-multi-image        unsafe        cannot-verify     DISAGREE
@@ -52,7 +68,7 @@ Where they differ, the recipe records why. That difference is a measurement:
 > **information-loss rate**: the proportion of recipes where a human can reach a definite
 > verdict and the verifier cannot.
 
-Today that rate is 4 of 5. It is not a defect. It is a number describing how much
+On 6 September that rate was 4 of 5. It is not a defect. It is a number describing how much
 safety-relevant evidence the v0.1 format destroys, and it is the argument for what v0.2
 must carry.
 
@@ -63,7 +79,7 @@ must carry.
 
 Zero false safes with zero decided is the meaningless zero the coverage floor exists to
 expose. Reported alone it looks like a pass. Reported as a pair it says plainly: **the
-verifier currently decides nothing, so it cannot yet be wrong.**
+verifier decided nothing then, so it could not yet be wrong.**
 
 Both numbers go in the proposal together, with the information-loss rate beside them. A
 verifier that abstains honestly and says why is a defensible first result. A verifier

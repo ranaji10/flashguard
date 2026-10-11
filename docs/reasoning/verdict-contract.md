@@ -3,13 +3,18 @@
 **Status: specification. Written before implementation, deliberately. The code is
 measured against this document, not the other way round.**
 
-Version 0.2, 13 September 2026.
+Version 0.3. First written 13 September 2026; updated 24 September (the `not-ready` verdict)
+and 8 October 2026 (models settled from public sources, pending confirmation). Checked
+against `flashguard/verify.py` on 11 October 2026.
 
 ---
 
 ## What the verifier is asked
 
-    verify(fingerprint, recipe) -> { verdict, reasons[], coverage, evidence }
+    verify(fingerprint, recipe) -> { verdict, reasons[], coverage, evidence, scope }
+
+`pending_confirmation: true` is added when the verdict is `not-ready` only because a person
+has to confirm the model (see `not-ready` below).
 
 `fingerprint` is what is known about one specific device, field by field, each field
 carrying its provenance and whether it was actually observed.
@@ -17,8 +22,8 @@ carrying its provenance and whether it was actually observed.
 `recipe` is an ordered sequence of provisioning operations plus references to the
 assets they write or prerequisites they declare.
 
-`verdict` is one of `safe`, `unsafe`, `cannot-verify`. There is no fourth value and
-no numeric score in the output. A score invites a person to set their own threshold,
+`verdict` is one of four values: `safe`, `not-ready`, `unsafe`, `cannot-verify`. There is
+no fifth value and no numeric score in the output. A score invites a person to set their own threshold,
 which relocates the safety decision to the least informed point in the system.
 
 ---
@@ -54,6 +59,15 @@ phone again).
 not fit this phone at all, so the verdict is `cannot-verify` and the unmet reason stays in
 the list. A remedy is guidance, never evidence: after following it, the phone is read again
 and that reading decides.
+
+**Pending confirmation (ruled 8 October 2026).** When everything the phone reports fits the
+recipe but the public sources cannot settle which device configuration it is, and nothing
+else is missing, the verdict is also `not-ready`, with `pending_confirmation: true`. The
+reason is one of `model-needs-confirmation`, `model-ambiguous-variant` or
+`device-code-differs`, and `evidence.confirmation_request` carries the question for the
+person. If any other check abstained, the verdict is `cannot-verify` instead. A pending
+`not-ready` is never counted as a decided answer. Details:
+`docs/reasoning/rulings-2026-10-08.md`.
 
 ### `cannot-verify`
 
@@ -139,7 +153,18 @@ must do out-of-band, and optionally a link to the authoritative upstream documen
 
 ## Hardware model matching
 
-Hardware model matching is performed directly against `target.models` (an explicit allowlist of supported `ro.product.model` strings), as ruled on 16 September on the evidence in `docs/Research/variant-danger-findings.md`.
+Ruled 16 September 2026, on the evidence in `docs/Research/variant-danger-findings.md`: a
+recipe's identity is confirmed by the phone's model (`product_model`), not only its
+codename, because one codename can cover several different models.
+
+Ruled 8 October 2026: the recipe carries the public sources it rests on
+(`target.models_sources`) and any configurations that share its codename
+(`target.competing_sources`). Only sources on a domain listed in `data/vocabulary.json`
+(`model_source_domains`) count. A model a credible source lists settles identity; a model
+the sources do not list is `unsafe` on stock firmware; when the sources cannot settle it,
+the verifier asks the person (see pending confirmation above). On custom firmware, identity
+written by the ROM can confirm a recipe but never condemn one. Full table:
+`docs/reasoning/rulings-2026-10-08.md`, section 4.
 
 ---
 
@@ -166,9 +191,9 @@ even when all fingerprint prerequisites and identity fields match cleanly.
    never confirmed on hardware, refusing `safe` is conservative and sound regardless of any
    other evidence.
 2. **The flag being ABSENT is not yet a fact.** Absence represents "tested" only if upstream
-   reliably clears `untested: true` once hardware verification is confirmed. We have reached
-   out to OpenAndroidInstaller maintainers and are awaiting confirmation of their maintenance
-   lifecycle.
+   reliably clears `untested: true` once hardware verification is confirmed. The question was
+   put to the OpenAndroidInstaller maintainers on 16 September 2026; no answer is recorded
+   yet.
 
 ### Pending upstream resolution
 
@@ -200,7 +225,8 @@ staleness is the consumer's decision.
 
 Any identity check that fails makes the verdict `unsafe`, whatever else was found. An
 unmet prerequisite on a phone whose identity is confirmed makes it `not-ready`, even if
-another check abstained, because "not ready" is already a definite finding. Any check
+another check abstained, because "not ready" is already a definite finding. A pending
+confirmation makes it `not-ready` only when no other check abstained. Any check
 abstaining makes the verdict at best `cannot-verify`. `safe` survives only unanimous
 agreement.
 
@@ -274,7 +300,7 @@ property worth stating in the grant application.
 
 ---
 
-## Open in v0.2
+## Still open (11 October 2026)
 
 - [ ] Reason code namespace and versioning policy.
 - [ ] How fingerprint field confidence is represented, given the /e/OS codename case

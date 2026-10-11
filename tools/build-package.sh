@@ -138,7 +138,13 @@ rm -f "$PKG_DIR/START-HERE.html.bak"
 
 mkdir -p "$OUT_DIR"
 ZIP_PATH="$OUT_DIR/flashguard-tester-kit-$TODAY.zip"
-rm -f "$ZIP_PATH"
+# A package built earlier the same day may already have gone to testers. Keep it:
+# move it to dist/archive/ with the time it was replaced, never delete it.
+if [ -f "$ZIP_PATH" ]; then
+  mkdir -p "$OUT_DIR/archive"
+  mv "$ZIP_PATH" "$OUT_DIR/archive/flashguard-tester-kit-$TODAY-replaced-$(date +%H%M%S).zip"
+  echo "Earlier package from today kept in $OUT_DIR/archive/"
+fi
 
 (
   cd "$STAGE"

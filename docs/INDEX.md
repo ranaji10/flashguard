@@ -28,9 +28,9 @@ Read before writing the proposal or changing a design.
 
 | File | Holds |
 |---|---|
-| `docs/reasoning/verdict-contract.md` | The verifier specification. safe / unsafe / cannot-verify, and what each means. |
+| `docs/reasoning/verdict-contract.md` | The verifier specification. safe / not-ready / unsafe / cannot-verify, and what each means. |
 | `docs/reasoning/verifier-plan.md` | Fingerprint vs corpus vs verifier, done criteria, the paired metric, what false-safe is measured against. |
-| `docs/reasoning/recipe-format.md` | The v0.1 JSON recipe shape accepted by the verifier and why it is declarative. |
+| `docs/reasoning/recipe-format.md` | The JSON recipe shape (v0.1 and the v0.2 prerequisite addition) and why it is declarative. v0.3 additions are in the 8 October rulings. |
 | `docs/reasoning/safe-case.md` | Why v0.1 has no defensible safe case and the minimum semantic addition needed for v0.2. |
 | `docs/reasoning/recipe-format-findings.md` | Five independent translations from OpenAndroidInstaller configs and the gaps they expose. |
 | `docs/reasoning/recipe-format-coverage.md` | Per-project coverage of every v0.1 recipe field and source fields with no v0.1 place. |
@@ -66,8 +66,8 @@ Read before writing the proposal or changing a design.
 
 | File | Holds |
 |---|---|
-| `grant/nlnet-restack-proposal.md` | The proposal. **Still shaped for seven questions; the form has two boxes.** |
-| `grant/schedule.md` | Milestones with payable, externally checkable criteria. Costing deliberately blank. |
+| `grant/nlnet-restack-proposal.md` | Working notes and facts for the proposal, with a dated status block. The final answers are written separately by the applicant. |
+| `grant/schedule.md` | What exists before the grant, and milestones M1 to M5 with externally checkable criteria (rewritten 11 October). Costing deliberately blank. |
 | `docs/Research/OAI-config-analysis.md` | OpenAndroidInstaller config structure: exact-string device codes, schema-enforced `is_ab_device`, a machine-readable `untested` flag, and no checksums anywhere. |
 | `docs/Research/install-method-classification.md` | All 28 LineageOS install methods classified by what the unlock requires. 303 devices are vendor-gated. Carries an analysis appendix separating verified from assumed. |
 | `docs/Research/TASK-2-install-method-classification.md` | The follow-up research task: classify all 28 install methods by what the unlock requires and whether a device can ever report it. |
@@ -110,11 +110,12 @@ Read before writing the proposal or changing a design.
 | `data/survey_upstream.py` | Filesystem runner that counts the cloned upstream sources without importing their text. |
 | `data/recipe_format_coverage.py` | Reproducible measurement of v0.1 recipe-field coverage in the cloned upstream records. |
 | `data/unlock_guidance.json` | Out-of-band unlock procedures and links keyed by unlock method. |
-| `data/recipes/` | The corpus. Five recipes, all `cannot-verify`, none safe. |
+| `data/recipes/` | The v0.1 corpus: recipes written from independent device facts, each with an expected verdict. |
+| `data/recipes-v0.2/` | The current-format corpus: recipes with a human assessment, an expected verdict and a named source. |
 | `tests/all.sh` | Everything checkable without a device. Run before every commit. |
 | `tests/test_intake.py` | Unit tests for session intake validation, PII blocking, and overwrite prevention. |
 | `tests/promote.py` | Descriptors to fixtures, with the ground-truth and consistency gates. |
-| `tests/webusb-probe.html` | Can a browser read what Tier A needs? **Not yet run.** |
+| `tests/webusb-probe.html` | Can a browser read what Tier A needs? First run 13 September: `tests/webusb-session-2026-09-13T19-47-58-661Z.txt`. |
 | `tools/confirm-model.py` | Lists the model questions the verifier is asking, and records a person's answer into a confirmations file beside the matrix, which merge.py applies. |
 | `tools/model-sources.py` | Isolates every upstream source for a device from the local clones and files them on a recipe as its own sources and the ones it cannot tell apart from. |
 | `tests/test_rulings_2026_10_08.py` | Holds the five rulings of 8 October. |
@@ -140,7 +141,7 @@ Read before writing the proposal or changing a design.
 | CC0 for data, GPL-3.0-or-later for code | `LICENSE`, `data/LICENSE`, `OPEN.md` |
 | Restack over CodeSupply and ELFA | `grant/nlnet-findings-2026-09-03.md` §2 |
 | No machine learning, and no vocabulary suggesting it | `README.md`, `CLAUDE.md` |
-| Bench kit frozen until a tester is blocked | `CLAUDE.md` |
+| Bench kit changes need a written ruling (unfrozen once, 8 October, for one change set) | `docs/reasoning/rulings-2026-10-08.md` |
 | Device owner carries the risk | `docs/reference/participation-note.md` |
 | Tier C, submission endpoint, landing page: not now | `OPEN.md` §8 |
 
@@ -148,11 +149,9 @@ Read before writing the proposal or changing a design.
 
 These are absent and that is recorded rather than forgotten.
 
-- **`verify()` does not exist.** `docs/reasoning/verifier-plan.md`.
-- **`data/recipes/` is empty.** Same file.
-- **`DECIDED_SHARE_FLOOR` is `None`** in `data/coverage.py`, until there is a corpus to
-  measure against.
-- **Upstream maintainer names** in `docs/reference/upstream-contacts.md`.
-- **`[CONTACT]` and `[RETURN ROUTE]`** in the participation note. `check-index.sh` fails
-  while they remain, so they cannot be forgotten into a tester's hands.
+- **No defensible `safe` case in recipe format v0.1.** `docs/reasoning/safe-case.md`.
+  Most answers are still `cannot-verify`; run `python3 data/coverage.py` for the current
+  decided share and false-safe count.
+- **The decided-share floor is low on purpose** (`data/coverage-floor.json`). It may only
+  go up as the corpus grows.
 - **Costing table** in `grant/schedule.md`, blank until M1 is built and can calibrate it.

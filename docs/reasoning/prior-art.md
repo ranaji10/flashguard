@@ -1,8 +1,10 @@
 # Prior art
 
 > Scanned 26 August 2026. Figures marked *(checked)* were read from the source on
-> that date and should be re-confirmed shortly before submission, since stars,
-> issue counts and device counts move.
+> that date; stars and issue counts move. The OpenAndroidInstaller device count was
+> re-read on 7 September 2026 from the pinned clone (90). Later, deeper studies of
+> LineageOS, OpenAndroidInstaller and postmarketOS are in `docs/Research/`, starting with
+> `docs/Research/cross-distro-upstream-analysis.md`.
 
 ## The claim this project can defend
 
@@ -27,7 +29,7 @@ A desktop installer that walks a person through putting an alternative Android
 distribution on their phone. Per-device configuration files describe the steps for
 each supported model.
 
-- **88 devices supported** across Fairphone, Google Pixel, Motorola, OnePlus,
+- **90 devices supported** (88 on 26 August, 90 from 7 September) across Fairphone, Google Pixel, Motorola, OnePlus,
   Samsung, Sony and Xiaomi/Poco *(checked)*
 - **GPL-3.0-or-later**, originally by Tobias Sterbak, 2022 onward *(checked)*
 - Actively maintained: 523 stars, 380 open issues, 16 open pull requests *(checked)*
@@ -37,9 +39,8 @@ each supported model.
 
 **Why it matters, in three separate ways.**
 
-**As prior art.** It must be named in Q5. Omitting the closest existing project
-reads either as an incomplete scan or an avoided comparison, and both cost more
-than the comparison itself would.
+**As prior art.** It is the closest existing project, so any comparison has to
+start here.
 
 **As the position that makes this project make sense.** OpenAndroidInstaller
 *executes*. This project *verifies*. Its own safety statement is
@@ -48,10 +49,11 @@ of the system. That gap is the thesis: this project is the verification layer
 underneath tools that already execute, and OpenAndroidInstaller is its most obvious
 first consumer rather than its competitor.
 
-**As a corpus.** Its 88 per-device configurations are published, structured and
-GPL-licensed. They are real provisioning recipes for real devices. This is the
-answer to the corpus problem: the verifier can be validated against dozens of
-genuine recipes on day one without owning the corresponding hardware. Its 380 open
+**As a corpus.** Its 90 per-device configurations are published, structured and
+GPL-licensed. They describe real provisioning steps for real devices, so test recipes
+can be written from them without owning the hardware. (This project's recipes state the
+device facts independently and cite the configuration they came from; they do not copy
+configuration text.) Its 380 open
 issues are, separately, a catalogue of real-world provisioning failure modes that
 would otherwise take a year to accumulate.
 
@@ -99,8 +101,7 @@ The differences that leave room for this project:
 
 <https://community.e.foundation/t/easy-installer-incorrectly-reports-e-os-compatibility/42475>
 
-Worth citing specifically, in Q6 rather than Q5, because it is a real, reproducible,
-documented failure of exactly the judgement this project is trying to make well.
+Worth citing specifically, because it is a real, reproducible, documented failure of exactly the judgement this project is trying to make well.
 
 The installer detected a Samsung Galaxy S7 edge (SM-G935F) correctly. Its supported
 list held the codenames `herolte` and `hero2lte`. The device reported itself as
@@ -108,7 +109,7 @@ list held the codenames `herolte` and `hero2lte`. The device reported itself as
 user *"Your SM_G935F is not yet supported by /e/ OS"*, which was not true: the
 device was supported by the OS, just not matched by the installer.
 
-Two things follow, and both belong in the proposal.
+Two things follow.
 
 1. **A device fingerprint cannot be a string comparison against a hardcoded list.**
    Variants, regional SKUs and hardware revisions collide with naming. Building a
@@ -129,15 +130,5 @@ Two things follow, and both belong in the proposal.
 Maintains a categorised device support matrix with per-device state. Not a verifier,
 and not a competitor. Relevant twice over: as an existing structured device dataset
 whose categorisation scheme should inform the schema here rather than being
-reinvented, and as an ecosystem partner for Q7.
-
----
-
-## Where each of these belongs in the application
-
-| Question | Use |
-|---|---|
-| Q1 outcomes | The verification-layer framing, and the two-corpus validation plan that OpenAndroidInstaller's configs make possible |
-| Q5 comparison | OpenAndroidInstaller first, fwupd/LVFS second, then the flasher table |
-| Q6 challenges | The /e/OS codename case, as concrete evidence for the fingerprint problem and the abstain verdict |
-| Q7 ecosystem | OpenAndroidInstaller, postmarketOS, LineageOS as named communities, with the matrix and corpus formats published as reusable open data |
+reinvented, and as an ecosystem partner. Its device files have no field for how a
+bootloader is unlocked, by design (`docs/Research/postmarketos-config-analysis.md`).

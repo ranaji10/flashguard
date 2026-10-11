@@ -53,6 +53,17 @@ done
 if [ -z "$FILTER" ]; then
   TMP_TEST="$(mktemp -d /tmp/bench-test.XXXXXX)"
   mkdir -p "$TMP_TEST/bin" "$TMP_TEST/bench"
+  # Run a COPY of the kit scripts. 01-detect.sh saves every capture to a descriptors/
+  # folder beside its own scripts/ folder, so running the real scripts here wrote test
+  # captures into bench-kit/descriptors/, and the clean-up then deleted that whole folder,
+  # including any real capture a tester had left there. With a copy, test captures land
+  # in the temp folder and the real bench-kit/descriptors/ is never written or deleted.
+  # The check after the tests proves it.
+  mkdir -p "$TMP_TEST/kit"
+  cp -R "$HERE/../bench-kit/scripts" "$TMP_TEST/kit/scripts"
+  KIT="$TMP_TEST/kit/scripts"
+  REAL_DESC="$HERE/../bench-kit/descriptors"
+  desc_before=$(ls -la "$REAL_DESC" 2>/dev/null || echo "absent")
 
   cat <<'EOF' > "$TMP_TEST/bin/sudo"
 #!/usr/bin/env bash
@@ -94,7 +105,7 @@ EOF
 
   # 1. 00-setup.sh baseline check: answering 'y' deletes baseline and exits 1
   SETUP_RC=0
-  SETUP_OUT=$(printf '\ny\n' | HOME="$TMP_TEST" PATH="$TMP_TEST/bin:$PATH" bash "$HERE/../bench-kit/scripts/00-setup.sh" 2>&1) || SETUP_RC=$?
+  SETUP_OUT=$(printf '\ny\n' | HOME="$TMP_TEST" PATH="$TMP_TEST/bin:$PATH" bash "$KIT/00-setup.sh" 2>&1) || SETUP_RC=$?
   if [ "$SETUP_RC" -eq 1 ] && \
      printf '%s' "$SETUP_OUT" | grep -q "Is the phone or tablet you are about to test in this list?" && \
      printf '%s' "$SETUP_OUT" | grep -q "Unplug it, then run bash 00-setup.sh again" && \
@@ -122,7 +133,7 @@ EOF
   chmod +x "$TMP_TEST/bin/lsusb"
 
   DETECT_RC=0
-  DETECT_OUT=$(printf '1\n' | HOME="$TMP_TEST" PATH="$TMP_TEST/bin:$PATH" bash "$HERE/../bench-kit/scripts/01-detect.sh" 2>&1) || DETECT_RC=$?
+  DETECT_OUT=$(printf '1\n' | HOME="$TMP_TEST" PATH="$TMP_TEST/bin:$PATH" bash "$KIT/01-detect.sh" 2>&1) || DETECT_RC=$?
   if [ "$DETECT_RC" -eq 0 ] && \
      printf '%s' "$DETECT_OUT" | grep -q "More than one new device appeared:" && \
      printf '%s' "$DETECT_OUT" | grep -q "Which one is the device you are testing?"; then
@@ -140,7 +151,7 @@ echo "Bus 001 Device 002: ID 046d:c52b Logitech, Inc. Unifying Receiver"
 EOF
   chmod +x "$TMP_TEST/bin/lsusb"
 
-  EMPTY_OUT=$(HOME="$TMP_TEST" PATH="$TMP_TEST/bin:$PATH" bash "$HERE/../bench-kit/scripts/01-detect.sh" 2>&1) || true
+  EMPTY_OUT=$(HOME="$TMP_TEST" PATH="$TMP_TEST/bin:$PATH" bash "$KIT/01-detect.sh" 2>&1) || true
   if printf '%s' "$EMPTY_OUT" | grep -q "Nothing new since setup"; then
     printf '  %-46s %-14s %-14s %s\n' "01-detect.sh empty diff message" "helpful advice" "helpful advice" "ok"
     pass=$((pass+1))
@@ -149,8 +160,17 @@ EOF
     fail=$((fail+1))
   fi
 
-  rm -rf "$TMP_TEST"
-  rm -rf "$HERE/../bench-kit/descriptors"
+  # The real descriptors folder must be exactly as it was before these tests.
+  desc_after=$(ls -la "$REAL_DESC" 2>/dev/null || echo "absent")
+  if [ "$desc_before" = "$desc_after" ]; then
+    printf '  %-46s %-14s %-14s %s\n' "bench-kit/descriptors/ left untouched" "unchanged" "unchanged" "ok"
+    pass=$((pass+1))
+  else
+    printf '  %-46s %-14s %-14s %s\n' "bench-kit/descriptors/ left untouched" "unchanged" "changed" "FAIL"
+    fail=$((fail+1))
+  fi
+
+  rm -rf "$TMP_TEST"   # only the temporary folder these tests created
 fi
 
 echo

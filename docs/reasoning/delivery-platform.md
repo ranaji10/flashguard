@@ -35,8 +35,11 @@ The nine captured descriptors and the classification records built from them sta
 means claiming the ADB interface. Chrome's documentation says the restriction is
 driver-claim based and applies to *claiming*, not to reading descriptors, and that macOS,
 Linux, Android and ChromeOS need no driver binding while Windows needs WinUSB. That is the
-part to test rather than assume. See `docs/reasoning/webusb-findings.md` once the probe has
-been run.
+part to test rather than assume. The probe was first run on 13 September 2026 (Chrome on
+Linux): it read three of four devices, and the raw export is
+`tests/webusb-session-2026-09-13T19-47-58-661Z.txt`. Five records in the matrix have since
+been captured through the browser, four of them on macOS. A per-platform write-up of the
+limits has not been done yet.
 
 **Added to the schema:** `capture_route`, recording how a record was obtained — `linux-live`,
 `browser`, or `package`. Without it, a record captured by a route the product will not have
@@ -49,9 +52,8 @@ it has to pick a target among many, which is a genuinely different problem and i
 
 ## Sequence
 
-1. **Run the probe** (`tests/webusb-probe.html`). Half an hour. It decides whether volunteers
-   should be asked to boot Linux at all.
-2. **Write up what it found** in `docs/reasoning/webusb-findings.md`.
+1. **Run the probe** (`tests/webusb-probe.html`). Done 13 September 2026; see above.
+2. **Write up what it found, per platform.** Not yet done.
 3. **Build the browser tool after the verifier**, not before. Testing feasibility is an
    afternoon; building the tool is weeks, and the grant funds the verifier.
 
@@ -60,6 +62,6 @@ it has to pick a target among many, which is a genuinely different problem and i
 - Whether the downloadable package is per-OS binaries, a script bundle, or the current kit
   with a friendlier front end.
 - Whether a "safe repurposing probability" belongs anywhere. See
-  `docs/reasoning/verdict-contract.md`: Flashguard returns three values and no score. A
+  `docs/reasoning/verdict-contract.md`: Flashguard returns four fixed verdicts and no score. A
   probability invites a user to act on 0.8, which is the false-safe pathway the design
   exists to close. If a score is wanted for end users it is RePurpose, not Flashguard.

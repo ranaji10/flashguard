@@ -1,50 +1,76 @@
-# Golden corpus
+# Test recipes (the "golden corpus")
 
-Every recipe here carries a `human_assessment`, an `expected_verdict`, and a
-human-written `expected_verdict_reason`. `human_assessment` records what a person
-reading the real device config concludes; `expected_verdict` records what the
-verifier should return from the recipe as written. `verdict_gap_reason` explains
-what the format could not carry, or why the two assessments agree. The runner produces actual verdicts
-for all of them, appends the results to a log that is never rewritten, and fails the
-build if a single **false safe** appears.
+A recipe describes the steps for installing software on one device model. These recipes are
+the test cases the verifier is measured against. They live in two folders:
 
-    false_safe    expected unsafe, got safe        MUST BE ZERO. Build fails.
-    false_unsafe  expected safe, got unsafe        tracked
-    abstain_rate  share answered cannot-verify     reported alongside, always
+- `data/recipes/`: five recipes in the first format (v0.1), kept unchanged as evidence of
+  what that format could not express (see `docs/reasoning/verdict-gap.md`).
+- `data/recipes-v0.2/`: ten recipes in the current formats (v0.2 and v0.3), which also
+  carry each recipe's prerequisites and the public sources for the device's model codes.
 
-Reporting abstain rate is what stops the primary metric being gamed by a verifier
-that refuses everything.
+The format is described in `docs/reasoning/recipe-format.md`, with the v0.3 additions in
+`docs/reasoning/rulings-2026-10-08.md`.
 
-## Seed cases
+## Two labels on every recipe
 
-| id | Expected | Case |
-|---|---|---|
-| `good-01` | safe | Valid recipe for a known device |
-| `bad-boot-order-01` | unsafe | Flashes bootloader, then fails to complete |
-| `bad-wrong-image-01` | unsafe | Image for a different model or variant |
-| `bad-slot-assumption-01` | unsafe | Assumes A/B on a single-partition device |
-| `bad-locked-bootloader-01` | unsafe | Operation needs unlock, device reports locked |
-| `cannotverify-01` | cannot-verify | Device and recipe the matrix has no data for |
-| `cannotverify-codename-01` | cannot-verify | Codename nearly matches but carries a regional suffix. See the /e/OS case in `docs/reasoning/prior-art.md`. |
+- `human_assessment`: what a person reading the real upstream instructions concludes
+  about running this procedure on this device.
+- `expected_verdict`: what a correct verifier should answer from the recipe as written.
 
-## Growing it without owning hardware
+Each comes with a written reason (`expected_verdict_reason`, and `verdict_gap_reason` where
+the two differ). They can differ, because a recipe may not carry everything a person can
+see. How often they differ is reported as the "information loss" rate.
 
-This is the answer to the corpus problem. Recipes are not devices, and recipes are
-published.
+## The recipes
 
-- **OpenAndroidInstaller** publishes per-device configuration files for 88 devices
-  under GPL-3.0-or-later. Real recipes, structured, for real hardware.
-- **LineageOS** publishes per-device install instructions for hundreds of models.
-- **postmarketOS** maintains a categorised device support matrix.
+| File | Device | Format | Human assessment | Expected verdict |
+|---|---|---|---|---|
+| `a5xelte-recovery-independent-facts.json` | Samsung Galaxy A5 (2016) (`a5xelte`) | 0.1 | cannot-verify | cannot-verify |
+| `avicii-multi-image-facts.json` | OnePlus Nord (`avicii`) | 0.1 | unsafe | cannot-verify |
+| `fp3-unlock-independent-facts.json` | Fairphone 3 (`FP3`) | 0.1 | unsafe | cannot-verify |
+| `fp4-independent-facts.json` | Fairphone 4 (`FP4`) | 0.1 | unsafe | cannot-verify |
+| `kirin-unlock-independent-facts.json` | Sony Xperia 10 (`kirin`) | 0.1 | unsafe | cannot-verify |
+| `a52sxq.json` | Samsung Galaxy A52s 5G (`a52sxq`) | 0.3 | safe | cannot-verify |
+| `a5xelte.json` | Samsung Galaxy A5 (2016) (`a5xelte`) | 0.2 | cannot-verify | cannot-verify |
+| `avicii.json` | OnePlus Nord (`avicii`) | 0.2 | safe | cannot-verify |
+| `fajita.json` | OnePlus 6T (`fajita`) | 0.3 | safe | not-ready |
+| `fp3.json` | Fairphone 3 (`FP3`) | 0.2 | unsafe | cannot-verify |
+| `fp4.json` | Fairphone 4 (`FP4`) | 0.2 | unsafe | cannot-verify |
+| `kirin.json` | Sony Xperia 10 (`kirin`) | 0.2 | unsafe | cannot-verify |
+| `larry.json` | OnePlus Nord CE 3 Lite (`larry`) | 0.3 | safe | safe |
+| `spacewar.json` | Nothing Phone (1) (`Spacewar`) | 0.2 | safe | safe |
+| `star2lte.json` | Samsung Galaxy S9+ (`star2lte`) | 0.3 | safe | cannot-verify |
 
-Read them independently, assign both assessments, and the verifier can be validated against
-hundreds of genuine recipes on day one. Physical devices are then reserved for the
-one thing only hardware gives you: the read-only fingerprint at Tier A.
+The expected verdict describes the recipe on its own. What the verifier actually answers
+also depends on the phone it is checked against: for example, `larry` and `spacewar` return
+`not-ready` against the real captured phones, because their bootloaders are locked.
 
-Respect the source licences. GPL-3.0-or-later on the OpenAndroidInstaller material is
-one of the arguments for the same licence here.
+**Label review.** Most v0.2 labels were set with the help of an AI coding assistant, in the
+same sitting as the verifier change they test. The labels of the three recipes added on
+8 October 2026 (`larry`, `fajita`, `star2lte`) rest on public sources only. Ranaji has
+deliberately not confirmed them, because he does not own these phones and cannot check
+them in hand. They stay as they are until someone who can does.
+
+## How results are measured
+
+Run `python3 data/coverage.py`. For each format it reports:
+
+    false safes        expected not-safe, answered safe     MUST BE ZERO. The build fails.
+    decided share      share of definite answers            must stay at or above the floor
+    information loss   human could decide, verifier could not
+
+The floor is in `data/coverage-floor.json` and may only go up. Reporting the decided share
+next to the false-safe count stops a verifier that refuses everything from looking good.
+
+## Where recipes come from
+
+Recipes are written from facts about each device published by OpenAndroidInstaller
+(GPL-3.0-or-later configuration files) and the LineageOS wiki (CC BY-SA 3.0). Facts such as
+codenames, model numbers and which unlock step is needed are stated independently; no
+instruction text is copied. Every recipe names where its facts came from in its `source`
+field. This folder is published under CC0 (`data/LICENSE`).
 
 ## Every miss becomes a permanent case
 
-A misclassification or a missed catch is added here as a new recipe with both
-assessments, before the rule that would have caught it is written. The corpus only grows.
+A wrong answer or a missed catch is added here as a new recipe with both labels, before the
+rule that would have caught it is written. The corpus only grows.

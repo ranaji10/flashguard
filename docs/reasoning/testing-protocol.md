@@ -66,11 +66,12 @@ in the matrix.
 When a fixture fails, fix `classify.sh`. Change `#!expect` only if the expectation was
 itself wrong, and say why in a `#!note`.
 
-The eight fixtures shipped today are **synthetic**, hand-built to encode the two known
+The eight fixtures in `tests/fixtures/` are **synthetic**, hand-built to encode the two known
 defects plus one trap. They are a guard against regression, not evidence of
 correctness — a synthetic fixture can only encode what its author already believed. Real
-descriptors from real devices are what make the suite meaningful, and they arrive from
-every capture from now on.
+descriptors from real devices are what make the suite meaningful. Since the first bench
+runs they sit alongside the synthetic ones in `tests/real-descriptors/`, privacy-checked by
+`tests/check-descriptor-privacy.sh`.
 
 `synthetic-cross-interface-trap.desc` is worth reading: a card reader with two
 vendor-specific interfaces, `255/66/80` and `255/1/1`. Neither is ADB — the ADB triple

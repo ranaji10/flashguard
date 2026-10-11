@@ -1,5 +1,12 @@
 # The v0.1 safe case
 
+> **Status, 11 October 2026.** The decision below still holds for format v0.1. The minimum
+> addition it asks for was made: format v0.2 carries a prerequisite block
+> (`docs/reasoning/recipe-format.md`, "Version 0.2 addition"), and `safe` became reachable on
+> 8 September when the fingerprint confirms every required state. The "Variant matching"
+> section at the end was replaced on 16 September by matching the phone's model, and on
+> 8 October by settling the model from public sources (`docs/reasoning/rulings-2026-10-08.md`).
+
 **Decision: a defensible `safe` recipe cannot exist in format v0.1.**
 
 The five real OpenAndroidInstaller translations are evidence of the boundary, not a

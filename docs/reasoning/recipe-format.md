@@ -1,15 +1,18 @@
 # Recipe format
 
-**Status: specification for verifier v0.1.** This format is deliberately small: it
+**Status: specification for recipe format v0.1, with the v0.2 addition below. The v0.3
+additions (public model sources under `target`) are described in
+`docs/reasoning/rulings-2026-10-08.md`, section 4.** This format is deliberately small: it
 describes the facts the verifier must check, without pretending to be a flashing
 script or executable command list.
 
 ## Location and loading
 
-Recipes are JSON objects stored as one file under `data/recipes/`. The verifier is
+Recipes are JSON objects stored as one file each under `data/recipes/` (format v0.1) and
+`data/recipes-v0.2/` (formats v0.2 and v0.3). The verifier is
 implemented in `flashguard/verify.py`, with `flashguard/__init__.py` re-exporting
-`verify`. Tests import it as `from flashguard import verify`; the verify path itself
-reads no files. Callers load and validate a recipe before passing the resulting
+`verify`. Tests import it as `from flashguard import verify`. The verifier reads its
+fixed data files once at import and reads no files while verifying. Callers load and validate a recipe before passing the resulting
 object to `verify(fingerprint, recipe)`.
 
 ## Shape

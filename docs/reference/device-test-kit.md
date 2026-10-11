@@ -94,8 +94,8 @@ Maintained in `../data/recipes/`. Each recipe carries an `expected` verdict so p
 and recall are measurable. The build fails on a single **false safe**. Abstention rate is
 reported alongside so a verifier that refuses everything cannot look successful.
 
-Recipes are not devices, and recipes are published: OpenAndroidInstaller's 88 per-device
-configurations, LineageOS install instructions, the postmarketOS device matrix. The corpus
+Recipes are not devices, and recipes are published: OpenAndroidInstaller's 90 per-device
+configurations (88 when this was written), LineageOS install instructions, the postmarketOS device matrix. The corpus
 can reach the hundreds without owning the hardware. Physical devices are reserved for the
 one thing only hardware gives: the read-only fingerprint.
 

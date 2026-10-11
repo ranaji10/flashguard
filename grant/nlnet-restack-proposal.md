@@ -1,11 +1,28 @@
 # NLnet / Restack (Open Internet Stack) — Proposal Working Document
 
-> **Staging and iteration space, not the final submission.** The NLnet application is
-> pasted into a web form, not uploaded. Draft here, paste the polished version when the
-> call opens.
+> **Working notes, not the submission.** The final answers are being written separately by
+> the applicant, in his own words, as NLnet asks. This file keeps the facts and reasoning to
+> draw on. The call is open; the live form has two free-text boxes rather than seven
+> questions (`grant/nlnet-findings-2026-09-03.md`), so the Q1 to Q7 headings below are kept
+> as a checklist of what to cover.
+
+## Where things stand, 11 October 2026
+
+- Verifier: `flashguard/verify.py`, a pure function returning one of four verdicts (safe,
+  not-ready, unsafe, cannot-verify) with reasons, evidence and scope. It checks identity
+  against public model sources and each operation's preconditions. It does not yet model
+  the order of operations (milestone M2 in `schedule.md`).
+- Corpus: 15 recipes for 10 phone models, each with two labels and a written reason.
+- Results: 0 false safes across 24 runs; decided on 2 of 7 distinct phone-and-recipe
+  pairings; the rest abstain, mostly because the phone does not report its storage layout
+  or no phone of that model has been captured.
+- Device matrix: 37 records, 26 Android, from 8 testers; 5 phones with all seven verifier
+  fields, 6 more complete for their storage layout.
+- In progress before submission: a testing round to close the storage-layout gap.
+- Public repository: <https://github.com/ranaji10/flashguard>.
 
 **Fund:** Restack (Open Internet Stack) · **Form:** <https://nlnet.nl/propose/>
-**Call opens:** 3 September 2026 · **Deadline:** 3 November 2026, 12:00 CET
+**Call opened:** 3 September 2026 · **Deadline:** 3 November 2026, 12:00 CET
 **Grant size:** €5,000 to €50,000, equity-free
 **Project name:** **Flashguard** (the verifier, what this grant funds). *RePurpose* is the working
 title for the wider ambition beyond the grant and is deliberately absent from this application.
@@ -19,6 +36,7 @@ title for the wider ambition beyond the grant and is deliberately absent from th
 | 2026-08-26 | v0.1 | Initial skeleton, drafted problem statement |
 | 2026-08-26 | v0.2 | Prior-art scan folded in. Q5 rebuilt around OpenAndroidInstaller and fwupd/LVFS. Two-corpus validation plan added to Q1 and Q4. Evaluation design and the false-safe metric added to Q1 and Q6. /e/OS codename case added to Q6. Data ethics added to Q7. Schedule split into `schedule.md`. |
 | 2026-09-24 | v0.3 | Q6 gains challenge 6: how a corpus label is made and checked, so the corpus reads as method rather than one person's view. Four verdicts (not-ready added). |
+| 2026-10-11 | v0.4 | Facts brought up to date: status block, four verdicts in Q1, state machine marked as planned, repository URL, data licence and programme choice settled, tester path now browser-first. Final answers move to the applicant's own document. |
 
 Mark edited sections with `<!-- edited vNN -->` when revising.
 
@@ -37,9 +55,8 @@ Over-scoping is NLnet's most common rejection reason.
 
 - Deadlines moved from even to odd months to avoid the summer break and FOSDEM. Calls
   resume 3 September 2026, first deadline 3 November 2026.
-- Restack is one of three new programmes under Open Internet Stack, alongside
-  **CodeSupply** and **ELFA**. **Read all three descriptions when the call opens before
-  choosing where to submit.** Submitting to the wrong programme is a silent rejection.
+- Restack is one of the programmes under Open Internet Stack. Checked 3 September: ELFA is
+  gone, and Restack was chosen over CodeSupply (`grant/nlnet-findings-2026-09-03.md`, §2).
 - Restack funds an open internet stack across every layer from hardware through
   middleware to applications, with explicit interest in *"technical debt and things that
   were left intentionally broken."* €7M through 2030. All results must be released under a
@@ -72,14 +89,15 @@ automated tooling, that does not scale, and the risk compounds.
 
 This project builds the missing layer: an open, verifiable method with a reference
 implementation that takes a device fingerprint and a candidate provisioning recipe and
-returns **safe / unsafe / cannot-verify** *without executing the recipe on hardware*. It
-combines static analysis of the recipe against the device's real partition and bootloader
-state with a modelled flash state machine that detects sequences leaving a device
-unbootable. Verification is a pure function with no device I/O, so the verifier
+returns **safe / not-ready / unsafe / cannot-verify** *without executing the recipe on
+hardware*. It checks the recipe against the device's real identity, partition and
+bootloader state today; modelling the order of flashing steps, to catch sequences that
+leave a device unbootable, is planned work (M2). Verification is a pure function with no device I/O, so the verifier
 structurally cannot damage what it inspects.
 
-Validation runs on two corpora, deliberately separated. **Recipe coverage**: hundreds of
-real provisioning recipes drawn from published, openly licensed sources including
+Validation runs on two corpora, deliberately separated (today 15 recipes and 37 device
+records; the targets are in `schedule.md`). **Recipe coverage**: real provisioning recipes
+drawn from published, openly licensed sources including
 OpenAndroidInstaller's per-device configurations. **Device coverage**: tens of physically
 fingerprinted devices from a volunteer tester network, contributing the read-only device
 state only hardware can give.
@@ -140,15 +158,14 @@ someone who has to earn each verdict from published evidence is the right tool f
 defined by expertise being scarce.
 
 **Open source.** My public contribution record is thin, and the honest remedy is code rather than
-claims: [REPO LINK] holds the read-only device fingerprinting, the recipe corpus and the verifier
+claims: <https://github.com/ranaji10/flashguard> holds the read-only device fingerprinting, the recipe corpus and the verifier
 reference implementation under GPL-3.0-or-later, with the device matrix under CC0.
 
 ---
 
 **[YOU] before this is final:**
 
-- [ ] Public repository URL. See `schedule.md`, milestone H1. Everything else in this answer is
-      already true; this is the only sentence that is not yet.
+- [x] Public repository URL: <https://github.com/ranaji10/flashguard> (public).
 - [ ] Make the existing private prototype repository public if nothing in its history embarrasses
       you. Two public repositories reads very differently from one.
 - [ ] **Certified in Cybersecurity (ISC2) is listed as in progress on your CV.** Finishing it
@@ -296,7 +313,7 @@ sentence that cannot be true.
 **Licensing.** Everything released under a recognised libre licence, as Restack requires.
 GPL-3.0-or-later for code, which is also compatible with the OpenAndroidInstaller material
 used as a corpus source. Device matrix and recipe corpus published as open data under
-`[CC0 or CC-BY-SA-4.0, to decide]` so other reuse and repair projects can absorb them.
+CC0 (`data/LICENSE`) so other reuse and repair projects can absorb them.
 
 **Communities.** OpenAndroidInstaller as the most obvious first consumer of the verifier.
 postmarketOS and LineageOS, whose published device data and install instructions are both
@@ -314,11 +331,11 @@ dataset is public. The protocol is piloted before it is fielded and the completi
 is measured, so we learn where non-specialists give up. That accessibility finding is
 itself an outcome, and closer to what Restack funds than the device data alone.
 
-**Reducing the barrier as a deliverable.** The recommended tester path is a bootable Linux
-image with device rules preinstalled, which removes the Windows driver-installation step
-that is the single largest source of volunteer drop-off. The Windows browser route is kept
-and its friction logged, because smoothing it matters, but it is not the default first
-experience.
+**Reducing the barrier as a deliverable.** The tester path is now browser-first: testers
+open `bench-kit/START-HERE.html` on macOS, Windows or Linux and follow it, with a live
+Linux USB stick kept as the option that reads the most devices
+(`docs/reasoning/delivery-platform.md`). Friction on each route is logged, and devices
+that could not be captured are recorded rather than dropped.
 
 **Publication.** The device-matrix and recipe-corpus formats are published as reusable
 specifications, not just as data. Coverage is reported openly, including gaps.
@@ -328,9 +345,11 @@ specifications, not just as data. Coverage is reported openly, including gaps.
 ## Open decisions before submitting
 
 - [ ] Final project name. Flashguard is a placeholder.
-- [ ] **Which of Restack / CodeSupply / ELFA.** Read all three on 3 September.
+- [x] Programme: Restack (ELFA gone; chosen over CodeSupply on 3 September).
 - [ ] Requested amount and person-month estimate.
 - [ ] Applicant entity. Must be EU-anchored; a Prague address is fine for NLnet.
-- [ ] Data licence: CC0 or CC-BY-SA-4.0.
-- [ ] Public repository URL for Q1 and Q2. See `schedule.md`.
-- [ ] Confirm exact form fields when the call opens.
+- [x] Data licence: CC0 (`data/LICENSE`).
+- [x] Public repository URL: <https://github.com/ranaji10/flashguard>.
+- [x] Form fields: two free-text boxes (`grant/nlnet-findings-2026-09-03.md`).
+- [ ] Disclose AI use in the proposal text, and say why it was necessary (NLnet's rule,
+      `grant/nlnet-findings-2026-09-03.md`, §5).
