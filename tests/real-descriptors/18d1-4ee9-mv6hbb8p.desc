@@ -1,0 +1,27 @@
+#!expect=adb
+#!ground_truth=tester_identified
+#!device=OnePlus Nord CE 3 Lite 5G
+#!route=browser
+#!captured=2026-10-13T09:29:00.838Z
+
+=== WEBUSB READ  2026-10-13T09:29:00.838Z ===
+
+  manufacturer      OnePlus
+  product           SM6375-QRD _SN:<stripped>
+  idVendor          0x18d1
+  idProduct         0x4ee9
+  deviceClass       0x00
+  usb version       2.0
+
+  configuration 1
+    interface 0 alt 0   class 1  subclass 1  protocol 0
+    interface 1 alt 0   class 1  subclass 3  protocol 0
+    interface 2 alt 0   class 255  subclass 66  protocol 1
+
+  --- the fields classify.sh uses ---
+  all interface classes   0x01 0x01 0xff
+  class/sub/proto         1/1/0, 1/3/0, 255/66/1
+  ADB interface (255/66/1)      yes
+  fastboot interface (255/66/3) no
+
+  Compare against tests/real-descriptors/18d1-4ee9-*.desc

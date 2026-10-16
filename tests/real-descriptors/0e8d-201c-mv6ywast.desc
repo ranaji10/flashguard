@@ -1,0 +1,25 @@
+#!expect=adb
+#!ground_truth=tester_identified
+#!device=unihertz-titan-pocket
+#!route=browser
+#!captured=2026-10-13T17:41:13.515Z
+
+=== WEBUSB READ  2026-10-13T17:41:13.515Z ===
+
+  manufacturer      Unihertz
+  product           Titan pocket
+  idVendor          0x0e8d
+  idProduct         0x201c
+  deviceClass       0x00
+  usb version       2.1
+
+  configuration 1
+    interface 0 alt 0   class 255  subclass 66  protocol 1
+
+  --- the fields classify.sh uses ---
+  all interface classes   0xff
+  class/sub/proto         255/66/1
+  ADB interface (255/66/1)      yes
+  fastboot interface (255/66/3) no
+
+  Compare against tests/real-descriptors/0e8d-201c-*.desc

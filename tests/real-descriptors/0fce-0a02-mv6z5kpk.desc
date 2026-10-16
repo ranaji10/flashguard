@@ -1,0 +1,30 @@
+#!expect=
+#!note=17 Oct: #!expect=adb was stamped by the kit from the device category, the same kit
+#!note=defect found on 8 Oct and still present in kit 2026-10-08. This descriptor has no ADB
+#!note=interface (255/66/1), so the label was wrong, not the classifier. Blanked rather than
+#!note=guessed: the USB mode was not established by a human at capture time.
+#!ground_truth=tester_identified
+#!device=sony-xperia-xa2
+#!route=browser
+#!captured=2026-10-13T17:48:26.264Z
+
+=== WEBUSB READ  2026-10-13T17:48:26.264Z ===
+
+  manufacturer      Sony
+  product           Xperia XA2
+  idVendor          0x0fce
+  idProduct         0x0a02
+  deviceClass       0x00
+  usb version       2.0
+
+  configuration 1
+    interface 0 alt 0   class 224  subclass 1  protocol 3
+    interface 1 alt 0   class 10  subclass 0  protocol 0
+
+  --- the fields classify.sh uses ---
+  all interface classes   0xe0 0x0a
+  class/sub/proto         224/1/3, 10/0/0
+  ADB interface (255/66/1)      no
+  fastboot interface (255/66/3) no
+
+  Compare against tests/real-descriptors/0fce-0a02-*.desc

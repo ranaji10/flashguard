@@ -1,0 +1,27 @@
+#!expect=adb
+#!ground_truth=tester_identified
+#!device=Nokia 7 plus
+#!route=browser
+#!captured=2026-10-13T18:54:06.416Z
+
+=== WEBUSB READ  2026-10-13T18:54:06.416Z ===
+
+  manufacturer      HMD Global
+  product           Nokia 7 plus
+  idVendor          0x2e04
+  idProduct         0xc026
+  deviceClass       0x00
+  usb version       2.0
+
+  configuration 1
+    interface 0 alt 0   class 255  subclass 255  protocol 0
+    interface 1 alt 0   class 8  subclass 6  protocol 80
+    interface 2 alt 0   class 255  subclass 66  protocol 1
+
+  --- the fields classify.sh uses ---
+  all interface classes   0xff 0x08 0xff
+  class/sub/proto         255/255/0, 8/6/80, 255/66/1
+  ADB interface (255/66/1)      yes
+  fastboot interface (255/66/3) no
+
+  Compare against tests/real-descriptors/2e04-c026-*.desc

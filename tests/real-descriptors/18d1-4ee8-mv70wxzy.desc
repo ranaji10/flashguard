@@ -1,0 +1,28 @@
+#!expect=adb
+#!ground_truth=tester_identified
+#!device=Doogee X96 Pro
+#!route=browser
+#!captured=2026-10-13T18:37:42.814Z
+
+=== WEBUSB READ  2026-10-13T18:37:42.814Z ===
+
+  manufacturer      DOOGEE
+  product           X96Pro
+  idVendor          0x18d1
+  idProduct         0x4ee8
+  deviceClass       0x00
+  usb version       2.0
+
+  configuration 1
+    interface 0 alt 0   class 255  subclass 66  protocol 1
+    interface 1 alt 0   class 255  subclass 0  protocol 0
+    interface 2 alt 0   class 255  subclass 0  protocol 0
+    interface 3 alt 0   class 255  subclass 0  protocol 0
+
+  --- the fields classify.sh uses ---
+  all interface classes   0xff 0xff 0xff 0xff
+  class/sub/proto         255/66/1, 255/0/0, 255/0/0, 255/0/0
+  ADB interface (255/66/1)      yes
+  fastboot interface (255/66/3) no
+
+  Compare against tests/real-descriptors/18d1-4ee8-*.desc

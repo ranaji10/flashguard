@@ -1,0 +1,29 @@
+#!expect=
+#!note=17 Oct: #!expect=adb was stamped by the kit from the device category, the same kit
+#!note=defect found on 8 Oct and still present in kit 2026-10-08. This descriptor has no ADB
+#!note=interface (255/66/1), so the label was wrong, not the classifier. Blanked rather than
+#!note=guessed: the USB mode was not established by a human at capture time.
+#!ground_truth=tester_identified
+#!device=Motorola egde 30 ultra
+#!route=browser
+#!captured=2026-10-13T09:21:00.439Z
+
+=== WEBUSB READ  2026-10-13T09:21:00.439Z ===
+
+  manufacturer      motorola
+  product           motorola edge 30 ultra
+  idVendor          0x22b8
+  idProduct         0x2e82
+  deviceClass       0x00
+  usb version       2.1
+
+  configuration 1
+    interface 0 alt 0   class 255  subclass 255  protocol 0
+
+  --- the fields classify.sh uses ---
+  all interface classes   0xff
+  class/sub/proto         255/255/0
+  ADB interface (255/66/1)      no
+  fastboot interface (255/66/3) no
+
+  Compare against tests/real-descriptors/22b8-2e82-*.desc
