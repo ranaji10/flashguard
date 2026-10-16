@@ -458,7 +458,7 @@ function scrLoop(){
   [].slice.call(c.querySelectorAll(".pick")).forEach(function(b){
     b.addEventListener("click",function(){
       var d=DEVICES.filter(function(x){return x.k===b.getAttribute("data-k");})[0];
-      cur={ dev:d, name:"", mode:"default", cap:null, android:null, android_raw:null, idsrc:null, descText:null, capture_route:"browser", browser_enumeration:"not_attempted" };
+      cur={ dev:d, name:"", mode:"default", hasAdb:null, adbMissing:false, cap:null, android:null, android_raw:null, idsrc:null, descText:null, capture_route:"browser", browser_enumeration:"not_attempted" };
       t0=Date.now();
       scrIdentify();
     });
@@ -662,8 +662,12 @@ function scrWebUSB(){
     navigator.usb.requestDevice({filters:[]}).then(function(d){
       return d.open().then(function(){ return d; }).catch(function(){ return d; });
     }).then(function(d){
-      var desc = buildWebUsbDescriptor(d, cur, descriptorExpect(cur.dev, cur.debugOn), cur.idsrc);
-      cur.descText = desc.text;
+      var desc = buildWebUsbDescriptor(d, cur, "", cur.idsrc);
+      cur.hasAdb = desc.hasAdb;
+      var dnote = descriptorNote(cur.dev, cur.debugOn, desc.hasAdb);
+      cur.descText = desc.text.replace(/^#!expect=.*$/m,
+        "#!expect=" + descriptorExpect(cur.dev, cur.debugOn, desc.hasAdb) + (dnote ? "\n#!note=" + dnote : ""));
+      cur.adbMissing = dnote !== "";
       var devClass = browserDeviceClass(d.vendorId, desc, cur.dev);
 
       var descFilename = desc.vendorId.slice(2) + "-" + desc.productId.slice(2) + "-" + Date.now().toString(36) + ".desc";
@@ -688,17 +692,17 @@ function scrWebUSB(){
 
   c.querySelector("#ansNotListed").addEventListener("click",function(){
     cur.browser_enumeration = "not_listed";
-    cur.cap = cur.cap || { usb_vendor_id: "unknown", usb_product_id: "unknown", device_class: (cur.dev.expect || "unknown"), usb_interface_class: "unknown" };
+    cur.cap = cur.cap || unreadCap(cur.dev);
     onNextStep();
   });
   c.querySelector("#ansCancelled").addEventListener("click",function(){
     cur.browser_enumeration = "tester_cancelled";
-    cur.cap = cur.cap || { usb_vendor_id: "unknown", usb_product_id: "unknown", device_class: (cur.dev.expect || "unknown"), usb_interface_class: "unknown" };
+    cur.cap = cur.cap || unreadCap(cur.dev);
     onNextStep();
   });
   c.querySelector("#skip").addEventListener("click",function(){
     cur.browser_enumeration = "not_attempted";
-    cur.cap = cur.cap || { usb_vendor_id: "unknown", usb_product_id: "unknown", device_class: (cur.dev.expect || "unknown"), usb_interface_class: "unknown" };
+    cur.cap = cur.cap || unreadCap(cur.dev);
     onNextStep();
   });
 }
@@ -850,13 +854,44 @@ function browserDeviceClass(vendorId, desc, dev){
 
 /* TESTABLE:descriptorExpect */
 /* The #!expect header is an assertion the classifier is tested against. For a phone it
-   is only "adb" when the tester said debugging is on; otherwise there is no assertion.
-   Three descriptors on 4 Oct carried expect=adb from the category alone. */
-function descriptorExpect(dev, debugOn){
-  if (dev && dev.phone) return debugOn === true ? "adb" : "";
+   is only "adb" when the tester said debugging is on AND this read shows an ADB
+   interface (255/66/1); otherwise there is no assertion.
+   Three descriptors on 4 Oct carried expect=adb from the category alone. Two on 13 Oct
+   carried it from the tester's answer while the port showed tethering or a vendor
+   interface: the answer was true of the settings screen, not of the port at that moment. */
+function descriptorExpect(dev, debugOn, hasAdb){
+  if (dev && dev.phone) return (debugOn === true && hasAdb === true) ? "adb" : "";
   return (dev && dev.expect) || "";
 }
 /* END TESTABLE:descriptorExpect */
+
+/* TESTABLE:descriptorNote */
+/* When the tester and the port disagree, keep the disagreement as evidence, not as an
+   assertion. */
+function descriptorNote(dev, debugOn, hasAdb){
+  if (dev && dev.phone && debugOn === true && hasAdb !== true)
+    return "tester said USB debugging was on; this read showed no ADB interface (255/66/1), so no class is asserted";
+  return "";
+}
+/* END TESTABLE:descriptorNote */
+
+/* Shown before the terminal step when the browser read found no debugging connection.
+   On 13 Oct, 13 of 37 records were empty retries where the script found no phone. */
+function adbMissingWarning(){
+  if(!cur || !cur.adbMissing) return "";
+  return '<div class="why hot"><b>The phone did not offer a debugging connection on that read</b>'+
+    'Before running the script: unlock the phone, look for the <b>Allow USB debugging?</b> prompt'+
+    ' and accept it, and set the USB mode to <b>File transfer</b> (not tethering). If the script'+
+    ' still finds no phone, unplug and replug the cable, or try another cable or port.</div>';
+}
+
+/* TESTABLE:unreadCap */
+/* A device the browser did not read has no class. Until 17 Oct this was filled in from
+   the category, so a phone that was never read was recorded as adb. */
+function unreadCap(dev){
+  return { usb_vendor_id: "unknown", usb_product_id: "unknown", device_class: "unknown", usb_interface_class: "unknown" };
+}
+/* END TESTABLE:unreadCap */
 
 /* ---------- Step 2 (Bash path): 02-android.sh ---------- */
 function scrAndroidBash(route, platform){
@@ -865,6 +900,7 @@ function scrAndroidBash(route, platform){
   '<div class="card">'+
     '<p class="kicker">Android fingerprint · step 2 <span class="where">Terminal</span></p>'+
     '<h1>Run the fingerprint script</h1>'+
+    adbMissingWarning()+
     '<p>Queries the allowlisted properties read-only and outputs a <code>BENCH_CAPTURE</code> line.</p>'+
     (plat === "ubuntu_live" ? "" : terminalHowTo(plat))+
     '<div class="cmd"><pre>bash 02-android.sh</pre><button class="copy" type="button">Copy</button></div>'+
@@ -920,6 +956,7 @@ function scrAndroidRaw(platform, shell){
   '<div class="card">'+
     '<p class="kicker">Android fingerprint · step 2 <span class="where">' + esc(shellName) + '</span></p>'+
     '<h1>Run this command block, then paste output</h1>'+
+    adbMissingWarning()+
     '<p>Queries the allowlisted properties read-only in ' + esc(shellName) + '. Paste the verbatim terminal output below.</p>'+
     terminalHowTo("windows", sh)+
     '<div class="cmd"><pre>' + esc(rawCmd) + '</pre><button class="copy" type="button">Copy</button></div>'+
@@ -1024,7 +1061,8 @@ function sameDeviceAgain(cur, rec){
 
 /* ---------- confirm ---------- */
 function scrConfirm(){
-  var cap=cur.cap||{}, got=cap.device_class||"unknown", exp=cur.dev.expect;
+  var cap=cur.cap||{}, got=cap.device_class||"unknown",
+      exp=cur.dev.phone ? descriptorExpect(cur.dev, cur.debugOn, cur.hasAdb) : cur.dev.expect;
   var agree=(!exp||got===exp), a=cur.android;
   var rows='<dt>class</dt><dd>'+esc(got)+(cap.classifier_confidence!=null?' <span style="color:var(--ink-faint)">conf '+esc(cap.classifier_confidence)+'</span>':'')+'</dd>'+
            '<dt>usb id</dt><dd>'+esc(cap.usb_vendor_id||"?")+":"+esc(cap.usb_product_id||"?")+'</dd>'+
@@ -1223,7 +1261,7 @@ function saveRecord(correct,cls,name,mode,note){
       content: cur.descText,
       device: rec.reported_device,
       route: "browser",
-      expect: descriptorExpect(cur.dev, cur.debugOn),
+      expect: descriptorExpect(cur.dev, cur.debugOn, cur.hasAdb),
       ground_truth: cur.idsrc || "unidentified",
       captured: new Date().toISOString()
     });

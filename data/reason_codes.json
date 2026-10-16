@@ -32,6 +32,11 @@
   },
   "codes": [
     {
+      "match": "match-partition_scheme-inferred-single",
+      "kind": "passed",
+      "plain": "The phone shows none of the three markers every A/B phone carries, and it runs the maker's own Android 8 or later, so its storage is read as a single set of partitions. That is what this recipe expects."
+    },
+    {
       "match": "match-*",
       "kind": "passed",
       "plain": "This matches the recipe."
@@ -55,6 +60,11 @@
       "match": "partition-scheme-mismatch",
       "kind": "unsafe",
       "plain": "The recipe expects a different storage layout than this phone has."
+    },
+    {
+      "match": "partition-scheme-mismatch-inferred",
+      "kind": "unsafe",
+      "plain": "The phone shows none of the three markers every A/B phone carries, and it runs the maker's own Android 8 or later, so its storage is read as a single set of partitions. This recipe is written for a phone with A/B slots."
     },
     {
       "match": "asset-product_device-mismatch",

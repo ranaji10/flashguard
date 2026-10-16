@@ -5,7 +5,7 @@ the test cases the verifier is measured against. They live in two folders:
 
 - `data/recipes/`: five recipes in the first format (v0.1), kept unchanged as evidence of
   what that format could not express (see `docs/reasoning/verdict-gap.md`).
-- `data/recipes-v0.2/`: ten recipes in the current formats (v0.2 and v0.3), which also
+- `data/recipes-v0.2/`: thirteen recipes in the current formats (v0.2 and v0.3), which also
   carry each recipe's prerequisites and the public sources for the device's model codes.
 
 The format is described in `docs/reasoning/recipe-format.md`, with the v0.3 additions in
@@ -30,20 +30,31 @@ see. How often they differ is reported as the "information loss" rate.
 | `fp3-unlock-independent-facts.json` | Fairphone 3 (`FP3`) | 0.1 | unsafe | cannot-verify |
 | `fp4-independent-facts.json` | Fairphone 4 (`FP4`) | 0.1 | unsafe | cannot-verify |
 | `kirin-unlock-independent-facts.json` | Sony Xperia 10 (`kirin`) | 0.1 | unsafe | cannot-verify |
-| `a52sxq.json` | Samsung Galaxy A52s 5G (`a52sxq`) | 0.3 | safe | cannot-verify |
+| `a52sxq.json` | Samsung Galaxy A52s 5G (`a52sxq`) | 0.3 | safe | not-ready |
+| `alioth.json` | POCO F3 (`alioth`), from LineageOS | 0.3 | not-ready | not-ready |
+| `alioth-oai.json` | POCO F3 (`alioth`), from OpenAndroidInstaller | 0.3 | unsafe | unsafe |
 | `a5xelte.json` | Samsung Galaxy A5 (2016) (`a5xelte`) | 0.2 | cannot-verify | cannot-verify |
 | `avicii.json` | OnePlus Nord (`avicii`) | 0.2 | safe | cannot-verify |
 | `fajita.json` | OnePlus 6T (`fajita`) | 0.3 | safe | not-ready |
+| `figo.json` | Huawei P smart (`figo`) | 0.3 | cannot-verify | not-ready |
 | `fp3.json` | Fairphone 3 (`FP3`) | 0.2 | unsafe | cannot-verify |
 | `fp4.json` | Fairphone 4 (`FP4`) | 0.2 | unsafe | cannot-verify |
 | `kirin.json` | Sony Xperia 10 (`kirin`) | 0.2 | unsafe | cannot-verify |
 | `larry.json` | OnePlus Nord CE 3 Lite (`larry`) | 0.3 | safe | safe |
 | `spacewar.json` | Nothing Phone (1) (`Spacewar`) | 0.2 | safe | safe |
-| `star2lte.json` | Samsung Galaxy S9+ (`star2lte`) | 0.3 | safe | cannot-verify |
+| `star2lte.json` | Samsung Galaxy S9+ (`star2lte`) | 0.3 | safe | not-ready |
 
 The expected verdict describes the recipe on its own. What the verifier actually answers
 also depends on the phone it is checked against: for example, `larry` and `spacewar` return
 `not-ready` against the real captured phones, because their bootloaders are locked.
+
+**Added 17 October 2026.** `alioth-oai.json` is the first recipe expected to return `unsafe`:
+OpenAndroidInstaller's config calls the POCO F3 a single-layout phone, while the phone reports
+virtual A/B and LineageOS agrees with the phone. `figo.json` keeps a gap on record: the verifier
+says not-ready (unlock first), but LineageOS states that no official unlock method exists for
+this phone. `a52sxq` and `star2lte` moved from cannot-verify to not-ready through the layout
+absence rule (`docs/reasoning/layout-absence-rule.md`). The labels of all three new recipes
+rest on public sources only, like those of 8 October.
 
 **Label review.** Most v0.2 labels were set with the help of an AI coding assistant, in the
 same sitting as the verifier change they test. The labels of the three recipes added on

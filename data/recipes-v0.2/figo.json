@@ -1,0 +1,67 @@
+{
+  "expected_verdict": "not-ready",
+  "expected_verdict_reason": "The captured FIG-LX1 runs stock EMUI on Android 9, user build with release-keys, and reports none of the three A/B markers, so the 17 Oct absence rule reads it as single, as LineageOS lists it (recovery partition, no is_ab_device). The model is listed upstream. The bootloader reports locked, which the recipe needs unlocked.",
+  "human_assessment": "cannot-verify",
+  "install_method": "fastboot_huawei",
+  "operations": [
+    {
+      "declared_by": "recovery_partition_name",
+      "kind": "write-image",
+      "partition": "recovery"
+    }
+  ],
+  "prerequisites": {
+    "bootloader_state": {
+      "declared_by": "unlock_bootloader",
+      "required": "unlocked",
+      "source_evidence": "LineageOS figo: an official method of unlocking the bootloader is not available; the phone reports its state in ro.boot.flash.locked (the captured FIG-LX1 reports 1, locked)",
+      "state": "OPEN",
+      "unlock_class": "out_of_band",
+      "unlock_method": "huawei_unlock_code",
+      "unlock_readback": "device",
+      "unlock_step": true
+    }
+  },
+  "recipe_id": "figo-recovery-v1",
+  "schema_version": "0.3",
+  "source": {
+    "authored": "independent",
+    "consulted": "2026-10-17",
+    "device_facts_from": "https://wiki.lineageos.org/devices/figo/",
+    "upstream_untested": "unestablished"
+  },
+  "source_fields_unused": [
+    "current_branch"
+  ],
+  "target": {
+    "competing_sources": [],
+    "models": [
+      "FIG-LX1",
+      "FIG-LA1",
+      "FIG-LX2",
+      "FIG-LX3",
+      "FIG-TL10",
+      "FIG-AL10"
+    ],
+    "models_sources": [
+      {
+        "consulted": "2026-10-17",
+        "install_method": "fastboot_huawei",
+        "models": [
+          "FIG-LX1",
+          "FIG-LA1",
+          "FIG-LX2",
+          "FIG-LX3",
+          "FIG-TL10",
+          "FIG-AL10"
+        ],
+        "name": "Huawei P Smart",
+        "project": "LineageOS",
+        "url": "https://wiki.lineageos.org/devices/figo/"
+      }
+    ],
+    "partition_scheme": "single",
+    "product_device": "figo"
+  },
+  "verdict_gap_reason": "LineageOS's figo page states that no official bootloader unlock method is available for this phone. not-ready tells the person to unlock first; a person reading the page knows there is no supported way to do so. The format has no way to say an unlock route has been withdrawn by the maker."
+}

@@ -33,6 +33,8 @@ eval(lift("maskSerial"));
 eval(lift("rawProp"));
 eval(lift("browserDeviceClass"));
 eval(lift("descriptorExpect"));
+eval(lift("descriptorNote"));
+eval(lift("unreadCap"));
 
 console.log("\n  sameDeviceAgain");
 {
@@ -387,10 +389,29 @@ console.log("\n  browserDeviceClass: a class the descriptor does not show is nev
 
 console.log("\n  descriptorExpect: a phone's expected class comes from the tester's answer, not the category");
 {
-  is(descriptorExpect({ phone: true, expect: "adb" }, true), "adb", "debugging on: expect adb");
+  is(descriptorExpect({ phone: true, expect: "adb" }, true, true), "adb", "debugging on and ADB interface read: expect adb");
   is(descriptorExpect({ phone: true, expect: "adb" }, false), "", "debugging not on: no assertion");
   is(descriptorExpect({ phone: true, expect: "adb" }, undefined), "", "not asked: no assertion");
   is(descriptorExpect({ expect: "mass_storage" }, undefined), "mass_storage", "non-phone categories unchanged");
+}
+
+console.log("\n  descriptorExpect: the tester's answer is only an assertion when the port agrees (17 Oct)");
+{
+  // 13 Oct: an Xperia XA2 (RNDIS 224/1/3) and an Edge 30 Ultra (255/255/0) were stamped adb
+  // because the tester said debugging was on. Neither read showed an ADB interface.
+  const phone = { phone: true, expect: "adb" };
+  is(descriptorExpect(phone, true, false), "", "said on, no ADB interface on this read: no assertion");
+  is(descriptorExpect(phone, true, true), "adb", "said on, ADB interface present: expect adb");
+  is(descriptorExpect(phone, false, true), "", "said off: no assertion even if ADB shows");
+  is(descriptorNote(phone, true, false) !== "", true, "said on, no ADB interface: the disagreement is noted");
+  is(descriptorNote(phone, true, true), "", "agreement needs no note");
+  is(descriptorNote({ expect: "mass_storage" }, undefined, false), "", "non-phones get no note");
+}
+
+console.log("\n  unreadCap: a device that was not read is unknown, never its category (17 Oct)");
+{
+  is(unreadCap({ phone: true, expect: "adb" }).device_class, "unknown", "phone not read: unknown, not adb");
+  is(unreadCap({ expect: "mass_storage" }).device_class, "unknown", "stick not read: unknown");
 }
 
 console.log("\n  buildAndroidBlock carries the 8 Oct properties, and the kit asks nothing new");

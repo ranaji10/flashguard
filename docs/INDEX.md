@@ -39,6 +39,7 @@ Read before writing the proposal or changing a design.
 | `docs/reasoning/testing-protocol.md` | How defects get caught before a device is plugged in. Pure functions, fixtures, the bash 3.2 rule. |
 | `docs/reasoning/prior-art.md` | OpenAndroidInstaller, LineageOS, postmarketOS. Positioning and corpus sources. |
 | `docs/reasoning/rulings-2026-10-08.md` | Five rulings after round 2: kit unfrozen with twelve more properties, Tier A per layout, custom firmware in scope, model settled from sources and asked only when they cannot, postmarketOS checked. |
+| `docs/reasoning/layout-absence-rule.md` | 17 Oct: stock Android 8+ with none of the three A/B markers is read as single. Scope, evidence against upstream labels, what a false single costs, residual risk. |
 | `docs/reasoning/verifier-readiness-review.md` | The original design review, 26 Aug. **Carries a superseded-in-parts header naming exactly which conclusions were overtaken.** Method still sound; figures and plans are not. |
 
 ## Reference — facts and procedures you look up
@@ -142,6 +143,7 @@ Read before writing the proposal or changing a design.
 | Restack over CodeSupply and ELFA | `grant/nlnet-findings-2026-09-03.md` §2 |
 | No machine learning, and no vocabulary suggesting it | `README.md`, `CLAUDE.md` |
 | Bench kit changes need a written ruling (unfrozen once, 8 October, for one change set) | `docs/reasoning/rulings-2026-10-08.md` |
+| When may the verifier read a layout the phone does not report? | `docs/reasoning/layout-absence-rule.md` |
 | Device owner carries the risk | `docs/reference/participation-note.md` |
 | Tier C, submission endpoint, landing page: not now | `OPEN.md` §8 |
 

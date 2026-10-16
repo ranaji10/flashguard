@@ -189,11 +189,14 @@ class RealRecipes(unittest.TestCase):
     def load(self, name):
         return json.loads((ROOT / "data" / "recipes-v0.2" / name).read_text())
 
-    def test_real_a52s_capture_lists_locked_but_cannot_say_not_ready(self):
+    def test_real_a52s_capture_is_not_ready_through_the_absence_rule(self):
+        # Until 17 Oct this phone was cannot-verify: it reports no layout property. The layout
+        # absence rule (docs/reasoning/layout-absence-rule.md) reads stock Android 8+ with no
+        # A/B marker as single, so the locked bootloader now decides it.
         rec = [json.loads(l) for l in MATRIX() if '"a52sxq"' in l][0]
         res = verify(rec["detected"]["android"], self.load("a52sxq.json"))
-        self.assertEqual(res["verdict"], "cannot-verify")
-        self.assertIn("missing-partition_scheme", codes(res))
+        self.assertEqual(res["verdict"], "not-ready")
+        self.assertIn("match-partition_scheme-inferred-single", codes(res))
         self.assertIn("prerequisite-bootloader_state-mismatch", codes(res))
 
     def test_a52s_that_reports_its_layout_is_not_ready_while_locked(self):

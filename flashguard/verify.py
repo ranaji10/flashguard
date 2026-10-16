@@ -61,6 +61,40 @@ def _parse_version(val):
 _EMPTY = (None, "", "unknown", "not_applicable", "not_recorded")
 
 
+# Ruled 17 Oct 2026 (docs/reasoning/layout-absence-rule.md). No Android property says
+# "single". A/B phones say A/B through three independent markers: ro.build.ab_update (written
+# by the build system whenever AB_OTA_UPDATER is set), ro.boot.slot_suffix (passed by the
+# bootloader on every A/B boot) and, for virtual A/B, ro.virtual_ab.enabled. derive.sh writes
+# _ABSENT_BASIS only when it queried all three and all three were empty. Within the scope
+# below, that absence is read as single. Outside it the verifier abstains as before.
+_ABSENT_BASIS = "no ab_update, no slot_suffix, no virtual_ab -- absent is not the same as single"
+_ABSENCE_MIN_SDK = 26
+
+
+def _inferred_single(fingerprint):
+    """True when the absence rule reads this phone's layout as single."""
+    if fingerprint.get("partition_scheme") not in _EMPTY:
+        return False
+    if fingerprint.get("partition_basis") != _ABSENT_BASIS:
+        return False
+    if fingerprint.get("slot_suffix") not in _EMPTY:
+        return False
+    if fingerprint.get("firmware_origin") != "stock":
+        return False
+    try:
+        if int(str(fingerprint.get("sdk")).strip()) < _ABSENCE_MIN_SDK:
+            return False
+    except (TypeError, ValueError):
+        return False
+    build_type = fingerprint.get("build_type")
+    build_tags = fingerprint.get("build_tags")
+    fingerprint_text = str(fingerprint.get("build_fingerprint") or "")
+    if build_type in _EMPTY or build_tags in _EMPTY:
+        # Captures before kit 2026-10-08 did not read these; the fingerprint carries both.
+        return fingerprint_text.endswith(":user/release-keys")
+    return build_type == "user" and build_tags == "release-keys"
+
+
 def _public_model_source(sources):
     """True when at least one entry names an https URL on a domain in the vocabulary.
 
@@ -497,8 +531,23 @@ def _verify_v2_inner(fingerprint, recipe, ctx):
     observed_scheme = fingerprint.get("partition_scheme")
     fields_consumed.append("partition_scheme")
     expected_scheme = target.get("partition_scheme")
+    inferred_fields = ["partition_scheme", "partition_basis", "slot_suffix", "firmware_origin", "sdk",
+                       "build_type", "build_tags", "build_fingerprint", "target.partition_scheme"]
 
-    if observed_scheme in (None, "", "unknown", "not_applicable"):
+    if observed_scheme in _EMPTY and _inferred_single(fingerprint):
+        fields_consumed.extend(inferred_fields[1:-1])
+        if expected_scheme == "single":
+            reasons.append(
+                _reason("match-partition_scheme-inferred-single", "pass", inferred_fields,
+                        "Stock firmware on Android 8 or later shows none of the three A/B markers, so the layout is read as single, which the recipe expects.")
+            )
+        else:
+            reasons.append(
+                _reason("partition-scheme-mismatch-inferred", "fail", inferred_fields,
+                        "Stock firmware on Android 8 or later shows none of the three A/B markers, so the layout is read as single; the recipe expects slots.")
+            )
+            identity_mismatch = True
+    elif observed_scheme in (None, "", "unknown", "not_applicable"):
         reasons.append(
             _reason("missing-partition_scheme", "abstain", ["partition_scheme"], "Required fingerprint evidence is absent or unknown.")
         )

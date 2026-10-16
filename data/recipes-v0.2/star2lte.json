@@ -1,6 +1,6 @@
 {
-  "expected_verdict": "cannot-verify",
-  "expected_verdict_reason": "The captured SM-G965F reports no partition layout property, so the verifier abstains. It also reports a locked bootloader, listed as unmet.",
+  "expected_verdict": "not-ready",
+  "expected_verdict_reason": "The captured SM-G965F (stock Android 10, release-keys fingerprint) reports none of the three A/B markers, so the 17 Oct absence rule reads its layout as single, which matches the recipe and LineageOS. It reports a locked bootloader, which the recipe needs unlocked: right recipe, phone not ready.",
   "verdict_gap_reason": "An SM-G965F on Android 10 stock firmware, bootloader unlocked through download mode, satisfies every precondition the LineageOS star2lte page states before recovery is written.",
   "human_assessment": "safe",
   "install_method": "samloader_rs",

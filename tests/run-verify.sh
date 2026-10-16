@@ -10,8 +10,11 @@ if [ ! -f "$ROOT/flashguard/verify.py" ]; then
   exit 2
 fi
 
-python3 "$HERE/test_verify_contract.py"
-python3 "$HERE/test_verdict_gap.py"
-python3 "$HERE/test_verify_v2.py"
-python3 "$HERE/test_false_safe_gate.py"
-python3 "$HERE/test_verdict_v03.py"
+# Until 17 Oct only the last line's result reached all.sh: a failure in any earlier file
+# was printed and then ignored. Each file now fails the run on its own.
+fail=0
+for t in test_verify_contract.py test_verdict_gap.py test_verify_v2.py test_false_safe_gate.py \
+         test_verdict_v03.py test_rulings_2026_10_08.py test_absence_rule_2026_10_17.py; do
+  python3 "$HERE/$t" || { echo "  FAIL in $t"; fail=1; }
+done
+exit $fail

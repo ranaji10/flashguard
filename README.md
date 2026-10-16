@@ -1,9 +1,12 @@
 # Flashguard
 
-Flashguard checks whether a set of instructions for reinstalling software on a phone or
+Flashguard checks whether a set of instructions for reinstalling an OS on a phone or
 tablet (a **provisioning recipe**) is safe for one specific device, **before anyone runs
-it**. You give it a description of the device (a **fingerprint**) and a recipe. It gives
-back one of four answers:
+it**. You plug a device into a computer and a read-only kit reads its parameters (a
+**fingerprint**): the USB description through a web browser, and the Android properties
+through one terminal command. Flashguard compares that fingerprint with a recipe written from
+the device configurations that public projects publish (LineageOS, OpenAndroidInstaller,
+postmarketOS) and gives back one of four answers:
 
 - **safe**: the recipe fits this device, and the device is ready for it.
 - **not-ready**: the recipe fits this device, but the device is not ready yet, for example
@@ -50,16 +53,40 @@ For a map of every document, see `docs/INDEX.md`.
 ## Where things stand
 
 - A working verifier (`flashguard/verify.py`) that reads recipe formats v0.1 to v0.3.
-- Fifteen test recipes for ten real phone models, in `data/recipes/` and
+- Eighteen test recipes for twelve real phone models, in `data/recipes/` and
   `data/recipes-v0.2/`.
 - Device fingerprints collected at volunteer test sessions, in `data/device-matrix.jsonl`.
 - So far, no false "safe" answers. Most answers are still cannot-verify. That is expected
   at this stage: the verifier holds back whenever a device does not report what it needs,
   or when no phone of that model has been captured yet.
-- Still open: no test recipe is expected to return `unsafe` yet. Three recent labels rest on
-  public sources only, by choice (see `data/recipes/README.md`).
+- One test recipe is expected to return `unsafe`, and does: an OpenAndroidInstaller
+  configuration that calls the POCO F3 a single-layout phone, while the phone itself reports
+  A/B slots. Six recent labels rest on public sources only, by choice (see
+  `data/recipes/README.md`).
 
 The numbers change as data comes in. To see the current ones, run `python3 data/coverage.py`.
+
+### What the October test sessions showed
+
+Fifteen volunteers have read 40 distinct Android phones, from a 2011 Sony Ericsson to
+a 2025 Pixel. Three findings shape the verifier:
+
+- **Bootloader lock state is readable on every phone running Android 8 or later** (24 of 24),
+  and on only 3 of 16 older ones. What counts is the Android version the phone runs now, not
+  the one it shipped with: a Galaxy S8 launched on Android 7 and updated to 9 reports it.
+- **A/B storage layout is reported directly** by every phone that has it, and agrees with
+  LineageOS each time the two can be compared. **No property ever reports a single
+  layout.** Since 17 October the verifier reads a single layout from the absence of all three
+  A/B markers, only on the maker's own firmware on Android 8 or later
+  (`docs/reasoning/layout-absence-rule.md`). Everywhere else it still answers cannot-verify.
+- **Upstream data can be wrong, and the phone catches it.** One upstream configuration
+  describes the POCO F3 as single-layout. The phone reports A/B, so the recipe built from that
+  configuration is answered `unsafe`. This is why a layout the phone reports always wins over
+  an inferred one.
+
+Reading a phone is the weakest step. In one session, 13 of 37 attempts were retries where the
+browser saw the phone but the terminal command could not reach it. The kit now warns the
+tester before the terminal step when the browser read shows no debugging connection.
 
 Only read-only work happens in this repository: detecting and describing devices (Tier A)
 and checking recipes in simulation (Tier B). Running a recipe on real hardware (Tier C) is
@@ -158,9 +185,14 @@ How this was kept under control:
 - Assistants are blocked from running commands that could harm a device
   (`.claude/settings.json`).
 
-**Copyright and terms of use.** When using a code assistant, check the assistant's terms of
-use, and make sure its outputs are not reconstructed from copyrighted sources. In this
-project, third-party material (other projects' files, papers) is kept in a separate local
+**Copyright and terms of use.** Under Anthropic's Consumer Terms (as read on 17 October
+2026), Anthropic assigns to the user whatever rights it has in Claude's outputs, including
+code, and makes no promise that outputs are original, accurate or free of others' rights.
+The code Claude wrote here was written for this project from its own specifications and tests;
+no file from another project was copied in, but a language model cannot prove that no line it
+writes resembles existing code, which is one reason every change is reviewed and tested. The
+code in this repository can be used freely under its licence (GPL-3.0-or-later), and the data
+under CC0; that includes the parts an assistant wrote. In this project, third-party material (other projects' files, papers) is kept in a separate local
 folder that is never committed. The scripts that study upstream projects count and classify
 their files without copying their text into this repository (`data/survey_upstream.py`).
 Test recipes are written independently from facts about each device, and each one records

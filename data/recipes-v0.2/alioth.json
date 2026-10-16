@@ -1,0 +1,95 @@
+{
+  "expected_verdict": "not-ready",
+  "expected_verdict_reason": "The captured M2012K11AG reports virtual A/B, matching LineageOS's is_ab_device: true, and its model is listed for variant 1 only. It runs Android 15, where the LineageOS page requires the HyperOS 1.0 (Android 13) firmware for this variant, and its bootloader is locked. Right recipe, phone not ready: two conditions unmet.",
+  "human_assessment": "not-ready",
+  "install_method": "fastboot_xiaomi_hyperos",
+  "operations": [
+    {
+      "declared_by": "before_recovery_install.partitions",
+      "kind": "write-image",
+      "partition": "boot"
+    },
+    {
+      "declared_by": "before_recovery_install.partitions",
+      "kind": "write-image",
+      "partition": "dtbo"
+    },
+    {
+      "declared_by": "recovery_partition_name",
+      "kind": "boot-recovery",
+      "partition": "vendor_boot"
+    }
+  ],
+  "prerequisites": {
+    "android_version": {
+      "compare": "exact_major",
+      "declared_by": "before_install_device_variants",
+      "required": "13",
+      "source_evidence": "LineageOS alioth variant 1 lists HyperOS OS1.0.x.TKH firmware for every POCO F3 region; the TKH builds are Android 13",
+      "state": "OPEN"
+    },
+    "bootloader_state": {
+      "declared_by": "unlock_bootloader",
+      "required": "unlocked",
+      "source_evidence": "Xiaomi unlock through the vendor's account-bound unlock tool and waiting period; the phone reports the result in ro.boot.flash.locked (the captured M2012K11AG reports 1, locked)",
+      "state": "OPEN",
+      "unlock_class": "out_of_band",
+      "unlock_method": "xiaomi_unlock_tool",
+      "unlock_readback": "device",
+      "unlock_step": true
+    }
+  },
+  "recipe_id": "alioth-lineage-v1",
+  "schema_version": "0.3",
+  "source": {
+    "authored": "independent",
+    "consulted": "2026-10-17",
+    "device_facts_from": "https://wiki.lineageos.org/devices/alioth/variant1/",
+    "upstream_untested": "unestablished"
+  },
+  "source_fields_unused": [
+    "before_lineage_install",
+    "firmware_update"
+  ],
+  "target": {
+    "competing_sources": [
+      {
+        "consulted": "2026-10-17",
+        "install_method": "fastboot_xiaomi_hyperos",
+        "models": [
+          "M2012K11AC"
+        ],
+        "name": "Redmi K40",
+        "project": "LineageOS",
+        "url": "https://wiki.lineageos.org/devices/alioth/variant2/"
+      },
+      {
+        "consulted": "2026-10-17",
+        "install_method": "fastboot_xiaomi_hyperos",
+        "models": [
+          "M2012K11AI"
+        ],
+        "name": "Mi 11X",
+        "project": "LineageOS",
+        "url": "https://wiki.lineageos.org/devices/alioth/variant3/"
+      }
+    ],
+    "models": [
+      "M2012K11AG"
+    ],
+    "models_sources": [
+      {
+        "consulted": "2026-10-17",
+        "install_method": "fastboot_xiaomi_hyperos",
+        "models": [
+          "M2012K11AG"
+        ],
+        "name": "POCO F3",
+        "project": "LineageOS",
+        "url": "https://wiki.lineageos.org/devices/alioth/variant1/"
+      }
+    ],
+    "partition_scheme": "A/B",
+    "product_device": "alioth"
+  }
+}

@@ -575,6 +575,11 @@ def tier_a_gate(records, androids, all_runs):
     if per["single"]:
         info("single, reported by the phone, all seven", len(per["single"]))
     info("layout not reported, the other six fields", len(per["unreported"]))
+    if per["unreported"]:
+        # Ruled 17 Oct 2026: docs/reasoning/layout-absence-rule.md.
+        from flashguard.verify import _inferred_single
+        inferred = [r for r in per["unreported"] if _inferred_single(r["detected"]["android"])]
+        info("  of which read as single (absence rule)", len(inferred))
     row(len(complete) >= 10, "distinct phones complete for their layout", len(complete), 10)
     if len(complete_all) > len(complete):
         print("        (%d records; repeat reads of an unchanged phone count once)" % len(complete_all))
@@ -582,8 +587,9 @@ def tier_a_gate(records, androids, all_runs):
     row(not wrong, "non-android classified correctly", len(ground_truth) - len(wrong), len(ground_truth))
     row(false_safe == 0, "false safes (must be zero)", false_safe, 0)
     if per["unreported"]:
-        print("\n    Phones whose layout is not reported are complete for Tier A, but the verifier")
-        print("    abstains on every recipe for them until a phone can show it has a single layout.")
+        print("\n    Phones whose layout is not reported are complete for Tier A. The verifier reads")
+        print("    those on stock Android 8 or later with no A/B marker as single, and abstains on")
+        print("    the layout of the rest (docs/reasoning/layout-absence-rule.md).")
 
     if unverifiable:
         print("\n    %d non-android record(s) carry no independent identity, so they" % unverifiable)
