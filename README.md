@@ -77,8 +77,8 @@ a 2025 Pixel. Three findings shape the verifier:
 - **A/B storage layout is reported directly** by every phone that has it, and agrees with
   LineageOS each time the two can be compared. **No property ever reports a single
   layout.** Since 17 October the verifier reads a single layout from the absence of all three
-  A/B markers, only on the maker's own firmware on Android 8 or later
-  (`docs/reasoning/layout-absence-rule.md`). Everywhere else it still answers cannot-verify.
+  A/B markers, only on the maker's own release firmware (`docs/reasoning/layout-absence-rule.md`).
+  On custom firmware it still answers cannot-verify.
 - **Upstream data can be wrong, and the phone catches it.** One upstream configuration
   describes the POCO F3 as single-layout. The phone reports A/B, so the recipe built from that
   configuration is answered `unsafe`. This is why a layout the phone reports always wins over

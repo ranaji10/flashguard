@@ -19,8 +19,9 @@ Applicant: Ranaji Deb, sole applicant, in his own name.
 The pure verifier at `flashguard/verify.py` reads recipe formats v0.1 to v0.3 and returns
 one of four verdicts (`docs/reasoning/verdict-contract.md`). Eighteen recipes exist: five in
 format v0.1 under `data/recipes/`, kept as evidence, and thirteen under `data/recipes-v0.2/`.
-Since 17 October the verifier reads an unreported layout as single on stock Android 8+ when
-all three A/B markers are absent (`docs/reasoning/layout-absence-rule.md`).
+Since 17 October the verifier reads an unreported layout as single on stock release firmware
+when all three A/B markers are absent (`docs/reasoning/layout-absence-rule.md`), and a recipe
+may mark an unlock route `withdrawn_by_maker` (`docs/reasoning/recipe-format.md`).
 For current numbers run `python3 data/coverage.py`; on 11 October 2026 it reported zero
 false safes in 24 runs and 2 of 7 paired recipes decided. Format v0.1 has no defensible
 `safe` case; see `docs/reasoning/safe-case.md`.

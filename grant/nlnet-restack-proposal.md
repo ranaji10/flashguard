@@ -14,14 +14,15 @@
   the order of operations (milestone M2 in `schedule.md`).
 - Corpus: 18 recipes for 12 phone models, each with two labels and a written reason. One is
   expected `unsafe`: an upstream configuration that calls an A/B phone single-layout.
-- Results: 0 false safes across 30 runs; decided on 8 of 11 distinct phone-and-recipe
+- Results: 0 false safes across 30 runs; decided on 7 of 11 distinct phone-and-recipe
   pairings (as of 17 October 2026; this figure moves as data comes in).
 - Device matrix: 81 records from 15 testers, 40 distinct Android phones; 12 phones with all
   seven verifier fields, 14 more complete for their storage layout.
 - Testing finding: lock state is readable on every phone running Android 8 or later (24 of
   24). A/B layout is reported directly; a single layout never is, so since 17 October the
-  verifier reads it from the absence of all three A/B markers on stock Android 8+ only
-  (`docs/reasoning/layout-absence-rule.md`).
+  verifier reads it from the absence of all three A/B markers on stock release firmware only
+  (`docs/reasoning/layout-absence-rule.md`). A recipe can now say that the maker has withdrawn
+  every official unlock route; the verifier then answers cannot-verify instead of "unlock first".
 - Public repository: <https://github.com/ranaji10/flashguard>.
 
 **Fund:** Restack (Open Internet Stack) · **Form:** <https://nlnet.nl/propose/>

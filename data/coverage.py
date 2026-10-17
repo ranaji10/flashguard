@@ -588,7 +588,7 @@ def tier_a_gate(records, androids, all_runs):
     row(false_safe == 0, "false safes (must be zero)", false_safe, 0)
     if per["unreported"]:
         print("\n    Phones whose layout is not reported are complete for Tier A. The verifier reads")
-        print("    those on stock Android 8 or later with no A/B marker as single, and abstains on")
+        print("    those on stock release firmware with no A/B marker as single, and abstains on")
         print("    the layout of the rest (docs/reasoning/layout-absence-rule.md).")
 
     if unverifiable:

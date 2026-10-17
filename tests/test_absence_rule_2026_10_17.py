@@ -5,9 +5,9 @@ See docs/reasoning/layout-absence-rule.md.
 
 No Android property ever says "this phone has one set of partitions". A/B phones say so
 positively, through three independent markers. The rule: on stock firmware (user build,
-release-keys) running Android 8 or later, when all three markers were queried and all three
-are empty, the verifier reads the layout as single. Anywhere outside that scope it abstains
-exactly as before.
+release-keys), when all three markers were queried and all three are empty, the verifier reads
+the layout as single. Until the evening of 17 Oct this applied from Android 8 only; it was
+widened to every Android version. Anywhere outside that scope it abstains exactly as before.
 """
 import copy
 import json
@@ -47,6 +47,13 @@ def run(**changes):
     return verify(fp, copy.deepcopy(RECIPE))
 
 
+def widen_recipe():
+    # The A52s recipe also pins Android 13 or 14; drop that so only the layout is under test.
+    r = copy.deepcopy(RECIPE)
+    r["prerequisites"].pop("android_version", None)
+    return r
+
+
 def layout_reason(result):
     hits = [r for r in result["reasons"] if "partition" in r["code"]]
     assert len(hits) == 1, hits
@@ -70,8 +77,19 @@ class AbsenceRule(unittest.TestCase):
         self.assertEqual(r["code"], "partition-scheme-mismatch-inferred")
         self.assertEqual(res["verdict"], "unsafe")
 
-    def test_below_android_8_abstains(self):
-        self.assertEqual(layout_reason(run(sdk="25", android_version="7.1.2"))["code"], "missing-partition_scheme")
+    def test_android_7_reads_as_single(self):
+        # Widened 17 Oct: a stock 7.x A/B phone (the first Pixels) carries the markers like any later one.
+        res = verify(dict(A52S, sdk="24", android_version="7.0"), widen_recipe())
+        self.assertEqual(layout_reason(res)["code"], "match-partition_scheme-inferred-single")
+
+    def test_android_6_and_older_read_as_single(self):
+        # AOSP's A/B platform code is public from Android 7.1; older stock firmware had none to carry.
+        for sdk, ver in (("23", "6.0.1"), ("16", "4.1.2"), ("10", "2.3.5")):
+            res = verify(dict(A52S, sdk=sdk, android_version=ver), widen_recipe())
+            self.assertEqual(layout_reason(res)["code"], "match-partition_scheme-inferred-single", sdk)
+
+    def test_an_unreadable_android_version_abstains(self):
+        self.assertEqual(layout_reason(run(sdk="unknown"))["code"], "missing-partition_scheme")
 
     def test_custom_firmware_abstains(self):
         self.assertEqual(layout_reason(run(firmware_origin="custom"))["code"], "missing-partition_scheme")
@@ -86,6 +104,13 @@ class AbsenceRule(unittest.TestCase):
     def test_markers_not_queried_abstains(self):
         # "unknown" basis means the properties were never read, not that they were empty.
         self.assertEqual(layout_reason(run(partition_basis="unknown"))["code"], "missing-partition_scheme")
+
+    def test_a_read_from_a_shell_on_the_phone_abstains(self):
+        # device_shell records carry their own basis: an app may not see every marker.
+        basis = ("read from a shell on the phone itself (device_shell); no ab_update, no slot_suffix, "
+                 "no virtual_ab seen, but whether an app can see every A/B marker is not established, "
+                 "so absence is not used")
+        self.assertEqual(layout_reason(run(partition_basis=basis))["code"], "missing-partition_scheme")
 
     def test_any_slot_suffix_blocks_the_inference(self):
         self.assertEqual(layout_reason(run(slot_suffix="_a"))["code"], "missing-partition_scheme")

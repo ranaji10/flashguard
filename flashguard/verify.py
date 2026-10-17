@@ -68,7 +68,6 @@ _EMPTY = (None, "", "unknown", "not_applicable", "not_recorded")
 # _ABSENT_BASIS only when it queried all three and all three were empty. Within the scope
 # below, that absence is read as single. Outside it the verifier abstains as before.
 _ABSENT_BASIS = "no ab_update, no slot_suffix, no virtual_ab -- absent is not the same as single"
-_ABSENCE_MIN_SDK = 26
 
 
 def _inferred_single(fingerprint):
@@ -81,9 +80,12 @@ def _inferred_single(fingerprint):
         return False
     if fingerprint.get("firmware_origin") != "stock":
         return False
+    # Widened the same evening from Android 8+ to every version. AOSP's A/B FAQ: the platform
+    # code is "public in Android 7.1 and higher", and the first A/B phones were the Pixel and
+    # Pixel XL of October 2016. Older stock firmware had no public A/B to carry. The SDK must
+    # still be readable, as evidence that the phone's properties were read.
     try:
-        if int(str(fingerprint.get("sdk")).strip()) < _ABSENCE_MIN_SDK:
-            return False
+        int(str(fingerprint.get("sdk")).strip())
     except (TypeError, ValueError):
         return False
     build_type = fingerprint.get("build_type")
@@ -213,8 +215,9 @@ def _validate_recipe(recipe):
             for req in prerequisites.values():
                 if isinstance(req, dict) and (
                     "unlock_readback" in req or "requirement" in req or req.get("compare") == "one_of"
+                    or "unlock_route" in req
                 ):
-                    return "Invalid recipe: a v0.2 recipe uses a v0.3 field (unlock_readback, requirement or one_of)."
+                    return "Invalid recipe: a v0.2 recipe uses a v0.3 field (unlock_readback, requirement, one_of or unlock_route)."
         for operation in operations:
             if not isinstance(operation, dict) or any(field not in operation for field in ("kind", "partition")):
                 return "Invalid recipe: every v0.2 operation needs kind and partition."
@@ -539,12 +542,12 @@ def _verify_v2_inner(fingerprint, recipe, ctx):
         if expected_scheme == "single":
             reasons.append(
                 _reason("match-partition_scheme-inferred-single", "pass", inferred_fields,
-                        "Stock firmware on Android 8 or later shows none of the three A/B markers, so the layout is read as single, which the recipe expects.")
+                        "Stock firmware shows none of the three A/B markers, so the layout is read as single, which the recipe expects.")
             )
         else:
             reasons.append(
                 _reason("partition-scheme-mismatch-inferred", "fail", inferred_fields,
-                        "Stock firmware on Android 8 or later shows none of the three A/B markers, so the layout is read as single; the recipe expects slots.")
+                        "Stock firmware shows none of the three A/B markers, so the layout is read as single; the recipe expects slots.")
             )
             identity_mismatch = True
     elif observed_scheme in (None, "", "unknown", "not_applicable"):
@@ -924,6 +927,20 @@ def _verify_v2_inner(fingerprint, recipe, ctx):
             )
             continue
 
+        # Ruled 17 Oct 2026: some makers withdrew every official unlock route. The recipe says so
+        # with unlock_route; absent means available. An unknown value is never read as available.
+        unlock_route = requirement.get("unlock_route") if isinstance(requirement, dict) else None
+        if unlock_route is not None and unlock_route not in _VOCABULARY.get("unlock_route_values", []):
+            reasons.append(
+                _reason(
+                    "unlock-route-unrecognized",
+                    "abstain",
+                    ["prerequisites." + name],
+                    f"Prerequisite '{name}' has unrecognized unlock_route: {unlock_route!r}.",
+                )
+            )
+            continue
+
         required = requirement.get("required") if isinstance(requirement, dict) else None
         compare = requirement.get("compare") if isinstance(requirement, dict) else None
         is_numeric_or_version_req = _is_numeric_or_version(required)
@@ -977,6 +994,19 @@ def _verify_v2_inner(fingerprint, recipe, ctx):
                     "abstain",
                     [name, "prerequisites." + name],
                     "Required prerequisite fingerprint evidence is missing.",
+                )
+            )
+            continue
+
+        if unlock_route == "withdrawn_by_maker" and observed != required:
+            # not-ready would say "unlock first", and there is no official way to. A phone that
+            # already reports the required state is compared as usual below.
+            reasons.append(
+                _reason(
+                    "unlock-route-withdrawn",
+                    "abstain",
+                    [name, "prerequisites." + name],
+                    f"Prerequisite '{name}' is unmet, and the maker no longer offers an official way to meet it.",
                 )
             )
             continue

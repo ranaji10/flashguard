@@ -68,7 +68,7 @@ This is uncomputed state, not `"unknown"` (which is a final assertion that a fie
   },
   "host_platform": "macos | windows | ubuntu_live | ubuntu_installed | linux_other | not_stated",
   "host_shell": "powershell | cmd | unknown | not_applicable",
-  "capture_route": "browser | adb_host | linux_live",
+  "capture_route": "browser | adb_host | linux_live | device_shell",
   "browser_enumeration": "enumerated | not_listed | tester_cancelled | not_attempted",
   "browser_enumeration_source": "tester | not_applicable",
   "browser_enumeration_context": "Mozilla/5.0 ... (userAgent and OS string)",
@@ -175,7 +175,15 @@ are refused by `merge.py` until derivation has been executed via `derive.sh` on 
 **`capture_route`** New in 0.4, added 6 September after the delivery platform was decided.
 How this record/capture was obtained: `browser` (step 1 via WebUSB in the browser, no install),
 `adb_host` (step 2 run from the tester's own operating system via adb), or `linux_live`
-(the bench kit on an Ubuntu session with root and a clean USB baseline).
+(the bench kit on an Ubuntu session with root and a clean USB baseline), or `device_shell`
+(added 17 October: the kit's allowlisted property loop run in a terminal on the phone itself,
+because adb could not reach it; the kit does not offer this route, a maintainer records it).
+
+A `device_shell` read runs as an app, not as the adb shell user, and whether an app can see
+every A/B marker is not established. Such a record therefore never carries the exact
+"no ab_update, no slot_suffix, no virtual_ab" basis that the layout absence rule reads
+(`docs/reasoning/layout-absence-rule.md`): its `partition_basis` says where the read came from,
+and the verifier abstains on its layout.
 
 This exists because **the matrix is being collected under conditions the product will not
 have.** `sudo lsusb -v` on a live Linux session sees more than a browser does. A record

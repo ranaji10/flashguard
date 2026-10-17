@@ -221,6 +221,9 @@ console.log("\n  host_platform, host_shell, capture_route, browser_enumeration &
   // Reverse assertion: every value declared in schema was found in HTML or is explicitly listed as unwritten
   const UNWRITTEN_VALUES = {
     // Values declared in schema that this HTML file is not expected to write directly, with one-line reason
+    capture_route: {
+      device_shell: "recorded by a maintainer when the allowlisted loop was run on the phone itself; the kit does not offer this route (17 Oct)"
+    }
   };
 
   for (const field of COVERED_SCHEMA_FIELDS) {

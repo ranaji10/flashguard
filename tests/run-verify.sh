@@ -14,7 +14,8 @@ fi
 # was printed and then ignored. Each file now fails the run on its own.
 fail=0
 for t in test_verify_contract.py test_verdict_gap.py test_verify_v2.py test_false_safe_gate.py \
-         test_verdict_v03.py test_rulings_2026_10_08.py test_absence_rule_2026_10_17.py; do
+         test_verdict_v03.py test_rulings_2026_10_08.py test_absence_rule_2026_10_17.py \
+         test_unlock_route_withdrawn.py; do
   python3 "$HERE/$t" || { echo "  FAIL in $t"; fail=1; }
 done
 exit $fail

@@ -34,7 +34,7 @@
     {
       "match": "match-partition_scheme-inferred-single",
       "kind": "passed",
-      "plain": "The phone shows none of the three markers every A/B phone carries, and it runs the maker's own Android 8 or later, so its storage is read as a single set of partitions. That is what this recipe expects."
+      "plain": "The phone shows none of the three markers every A/B phone carries, and it runs the maker's own firmware, so its storage is read as a single set of partitions. That is what this recipe expects."
     },
     {
       "match": "match-*",
@@ -64,7 +64,7 @@
     {
       "match": "partition-scheme-mismatch-inferred",
       "kind": "unsafe",
-      "plain": "The phone shows none of the three markers every A/B phone carries, and it runs the maker's own Android 8 or later, so its storage is read as a single set of partitions. This recipe is written for a phone with A/B slots."
+      "plain": "The phone shows none of the three markers every A/B phone carries, and it runs the maker's own firmware, so its storage is read as a single set of partitions. This recipe is written for a phone with A/B slots."
     },
     {
       "match": "asset-product_device-mismatch",
@@ -162,6 +162,11 @@
       "plain": "The source says this phone needs no unlock step. The tool records that and does not rely on it yet."
     },
     {
+      "match": "unlock-route-withdrawn",
+      "kind": "honest",
+      "plain": "The recipe needs the bootloader unlocked, this phone reports it locked, and the maker no longer offers any official way to unlock it. Unofficial methods exist for some phones; this tool does not judge them."
+    },
+    {
       "match": "recipe-untested-upstream",
       "kind": "honest",
       "plain": "The project that published this recipe says it was never tried on a real phone."
@@ -210,6 +215,11 @@
       "match": "unlock-readback-unrecognized",
       "kind": "our_gap",
       "plain": "The recipe describes its unlock step in a way the tool cannot read."
+    },
+    {
+      "match": "unlock-route-unrecognized",
+      "kind": "our_gap",
+      "plain": "The recipe says whether an unlock route exists in a way the tool cannot read."
     },
     {
       "match": "unlock-requirement-unrecognized",

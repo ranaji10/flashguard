@@ -1,6 +1,6 @@
 {
   "expected_verdict": "cannot-verify",
-  "expected_verdict_reason": "The OEM unlock toggle happens in a phone menu and the A5 (2016) reports neither its lock state nor its partition layout, so the verifier abstains for honest reasons.",
+  "expected_verdict_reason": "The OEM unlock toggle happens in a phone menu and the A5 (2016) does not report its lock state, so the verifier abstains for an honest reason. Since 17 October its layout is read as single by the absence rule (stock Android 7.0, release-keys, no A/B marker), which matches the recipe; the unlock alone keeps it at cannot-verify.",
   "human_assessment": "cannot-verify",
   "install_method": "heimdall_flash_recovery",
   "operations": [

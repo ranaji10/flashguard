@@ -86,6 +86,15 @@ operation with no classified unlock prerequisite abstains with `unlock-undeclare
 In format v0.3 an `out_of_band` unlock may add `unlock_readback: "device"` when the phone
 reports the result; see `data/schema.md`, "Recipe format v0.3".
 
+Also in v0.3 (added 17 October 2026), an unlock prerequisite may carry `unlock_route`, one of
+`available` (the same as leaving it out) or `withdrawn_by_maker`, for phones whose maker no
+longer offers any official unlock (LineageOS says so of the Huawei P smart, `figo`). When the
+phone reports the required state is unmet and the route is withdrawn, the verifier answers
+`cannot-verify` with `unlock-route-withdrawn` instead of `not-ready`, because "unlock first"
+would send the person after something that does not exist. A phone that already reports the
+required state is checked as usual. Any other value abstains with `unlock-route-unrecognized`.
+Held by `tests/test_unlock_route_withdrawn.py`.
+
 The `prerequisites` key has three distinct meanings: absent means the author did
 not record whether prerequisites were considered; `{}` means the author declares
 that none are needed; and `null` is invalid because the authoring state is not
