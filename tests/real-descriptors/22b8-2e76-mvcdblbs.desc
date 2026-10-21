@@ -1,0 +1,26 @@
+#!expect=adb
+#!ground_truth=tester_identified
+#!device=motorola edge 50 fusion
+#!route=browser
+#!captured=2026-10-17T12:23:52.502Z
+
+=== WEBUSB READ  2026-10-17T12:23:52.502Z ===
+
+  manufacturer      motorola
+  product           motorola edge 50 fusion
+  idVendor          0x22b8
+  idProduct         0x2e76
+  deviceClass       0x00
+  usb version       2.1
+
+  configuration 1
+    interface 0 alt 0   class 255  subclass 255  protocol 0
+    interface 1 alt 0   class 255  subclass 66  protocol 1
+
+  --- the fields classify.sh uses ---
+  all interface classes   0xff 0xff
+  class/sub/proto         255/255/0, 255/66/1
+  ADB interface (255/66/1)      yes
+  fastboot interface (255/66/3) no
+
+  Compare against tests/real-descriptors/22b8-2e76-*.desc
