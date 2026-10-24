@@ -1,12 +1,13 @@
 # NLnet / Restack (Open Internet Stack) — Proposal Working Document
 
 > **Working notes, not the submission.** The final answers are being written separately by
-> the applicant, in his own words, as NLnet asks. This file keeps the facts and reasoning to
+> the applicant, in his own words, as NLnet asks (`grant/proposal_ranaji.md`, with the
+> milestones and costing in `grant/milestones.md`). This file keeps the facts and reasoning to
 > draw on. The call is open; the live form has two free-text boxes rather than seven
 > questions (`grant/nlnet-findings-2026-09-03.md`), so the Q1 to Q7 headings below are kept
 > as a checklist of what to cover.
 
-## Where things stand, 17 October 2026
+## Where things stand, 24 October 2026
 
 - Verifier: `flashguard/verify.py`, a pure function returning one of four verdicts (safe,
   not-ready, unsafe, cannot-verify) with reasons, evidence and scope. It checks identity
@@ -15,11 +16,11 @@
 - Corpus: 18 recipes for 12 phone models, each with two labels and a written reason. One is
   expected `unsafe`: an upstream configuration that calls an A/B phone single-layout.
 - Results: 0 false safes across 30 runs; decided on 7 of 11 distinct phone-and-recipe
-  pairings (as of 17 October 2026; this figure moves as data comes in).
-- Device matrix: 81 records from 15 testers, 40 distinct Android phones; 12 phones with all
+  pairings (as of 24 October 2026; this figure moves as data comes in).
+- Device matrix: 83 records from 16 testers, 42 distinct Android phones; 14 phones with all
   seven verifier fields, 14 more complete for their storage layout.
-- Testing finding: lock state is readable on every phone running Android 8 or later (24 of
-  24). A/B layout is reported directly; a single layout never is, so since 17 October the
+- Testing finding: lock state is readable on every phone running Android 8 or later (26 of
+  26). A/B layout is reported directly; a single layout never is, so since 17 October the
   verifier reads it from the absence of all three A/B markers on stock release firmware only
   (`docs/reasoning/layout-absence-rule.md`). A recipe can now say that the maker has withdrawn
   every official unlock route; the verifier then answers cannot-verify instead of "unlock first".
@@ -41,6 +42,7 @@ title for the wider ambition beyond the grant and is deliberately absent from th
 | 2026-08-26 | v0.2 | Prior-art scan folded in. Q5 rebuilt around OpenAndroidInstaller and fwupd/LVFS. Two-corpus validation plan added to Q1 and Q4. Evaluation design and the false-safe metric added to Q1 and Q6. /e/OS codename case added to Q6. Data ethics added to Q7. Schedule split into `schedule.md`. |
 | 2026-09-24 | v0.3 | Q6 gains challenge 6: how a corpus label is made and checked, so the corpus reads as method rather than one person's view. Four verdicts (not-ready added). |
 | 2026-10-11 | v0.4 | Facts brought up to date: status block, four verdicts in Q1, state machine marked as planned, repository URL, data licence and programme choice settled, tester path now browser-first. Final answers move to the applicant's own document. |
+| 2026-10-24 | v0.5 | Status block and Q1 corpus figures refreshed after the 17 October sessions (83 records, 16 testers, 42 phones). Points to `grant/proposal_ranaji.md` and `grant/milestones.md`. |
 
 Mark edited sections with `<!-- edited vNN -->` when revising.
 
@@ -99,8 +101,8 @@ bootloader state today; modelling the order of flashing steps, to catch sequence
 leave a device unbootable, is planned work (M2). Verification is a pure function with no device I/O, so the verifier
 structurally cannot damage what it inspects.
 
-Validation runs on two corpora, deliberately separated (today 15 recipes and 37 device
-records; the targets are in `schedule.md`). **Recipe coverage**: real provisioning recipes
+Validation runs on two corpora, deliberately separated (on 24 October 2026, 18 recipes and
+83 device records; the targets are in `schedule.md`). **Recipe coverage**: real provisioning recipes
 drawn from published, openly licensed sources including
 OpenAndroidInstaller's per-device configurations. **Device coverage**: tens of physically
 fingerprinted devices from a volunteer tester network, contributing the read-only device

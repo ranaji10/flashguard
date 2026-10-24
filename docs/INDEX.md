@@ -2,7 +2,8 @@
 
 *The map from "we decided that" to "it is written here". `tests/check-index.sh` fails the
 build if any path below does not exist, and fails if a file under `docs/` is missing from
-this index — so a document cannot quietly become an orphan.*
+this index (private, gitignored files excepted, and the index may not name them) — so a
+document cannot quietly become an orphan.*
 
 **Why this exists.** On 6 September an audit found eleven things that had been decided in
 conversation and written into no file at all, plus three files claiming to cover work they
@@ -19,8 +20,8 @@ exist. Nothing checked, so nothing caught it.
 | What is the verifier supposed to do? | `docs/reasoning/verdict-contract.md` |
 | What counts as done, and what is it measured against? | `docs/reasoning/verifier-plan.md` |
 | Why does it abstain where a human says unsafe? | `docs/reasoning/verdict-gap.md` |
-| What is outstanding? | `OPEN.md`, generated from `docs/tracker/open-items.html` |
-| Which copy of the tracker wins? | `docs/reference/sync-protocol.md` |
+| Where do things stand, in plain words? | `README.md` |
+| What is known to be missing, on purpose? | "Known gaps" at the end of this file |
 
 ## Reasoning — why things are the way they are
 
@@ -30,7 +31,7 @@ Read before writing the proposal or changing a design.
 |---|---|
 | `docs/reasoning/verdict-contract.md` | The verifier specification. safe / not-ready / unsafe / cannot-verify, and what each means. |
 | `docs/reasoning/verifier-plan.md` | Fingerprint vs corpus vs verifier, done criteria, the paired metric, what false-safe is measured against. |
-| `docs/reasoning/recipe-format.md` | The JSON recipe shape (v0.1 and the v0.2 prerequisite addition) and why it is declarative. v0.3 additions are in the 8 October rulings. |
+| `docs/reasoning/recipe-format.md` | The JSON recipe shape (v0.1 and the v0.2 prerequisite addition) and why it is declarative. v0.3 additions: the 8 October rulings, and `unlock_route` (17 October). |
 | `docs/reasoning/safe-case.md` | Why v0.1 has no defensible safe case and the minimum semantic addition needed for v0.2. |
 | `docs/reasoning/recipe-format-findings.md` | Five independent translations from OpenAndroidInstaller configs and the gaps they expose. |
 | `docs/reasoning/recipe-format-coverage.md` | Per-project coverage of every v0.1 recipe field and source fields with no v0.1 place. |
@@ -39,7 +40,7 @@ Read before writing the proposal or changing a design.
 | `docs/reasoning/testing-protocol.md` | How defects get caught before a device is plugged in. Pure functions, fixtures, the bash 3.2 rule. |
 | `docs/reasoning/prior-art.md` | OpenAndroidInstaller, LineageOS, postmarketOS. Positioning and corpus sources. |
 | `docs/reasoning/rulings-2026-10-08.md` | Five rulings after round 2: kit unfrozen with twelve more properties, Tier A per layout, custom firmware in scope, model settled from sources and asked only when they cannot, postmarketOS checked. |
-| `docs/reasoning/layout-absence-rule.md` | 17 Oct: stock Android 8+ with none of the three A/B markers is read as single. Scope, evidence against upstream labels, what a false single costs, residual risk. |
+| `docs/reasoning/layout-absence-rule.md` | 17 Oct: the maker's own release firmware with none of the three A/B markers is read as single (any Android version since the same evening). Scope, evidence against upstream labels, what a false single costs, residual risk. |
 | `docs/reasoning/verifier-readiness-review.md` | The original design review, 26 Aug. **Carries a superseded-in-parts header naming exactly which conclusions were overtaken.** Method still sound; figures and plans are not. |
 
 ## Reference — facts and procedures you look up
@@ -50,25 +51,36 @@ Read before writing the proposal or changing a design.
 | `docs/reference/participation-note.md` | What testers agree to. Canonical copy; `bench-kit/participation-note.md` must match it byte for byte. |
 | `docs/reference/handoff.md` | How to hand work between VS Code and a Claude session, and how open-items provenance is tracked. |
 | `docs/reference/review-workflow.md` | Every command of the review ritual in order, what each one prints, and why the reviewer is never given a summary. |
-| `docs/reference/upstream-contacts.md` | Who to approach at the three upstream projects, how, and why they would care. **Names not yet researched.** |
+| `docs/reference/upstream-contacts.md` | Who to approach at the three upstream projects, how, and why they would care; the questions sent and the answers received. |
 | `docs/reference/tier-a-bench-protocol.md` | The Tier A protocol in full. |
 | `docs/reference/device-test-kit.md` | Kit design notes. |
 | `docs/reference/runs/bench-run-2026-08-29.md` | Run 1. The MTP/PTP defect. |
 | `docs/reference/runs/bench-run-2026-08-30.md` | Run 2. First fingerprints, the controlled comparison, four defects, `cdc_modem`. |
 | `docs/reference/runs/tester-attrition.md` | Devices that could not be captured, and the schema gap that exposed. |
-| `docs/open-items-snapshot.md` | Copy of `OPEN.md` inside the repo. Generated. |
-| `docs/reference/sync-protocol.md` | The two copies of the tracker, which one wins, and what the word "sync" means to Copilot and to a Claude session. |
+| `docs/reference/sync-protocol.md` | How the maintainers' open-items tracker is kept in step, and what the word "sync" means to Copilot and to a Claude session. The tracker itself is private and not in this repository. |
 | `docs/reference/testing-runbook.md` | Organiser runbook for tester invitations, the hackerspace evening, remote wave, file intake and withdrawal. |
 | `docs/reference/form-consent-text.md` | Exact consent and privacy text for the Google Form return upload. |
 | `docs/reference/review-log.md` | What each blind review found, and whether it was ever fixed. Ticked by hand only. |
-| `docs/tracker/open-items.html` | **The tracker itself.** Double-click to open. Published copy lives at claude.ai; same source, two copies. |
 
 ## Grant
 
 | File | Holds |
 |---|---|
-| `grant/nlnet-restack-proposal.md` | Working notes and facts for the proposal, with a dated status block. The final answers are written separately by the applicant. |
-| `grant/schedule.md` | What exists before the grant, and milestones M1 to M5 with externally checkable criteria (rewritten 11 October). Costing deliberately blank. |
+| `grant/proposal_ranaji.md` | **The proposal**: NLnet's questions and the applicant's own answers. |
+| `grant/milestones.md` | **The milestones and costing** as submitted: what each payment is for and how it is checked. |
+| `grant/schedule.md` | An AI-generated milestone plan (11 October; "before the grant" figures refreshed 24 October), each milestone with an externally checkable criterion. Kept for transparency. |
+| `grant/nlnet-restack-proposal.md` | An AI-generated working draft and fact sheet, with a dated status block. Not used to write the proposal; kept for transparency. |
+| `grant/work-log-2026-09-13.md` | What was actually done, 26 Aug to 13 Sep, with commits and numbers. Source material for the proposal, **not** the proposal. |
+| `grant/nlnet-findings-2026-09-03.md` | The open call, verified against the live pages. Programme choice, form, scoring weights, AI rules. |
+| `grant/_drafts/README.md` | Where superseded long-form answers go. Not `library/`. |
+
+## Research: the three upstream projects
+
+Studies of LineageOS, OpenAndroidInstaller and postmarketOS, written by research helpers that
+could only write into `docs/Research/`. Figures carry the date of their clone.
+
+| File | Holds |
+|---|---|
 | `docs/Research/OAI-config-analysis.md` | OpenAndroidInstaller config structure: exact-string device codes, schema-enforced `is_ab_device`, a machine-readable `untested` flag, and no checksums anywhere. |
 | `docs/Research/install-method-classification.md` | All 28 LineageOS install methods classified by what the unlock requires. 303 devices are vendor-gated. Carries an analysis appendix separating verified from assumed. |
 | `docs/Research/TASK-2-install-method-classification.md` | The follow-up research task: classify all 28 install methods by what the unlock requires and whether a device can ever report it. |
@@ -76,8 +88,13 @@ Read before writing the proposal or changing a design.
 | `docs/Research/variant-danger-findings.md` | Task 3 result: cross-flashing across models sharing one codename blows ARB fuses, zeroes IMEIs and corrupts modem NVRAM. 89 codenames have 2-6 upstream pages each. |
 | `docs/Research/reply-to-lineageos-2026-09-15.md` | What to send back to LineageOS after their answer, and the reasoning behind each line of it. |
 | `docs/Research/custom_unlock_cmd-findings.md` | What absence of `custom_unlock_cmd` means in LineageOS, read from the templates. Settles it: the field is a template override, not documentation. |
-| `docs/Research/postmarketos-config-analysis.md` | postmarketOS `deviceinfo`: no unlock field exists anywhere, by design; unlock lives on the wiki. Confirms the 0-of-556 survey number was measuring the right thing. |
+| `docs/Research/postmarketos-config-analysis.md` | postmarketOS `deviceinfo`: no unlock field exists anywhere, by design; unlock lives on the wiki. Confirms that the survey's zero unlock fields measured the right thing (0 of 670 devices on the 23 October 2026 clone). |
 | `docs/Research/cross-distro-upstream-analysis.md` | LineageOS, OpenAndroidInstaller and postmarketOS side by side: codenames match across all three, no shared prerequisite database exists, and no project has a word for browser-invisible. |
+
+## Working records: task briefs for the coding assistant
+
+| File | Holds |
+|---|---|
 | `docs/reference/producer-prompt-2026-09-14-testfix.md` | Second repair: leading whitespace zeroes every field, and two of three shape tests undo their own perturbation. Test the shipped normaliser in node. |
 | `docs/reference/producer-prompt-2026-09-14-repair.md` | Repair task after the blind review: CRLF corrupting two verifier fields, a test that could not fail, pending records claiming seventeen answers. |
 | `docs/reference/producer-prompt-2026-09-15-package.md` | The build task for the merged WebUSB + bench-kit tester file. Decisions already made, and where a producer will be tempted to go wrong. |
@@ -90,10 +107,6 @@ Read before writing the proposal or changing a design.
 | `docs/reference/producer-prompt-2026-09-17-batch6.md` | Batch 6: fix false safe in avicii.json unlock step gating, typed upstream_untested check, bootloader_state recipe prerequisite migration. |
 | `docs/reference/producer-prompt-2026-09-17-batch7.md` | Batch 7: last build before testing. Verifier final (operations require a declared unlock, declared version comparison, gate on human assessment), tester package build with checksums, session intake, testing runbook and form consent text. |
 | `docs/reference/producer-prompt-2026-09-18-batch7.6.md` | Batch 7.6: intake stops refusing the kit's own descriptors, descriptor filenames treated as untrusted, the dry run actually checks privacy, and the kit stops assuming a Linux session for the 22 September evening. |
-| `docs/tracker/pending-2026-09-16.md` | Pending tracker notes from 16 September. |
-| `grant/work-log-2026-09-13.md` | What was actually done, 26 Aug to 13 Sep, with commits and numbers. Source material for the proposal, **not** the proposal. |
-| `grant/nlnet-findings-2026-09-03.md` | The open call, verified against the live pages. Programme choice, form, scoring weights, AI rules. |
-| `grant/_drafts/README.md` | Where superseded long-form answers go. Not `library/`. |
 
 ## Code and data
 
@@ -107,6 +120,8 @@ Read before writing the proposal or changing a design.
 | `data/schema.md` | The record format, v0.4. |
 | `data/merge.py` | Contributions to canonical matrix. Validates, dedupes, reconciles. |
 | `data/coverage.py` | Tier A scoreboard and the paired verifier gate. |
+| `data/claims.json` | Every number the README and the proposal quote, with its date and how to reproduce it. |
+| `tests/check-claims.py` | Fails the build when a listed file quotes a number that disagrees with `data/claims.json`; `--final` recomputes them from the data and the upstream clones. |
 | `data/prerequisite_survey.py` | Pure text-in, record-out classifier for upstream prerequisite evidence. |
 | `data/survey_upstream.py` | Filesystem runner that counts the cloned upstream sources without importing their text. |
 | `data/recipe_format_coverage.py` | Reproducible measurement of v0.1 recipe-field coverage in the cloned upstream records. |
@@ -120,14 +135,17 @@ Read before writing the proposal or changing a design.
 | `tools/confirm-model.py` | Lists the model questions the verifier is asking, and records a person's answer into a confirmations file beside the matrix, which merge.py applies. |
 | `tools/model-sources.py` | Isolates every upstream source for a device from the local clones and files them on a recipe as its own sources and the ones it cannot tell apart from. |
 | `tests/test_rulings_2026_10_08.py` | Holds the five rulings of 8 October. |
+| `tests/test_absence_rule_2026_10_17.py` | Holds the layout absence rule: undo any part of it and a test fails. |
+| `tests/test_unlock_route_withdrawn.py` | Holds `unlock_route: withdrawn_by_maker` (a locked phone whose maker withdrew every unlock route is cannot-verify). |
 | `tools/intake.py` | Session export intake: validation, PII scan, contributions and descriptors writer. |
+| `tools/build-package.sh` | Builds the tester package (`dist/`, not committed) with checksums and a stamped `KIT_VERSION`. `tests/check-package.sh` rebuilds and verifies it. |
 | `tests/check-index.sh` | Enforces this file: dangling paths, unindexed docs, broken editor instruction files, diverged copies. |
 | `tests/check-tracker.sh` | Enforces the tracker: no dead paths, a banner that is not older than the data, and a "what changed" filter that is not silently empty. |
 | `tests/handoff.sh` | Prints the handoff block. Run it before switching tools. |
 | `tests/review-packet.sh` | Builds the packet for a reviewing assistant: suite, diff, and the five questions. |
 | `tests/review-carry.sh` | The SECOND pass: unticked findings from earlier reviews. Never run before the blind answer is in. |
 | `tests/review-log-add.sh` | Files a review into the log with the right heading, keeps the full answer, and refuses a ticked box. |
-| `tests/tracker-export.py` | Regenerates `OPEN.md` and the snapshot from the tracker source. This is what "sync" runs. |
+| `tests/tracker-export.py` | Regenerates the open-items export from the private tracker. Maintainer workflow only; neither file is in this repository. |
 | `.githooks/pre-commit` | Runs the suite before every commit. Enable with `git config core.hooksPath .githooks`. |
 | `tests/check-disputed.sh` | Collects `DISPUTED:` markers — disagreements no test can settle, needing Ranaji's ruling. |
 | `tests/check-public-safe.sh` | What would become public if the repo flipped today. Tracked files only. |
@@ -139,13 +157,13 @@ Read before writing the proposal or changing a design.
 
 | Decision | Written in |
 |---|---|
-| CC0 for data, GPL-3.0-or-later for code | `LICENSE`, `data/LICENSE`, `OPEN.md` |
+| CC0 for data, GPL-3.0-or-later for code | `LICENSE`, `data/LICENSE`, `README.md` |
 | Restack over CodeSupply and ELFA | `grant/nlnet-findings-2026-09-03.md` §2 |
 | No machine learning, and no vocabulary suggesting it | `README.md`, `CLAUDE.md` |
 | Bench kit changes need a written ruling (unfrozen once, 8 October, for one change set) | `docs/reasoning/rulings-2026-10-08.md` |
 | When may the verifier read a layout the phone does not report? | `docs/reasoning/layout-absence-rule.md` |
 | Device owner carries the risk | `docs/reference/participation-note.md` |
-| Tier C, submission endpoint, landing page: not now | `OPEN.md` §8 |
+| Tier C (running a recipe on hardware), submission endpoint, landing page: not now | `README.md`, `CLAUDE.md` (scope guardrail) |
 
 ## Known gaps, on purpose
 
@@ -156,4 +174,5 @@ These are absent and that is recorded rather than forgotten.
   decided share and false-safe count.
 - **The decided-share floor is low on purpose** (`data/coverage-floor.json`). It may only
   go up as the corpus grows.
-- **Costing table** in `grant/schedule.md`, blank until M1 is built and can calibrate it.
+- **Costing** lives in `grant/milestones.md`, written by the applicant. The table in
+  `grant/schedule.md` is left blank on purpose.

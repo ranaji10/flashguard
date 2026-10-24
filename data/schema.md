@@ -129,7 +129,7 @@ all from `derive.sh` except the last row, which is a person's answer to the veri
 | `firmware_origin`, `firmware_basis` | build type and tags, fingerprint, ROM markers | `stock`, `custom`, `unknown`; the basis says which evidence decided it. `firmware_origin_source: backfilled_from_build_fingerprint` marks a value `merge.py` derived for an earlier record. |
 | `build_type`, `build_tags` | `ro.build.type`, `ro.build.tags`, or the fingerprint | verbatim |
 | `first_api_level`, `first_api_source` | `ro.product.first_api_level`, else `ro.board.first_api_level` | API level the phone launched on |
-| `treble_enabled`, `dynamic_partitions` | `ro.treble.enabled`, `ro.boot.dynamic_partitions` | verbatim; not yet used to derive `partition_scheme` |
+| `treble_enabled`, `dynamic_partitions` | `ro.treble.enabled`, `ro.boot.dynamic_partitions` | verbatim; not used to derive `partition_scheme`: round 3 showed both appear on phones with and without A/B (`docs/reasoning/layout-absence-rule.md`) |
 | `build_product`, `product_name` | `ro.build.product`, `ro.product.name` | verbatim |
 | `vendor_device`, `vendor_model` | `ro.product.vendor.device`, `ro.product.vendor.model` | verbatim |
 | `hardware_sku` | `ro.boot.hardware.sku` | verbatim (Motorola XT code) |

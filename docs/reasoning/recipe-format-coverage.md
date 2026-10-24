@@ -62,6 +62,12 @@ the structured count because the recipe schema needs machine-readable input.
 
 ### postmarketOS, denominator 556
 
+> **Re-measured 24 October 2026** with `python3 data/recipe_format_coverage.py` on pmaports
+> `c7940da`: denominator 671 (670 devices plus one test fixture). Structured: identity fields
+> 671, `operations` 560, `target.partition_scheme` and `operations.partition` 144; every
+> asset, label and source-provenance field still 0. The table below is the 8 September
+> measurement on the 2024 clone, kept as recorded.
+
 | v0.1 field | Structured / available | Prose only | Absent / unavailable |
 |---|---:|---:|---:|
 | `schema_version` | 556 / 556 | 0 / 556 | 0 / 556 |

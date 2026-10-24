@@ -90,6 +90,14 @@ its `removed/` subdirectory were excluded from this denominator as removed confi
 The pmaports checkout contains **556 `deviceinfo` files**. Each file is one countable
 device configuration under the unit definition above.
 
+> **Re-measured 24 October 2026** with `python3 data/survey_upstream.py` on pmaports `c7940da`
+> (pulled 23 October). The tables in this section are the 8 September measurement on the
+> 2024 clone and are kept as recorded; 556 there was 555 devices plus one test fixture
+> (`main/devicepkg-dev/testdata/deviceinfo`). Today: 671 `deviceinfo` files, which is
+> **670 devices** plus the same fixture. Unlock prerequisite: still declared by none.
+> Partition scheme or explicit layout: structured in 144. Device identity: all.
+> The proposal quotes 670 (`data/claims.json`).
+
 | Field | Structured | Prose only | Not at all | Denominator |
 |---|---:|---:|---:|---:|
 | unlock prerequisite | 0 | 0 | 556 | 556 |

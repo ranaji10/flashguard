@@ -3,6 +3,11 @@
 *The tracker exists in two places on purpose. This is the rule that stops them lying to
 each other.*
 
+> **The tracker file and its export are private**: `docs/tracker/` and
+> `docs/open-items-snapshot.md` are gitignored because they carry names of people who did not
+> sign up for this repository. Where this page says the file "is in git", read "is on the
+> maintainer's machine". The workflow below is unchanged.
+
 ## The two copies
 
 | | Where | Good for | Cannot |

@@ -3,15 +3,15 @@
 *Written 6 September 2026. The v0.1 verifier exists; this file records what remains
 unproven and what "done" means.*
 
-> **Status, 11 October 2026.** Most of the plan below has happened. The verifier now reads
-> recipe formats v0.1 to v0.3 and can return all four verdicts. There are 15 recipes
+> **Status, 24 October 2026.** Most of the plan below has happened. The verifier now reads
+> recipe formats v0.1 to v0.3 and can return all four verdicts. There are 18 recipes
 > (`data/recipes/`, `data/recipes-v0.2/`); the false-safe gate fails the build
 > (`tests/test_false_safe_gate.py`); and the decided-share floor was set at 20% on
-> 17 September (`data/coverage-floor.json`, which may only go up). Today: 0 false safes in 24
-> runs, 2 of 7 paired recipes decided (29%). Still not done: no corpus recipe is expected to return
-> `unsafe` yet, so the corpus does not exercise that verdict (the "five deliberately unsafe"
-> recipes below), and the ten-config hand-labelling experiment described below has not been
-> written up. The rest of this page
+> 17 September (`data/coverage-floor.json`, which may only go up). Today: 0 false safes in 30
+> runs, 7 of 11 paired recipes decided (64%). One corpus recipe is now expected to return
+> `unsafe` (`alioth-oai.json`, since 17 October), against the "five deliberately unsafe"
+> recipes below. Still not done: the other four, and the ten-config hand-labelling experiment
+> described below has not been written up. The rest of this page
 > is the plan as written on 6 September.
 
 **Read `docs/reasoning/verdict-contract.md` first.** That is the contract; this is the plan

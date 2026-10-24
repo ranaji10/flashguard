@@ -56,10 +56,11 @@ applications like this one are rejected.
 
 ## Current state
 
-The v0.1 pure verifier exists at `flashguard/verify.py`, and five independently authored
-recipes exist under `data/recipes/`. The corpus replay reports five `cannot-verify` results,
-zero decided results, and zero false safes. V0.1 has no defensible `safe` case; see
-`docs/reasoning/safe-case.md`. Do not extend the bench kit unless a tester is blocked.
+The pure verifier at `flashguard/verify.py` reads recipe formats v0.1 to v0.3 and returns
+one of four verdicts. Eighteen recipes live under `data/recipes/` (v0.1, kept as evidence)
+and `data/recipes-v0.2/`. For current numbers run `python3 data/coverage.py`; never quote
+a number that is not in `data/claims.json`. Kit changes need a written ruling
+(`docs/reasoning/rulings-2026-10-08.md`).
 
 ## Nothing is done until a command proves it
 

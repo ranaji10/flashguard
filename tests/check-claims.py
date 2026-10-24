@@ -43,17 +43,61 @@ def live_metrics():
                   and not r.get("pending_confirmation"))
     fs = sum(1 for r in runs if r["verdict"] == "safe"
              and (r.get("human_assessment") != "safe" or r.get("expected") != "safe"))
+
+    # Matrix figures quoted in README.md and the proposal (added 24 October 2026, when the
+    # README's "Fifteen volunteers, 40 phones, 24 of 24" had gone stale with nothing to catch it).
+    # A phone is a distinct model as read: same codename and same board. Two Ubuntu Touch
+    # phones both report the codename halium_arm64, so the codename alone undercounts.
+    phones = {}
+    for r in androids:
+        a = r["detected"].get("android", {})
+        if str(a.get("android_version", "")) in cov.EMPTY:
+            continue
+        phones.setdefault((a.get("product_device"), a.get("board_platform")), []).append(a)
+
+    def sdk(a):
+        try:
+            return int(a.get("sdk"))
+        except (TypeError, ValueError):
+            return None
+
+    def lock_read(reads):
+        return any(str(a.get("bootloader_state", "")) not in cov.EMPTY for a in reads)
+    newer = [v for v in phones.values() if (sdk(v[-1]) or 0) >= 26]
+    older = [v for v in phones.values() if sdk(v[-1]) is not None and sdk(v[-1]) < 26]
+    ab = [v for v in phones.values()
+          if any(a.get("partition_scheme") in cov.LAYOUTS_REPORTED_AB for a in v)]
+    six = [f for f in cov.SEVEN if f != "partition_scheme"]
+    unreported = {cov.state_key(r["detected"]["android"]) for r in androids
+                  if str(r["detected"]["android"].get("partition_scheme", "")) in cov.EMPTY
+                  and all(str(r["detected"]["android"].get(f, "")) not in cov.EMPTY for f in six)}
     return {"distinct_complete_phones": len(complete),
             "decided_distinct_paired": "%d of %d" % (decided, len(paired)),
-            "false_safes": fs}
+            "false_safes": fs,
+            "matrix_records": len(records),
+            "testers": len({r.get("tester") for r in records}),
+            "distinct_android_phones": len(phones),
+            "lock_read_android8": "%d of %d" % (sum(lock_read(v) for v in newer), len(newer)),
+            "lock_read_older": "%d of %d" % (sum(lock_read(v) for v in older), len(older)),
+            "ab_reported_phones": len(ab),
+            "complete_layout_unreported": len(unreported)}
+
+
+# Prose spells small numbers out ("Fifteen volunteers"). Compare them as digits.
+WORDS = {w: str(i) for i, w in enumerate(
+    "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen "
+    "fifteen sixteen seventeen eighteen nineteen twenty".split())}
 
 
 def check_text(text, name, claims, refused):
     problems = []
+    # A number wrapped onto the next line ("decided\n  on 2 of 7") slipped past every pattern
+    # until 24 October 2026, and grant/schedule.md quoted an 11 October figure unnoticed.
+    text = re.sub(r"\s+", " ", text)
     for c in claims:
         for pat in c.get("patterns", []):
             for m in re.finditer(pat, text, re.I):
-                got = m.group(1)
+                got = WORDS.get(m.group(1).lower(), m.group(1))
                 if str(got).replace(",", "") != str(c["value"]):
                     problems.append("%s: says %s for %s, claims.json has %s (as of %s)"
                                     % (name, got, c["id"], c["value"], c["as_of"]))
@@ -71,6 +115,8 @@ def main():
     if "--self-test" in sys.argv:
         planted = [("OpenAndroidInstaller covers 88 devices.", True),
                    ("About 68% of devices are readable.", True),
+                   ("0 false safes across 24 runs, decided\n  on 2 of 7 distinct pairings.", True),
+                   ("Fourteen volunteers have read 40 distinct Android phones.", True),
                    ("OpenAndroidInstaller covers 90 devices, as of 7 September.", False)]
         for text, should_fail in planted:
             if bool(check_text(text, "plant", claims, refused)) != should_fail:

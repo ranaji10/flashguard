@@ -22,15 +22,19 @@ format v0.1 under `data/recipes/`, kept as evidence, and thirteen under `data/re
 Since 17 October the verifier reads an unreported layout as single on stock release firmware
 when all three A/B markers are absent (`docs/reasoning/layout-absence-rule.md`), and a recipe
 may mark an unlock route `withdrawn_by_maker` (`docs/reasoning/recipe-format.md`).
-For current numbers run `python3 data/coverage.py`; on 11 October 2026 it reported zero
-false safes in 24 runs and 2 of 7 paired recipes decided. Format v0.1 has no defensible
+For current numbers run `python3 data/coverage.py`; on 24 October 2026 it reported zero
+false safes in 30 runs and 7 of 11 paired recipes decided. Every number the README and the
+proposal quote is registered in `data/claims.json`; run `python3 tests/check-claims.py --final`
+after new data or an upstream pull. Format v0.1 has no defensible
 `safe` case; see `docs/reasoning/safe-case.md`.
 
 The bench kit was unfrozen on 8 October 2026 for one change set: twelve more
 allowlisted properties and two console fixes. Capture asks the tester nothing new. Custom
 firmware is in scope, and the verifier settles a phone's model from credible public
 sources, asking the person only when those cannot. See
-`docs/reasoning/rulings-2026-10-08.md`. Kit changes beyond that set still need a ruling.
+`docs/reasoning/rulings-2026-10-08.md`. One console fix followed on 17 October under the same
+rulings file (kit 2026-10-17, used by the sessions of that day). Kit changes beyond that still
+need a ruling.
 
 ## Scope guardrail
 

@@ -1,6 +1,7 @@
 # Milestones
 
-*Rewritten 11 October 2026 from the state of the repository on that day. The first version
+*Rewritten 11 October 2026 from the state of the repository on that day; the figures under
+"Before the grant" and the known gaps were refreshed on 24 October 2026. The first version
 (6 September) planned work that has since been done; that work now sits under "Before the
 grant", and the milestones below are what the grant would fund. NLnet pays on completion,
 never upfront: "you divide your project into milestones... Once you reach a milestone you
@@ -19,7 +20,7 @@ false-safe count against them" is.
 ## Before the grant: what already exists
 
 Not claimable, and not padding either. It is the evidence that the plan is real. Figures are
-as of 11 October 2026; run `python3 data/coverage.py` for today's.
+as of 24 October 2026; run `python3 data/coverage.py` for today's.
 
 - **A working verifier**, `flashguard/verify.py`: a pure function, no device I/O, returning
   one of four verdicts (safe, not-ready, unsafe, cannot-verify), each with plain-language
@@ -27,23 +28,25 @@ as of 11 October 2026; run `python3 data/coverage.py` for today's.
   (`docs/reasoning/verdict-contract.md`). It checks identity against public model sources
   and each operation's preconditions against the phone's reported state. It does not yet
   model the order of operations.
-- **A test corpus of 15 recipes for 10 phone models**, in three format versions, each with a
+- **A test corpus of 18 recipes for 12 phone models**, in three format versions, each with a
   human assessment, an expected verdict and a written reason, and the source its facts came
   from (`data/recipes/README.md`).
 - **Measurement that cannot be gamed by refusing.** The build fails on a single false safe;
   the decided share is reported beside it against a floor that may only rise
-  (`data/coverage-floor.json`, 20%). As of 11 October: 0 false safes across 24 runs, decided
-  on 2 of 7 distinct phone-and-recipe pairings, and the information lost between a human
+  (`data/coverage-floor.json`, 20%). As of 24 October: 0 false safes across 30 runs, decided
+  on 7 of 11 distinct phone-and-recipe pairings, and the information lost between a human
   reading and the recipe format reported per format.
-- **A device matrix of 37 records, 26 of them Android, from 8 testers**, captured through
-  three routes (adb on a host, a live Linux stick, and a browser). 5 distinct phones carry
-  all seven verifier fields; 6 more carry every field their storage layout reports.
+- **A device matrix of 83 records, 70 of them Android, from 16 testers**, captured through
+  three routes (adb on a host, a live Linux stick, and a browser), plus one phone read in a
+  shell on the phone itself. 14 distinct phones carry all seven verifier fields; 14 more
+  carry every field their storage layout reports.
 - **A read-only tester kit**: a browser console for macOS, Windows and Linux
   (`bench-kit/START-HERE.html`), allowlisted capture scripts, a participation note and
-  consent text, an intake tool that refuses personal identifiers, and two field rounds
-  (a hackerspace evening in September, LinuxDays Prague in October).
+  consent text, an intake tool that refuses personal identifiers, two field rounds
+  (a hackerspace evening in September, LinuxDays Prague in October) and remote sessions on
+  13, 15 and 17 October.
 - **Upstream research**: LineageOS (737 device pages), OpenAndroidInstaller (90 configs) and
-  postmarketOS (668 device packages) studied and compared (`docs/Research/`). Questions put
+  postmarketOS (670 device packages) studied and compared (`docs/Research/`). Questions put
   to OpenAndroidInstaller and LineageOS; LineageOS has answered.
 - **A test suite that runs before every commit with no device attached** (`tests/all.sh`),
   and a claims registry (`data/claims.json`) that fails the build if the proposal quotes a
@@ -51,10 +54,14 @@ as of 11 October 2026; run `python3 data/coverage.py` for today's.
 
 **Known gaps, stated so the milestones can be read against them:**
 
-- Most phones do not report their storage layout, so the verifier abstains on them. A
-  further testing round to close this gap for A/B phones is under way before submission.
-- No recipe in the corpus is expected to return `unsafe` yet.
-- Labels have one author. Three recent labels rest on public sources only, deliberately,
+- No phone reports a single storage layout. Since 17 October the verifier reads one from
+  the absence of all three A/B markers, on the maker's own release firmware only
+  (`docs/reasoning/layout-absence-rule.md`), and abstains on the layout of everything else.
+  The rule agrees with all 21 captured phones that have a public label; it rests on that
+  absence being near-impossible on a working A/B build, not on measurement at scale.
+- One recipe in the corpus is expected to return `unsafe` (`alioth-oai.json`, from an
+  upstream configuration that gets the POCO F3's layout wrong). M1 needs many more.
+- Labels have one author. Six recent labels rest on public sources only, deliberately,
   because nobody on the project owns those phones.
 - The order of flashing steps is not modelled.
 

@@ -1,7 +1,7 @@
 # The layout absence rule, 17 October 2026
 
-*Asked for by Ranaji after the round 3 review (`Claude outputs/flashguard-round3-review-2026-10-17.md`,
-outside the repo), once the research below was done. Widened the same evening, at his request,
+*Asked for by Ranaji after the round 3 review (a private working note, not part of this
+repository), once the research below was done. Widened the same evening, at his request,
 from Android 8+ to every Android version. Held by `tests/test_absence_rule_2026_10_17.py`:
 undo any part of the rule and a test there fails.*
 
@@ -81,6 +81,11 @@ OpenAndroidInstaller (`is_ab_device: true/false`), local clones of 7 September 2
 | Android 8+, stock, labelled from other public sources (see below) | Galaxy S8+, Galaxy J5 2017, Lenovo K10 Note, OnePlus Nord CE 2 (IV2201) | **4 of 4** read as single |
 | Android 7.0 and older, upstream says not A/B | Galaxy A5 2016, LG G4, Nexus 5, Droid 4 (stock); Xperia X, Galaxy Note 10.1 2014 (custom, still out of scope) | 6 of 6 show no marker |
 | Upstream says A/B | Nothing 1, Edge 30 Ultra, Nord CE 3 Lite, OnePlus 6T, POCO F3, Pixel 8, Nokia 7 plus | 7 of 7 report A/B positively |
+
+*Added 24 October.* The two phones read on 17 October with kit 2026-10-17, a Motorola Edge 50
+Fusion and a realme 14 Pro Lite 5G (both stock Android 16, locked), report virtual A/B
+positively and so never reach the rule. Neither has an upstream label. Fifteen captured phones
+now report A/B or virtual A/B.
 
 ### Labels from other public sources (researched 17 October)
 

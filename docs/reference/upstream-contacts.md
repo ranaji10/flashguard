@@ -195,7 +195,8 @@ read it rather than infer it.
 
 ### postmarketOS
 
-**1. Is the absence of unlock prerequisites in `deviceinfo` deliberate?** 0 of 556 declare one,
+**1. Is the absence of unlock prerequisites in `deviceinfo` deliberate?** 0 of 556 declare one
+(the 8 September count; 0 of 670 devices on the clone of 23 October 2026),
 against OpenAndroidInstaller's 90 of 90. That is the clearest gap the survey found, and it may
 be by design — pmaports may consider unlocking out of scope for `deviceinfo` and handle it in
 the wiki instead. Ask before assuming it is an omission worth fixing.

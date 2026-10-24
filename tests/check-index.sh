@@ -9,7 +9,8 @@
 #      OPEN.md pointed at docs/delivery-platform.md and docs/tester-attrition.md for a
 #      week; neither existed.
 #   2. ORPHANED DOCS. A file under docs/ that INDEX.md does not list. This is what stops
-#      the index rotting: a new document has to be indexed or the build fails.
+#      the index rotting: a new document has to be indexed or the build fails. Gitignored
+#      (private) files are exempt, and the index must not name them: see 2b.
 #   3. PLACEHOLDERS IN TESTER-FACING FILES. [CONTACT] reaching a volunteer is not a typo,
 #      it is a broken promise about withdrawal.
 #   4. THE PARTICIPATION NOTE COPIES DIVERGING. Two copies exist because the kit runs
@@ -67,12 +68,29 @@ orphans=""
 while IFS= read -r f; do
   rel="${f#$ROOT/}"
   case "$rel" in docs/INDEX.md) continue ;; esac
+  # A gitignored file under docs/ (the private tracker and its snapshot) is absent in a
+  # clone, so the public index must not name it either. Ruled 24 October 2026.
+  if git -C "$ROOT" check-ignore -q "$rel" 2>/dev/null; then continue; fi
   grep -qF "$rel" "$ROOT/docs/INDEX.md" || orphans="$orphans $rel"
 done < <(find "$ROOT/docs" -name '*.md' -type f)
 if [ -n "$orphans" ]; then
   echo "  ORPHANED: under docs/ but not listed in docs/INDEX.md:"
   for p in $orphans; do echo "      $p"; done
   echo "      Add it to the index, or move it out of docs/."
+  fail=1
+fi
+
+# ---- 2b. the public index names no private file ------------------------------
+# docs/INDEX.md is published. A path in it that is gitignored points a reader at a file
+# they can never have. (OPEN.md, outside the repository, is private too.)
+leak=""
+for p in $(grep -ohE '`[A-Za-z_][A-Za-z0-9_./-]*\.(md|sh|py|js|html|jsonl|json|txt)`' "$ROOT/docs/INDEX.md" | tr -d '`' | sort -u); do
+  case "$p" in OPEN.md|*/OPEN.md) leak="$leak $p"; continue ;; esac
+  git -C "$ROOT" check-ignore -q "$p" 2>/dev/null && leak="$leak $p"
+done
+if [ -n "$leak" ]; then
+  echo "  PRIVATE FILE NAMED in docs/INDEX.md (absent in a clone):"
+  for p in $leak; do echo "      $p"; done
   fail=1
 fi
 
